@@ -24,6 +24,8 @@ export const CATALOG: Record<string, CatalogItem> = {
   'sliders-video': { type: 'sliders', group: 'video', title: 'DSP – vidéo', w: 6, h: 7, kind: 'curseurs', desc: 'Curseurs – caméras, bitrate' },
   'sliders-chpg': { type: 'sliders', group: 'chpg', title: 'CHPG', w: 6, h: 7, kind: 'curseurs', desc: 'Curseurs – croissance et digitalisation CHPG' },
 
+  hyps: { type: 'hyps', title: 'Hypothèses sélectionnées', w: 6, h: 14, kind: 'curseurs', desc: 'Curseurs des hypothèses cochées dans le menu « Hypothèses »' },
+
   kpi: { type: 'kpi', title: 'Indicateurs clés 2035', w: 18, h: 6, kind: 'graphique', desc: 'Cartes : besoin, demande adressable, taux, croissance (vs Excel)' },
   compare: { type: 'compare', title: 'Scénarios : 2026 vs 2035', w: 9, h: 11, kind: 'graphique', desc: 'Barres : baseline 2026, besoin 2035, demande adressable' },
   trajectory: { type: 'trajectory', title: 'Trajectoire 2026 → 2035', w: 9, h: 11, kind: 'graphique', desc: 'Courbes annuelles de la demande adressable (3 scénarios)' },
@@ -48,7 +50,7 @@ const POS: Record<string, [number, number]> = {
 }
 
 export const defaultWidgets = (): WidgetCfg[] =>
-  Object.entries(CATALOG).map(([key, c]) => ({ id: key, type: c.type, title: c.title, group: c.group, scenario: 'global', legend: true }))
+  Object.entries(CATALOG).filter(([key]) => key !== 'hyps').map(([key, c]) => ({ id: key, type: c.type, title: c.title, group: c.group, scenario: 'global', legend: true }))
 
 export const defaultLayout = (): Layout[] =>
-  Object.entries(CATALOG).map(([key, c]) => ({ i: key, x: POS[key][0], y: POS[key][1], w: c.w, h: c.h }))
+  Object.entries(CATALOG).filter(([key]) => key !== 'hyps').map(([key, c]) => ({ i: key, x: POS[key][0], y: POS[key][1], w: c.w, h: c.h }))

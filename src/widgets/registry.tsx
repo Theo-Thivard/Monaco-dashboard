@@ -19,6 +19,11 @@ export function themeColors(mode: 'dark' | 'light') {
     : { fg: '#1d2433', muted: '#5b6678', line: 'rgba(0,0,0,0.09)' }
 }
 
+function HypsWidget() {
+  const { shownHyps } = useStore()
+  return <Sliders ids={shownHyps} />
+}
+
 function ChartWidget({ cfg, fg }: { cfg: WidgetCfg; fg: string }) {
   const { results, trajectory, params, options, theme, activeScenario } = useStore()
   const tc = themeColors(theme.mode)
@@ -36,6 +41,7 @@ function ChartWidget({ cfg, fg }: { cfg: WidgetCfg; fg: string }) {
 export function WidgetBody({ cfg, fg }: { cfg: WidgetCfg; fg: string }): ReactNode {
   switch (cfg.type) {
     case 'sliders': return <Sliders group={cfg.group!} />
+    case 'hyps': return <HypsWidget />
     case 'kpi': return <Kpi />
     case 'table': return <DataTable />
     default: return CHARTS[cfg.type] ? <ChartWidget cfg={cfg} fg={fg} /> : null

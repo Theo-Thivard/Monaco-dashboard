@@ -63,3 +63,27 @@ tfoot td { font-weight: 700; }
 .color-row { display: flex; align-items: center; gap: 8px; }
 input[type=color] { width: 36px; height: 28px; padding: 0; border: 1px solid var(--border); background: none; border-radius: 4px; }
 .btns { display: grid; gap: 8px; } .hint { color: var(--muted); font-size: 12px; }
+
+.panel.left { right: auto; left: 0; border-left: 0; border-right: 1px solid var(--border); box-shadow: 8px 0 30px rgba(0,0,0,.3); }
+.search { width: 100%; margin-bottom: 8px; }
+.btns.row { display: flex; gap: 8px; margin-bottom: 8px; }
+.hgroup { margin-top: 12px; }
+.hgroup-head { display: flex; justify-content: space-between; align-items: baseline; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.hitem { display: flex; gap: 8px; align-items: flex-start; padding: 4px 2px; cursor: pointer; font-size: 13px; }
+.hitem small { display: block; color: var(--muted); font-size: 11px; }
+.size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.size-grid input { width: 100%; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }
+.free { display: flex; gap: 6px; align-items: center; }
+.editing .react-resizable-handle { background-image: none !important; transform: none !important; margin: 0 !important; z-index: 5; }
+.editing .react-resizable-handle-e { top: 0 !important; bottom: 0 !important; right: 0 !important; width: 8px !important; height: auto !important; cursor: ew-resize; }
+.editing .react-resizable-handle-w { top: 0 !important; bottom: 0 !important; left: 0 !important; width: 8px !important; height: auto !important; cursor: ew-resize; }
+.editing .react-resizable-handle-n { left: 0 !important; right: 0 !important; top: 0 !important; height: 8px !important; width: auto !important; cursor: ns-resize; }
+.editing .react-resizable-handle-s { left: 0 !important; right: 0 !important; bottom: 0 !important; height: 8px !important; width: auto !important; cursor: ns-resize; }
+.editing .react-resizable-handle-nw, .editing .react-resizable-handle-ne, .editing .react-resizable-handle-sw, .editing .react-resizable-handle-se { width: 16px !important; height: 16px !important; z-index: 6; }
+.editing .react-resizable-handle-nw { top: 0 !important; left: 0 !important; cursor: nwse-resize; }
+.editing .react-resizable-handle-ne { top: 0 !important; right: 0 !important; left: auto !important; cursor: nesw-resize; }
+.editing .react-resizable-handle-sw { bottom: 0 !important; left: 0 !important; top: auto !important; cursor: nesw-resize; }
+.editing .react-resizable-handle-se { bottom: 0 !important; right: 0 !important; top: auto !important; left: auto !important; cursor: nwse-resize; }
+.editing .react-resizable-handle-nw::after, .editing .react-resizable-handle-ne::after, .editing .react-resizable-handle-sw::after { display: none; }
+.editing .react-resizable-handle:hover { background: rgba(79,156,249,.35); }
+.editing .react-resizable-handle-e::after, .editing .react-resizable-handle-w::after, .editing .react-resizable-handle-n::after, .editing .react-resizable-handle-s::after { display: none; }

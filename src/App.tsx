@@ -7,6 +7,7 @@ import { SCENARIOS } from './model'
 import { useStore, type WidgetCfg } from './store'
 import { themeColors, WidgetBody } from './widgets/registry'
 import { SettingsPanel } from './SettingsPanel'
+import { HypMenu } from './HypMenu'
 
 const Grid = WidthProvider(GridLayout)
 
@@ -42,9 +43,10 @@ export default function App() {
   const s = useStore()
   const [menu, setMenu] = useState(false)
   const [globalOpen, setGlobalOpen] = useState(false)
+  const [hypOpen, setHypOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const sel = s.widgets.find((w) => w.id === s.selected)
-  const layout = useMemo(() => s.layout.map((l) => ({ ...l, minW: 3, minH: 4 })), [s.layout])
+  const layout = useMemo(() => s.layout.map((l) => ({ ...l, minW: 1, minH: 2 })), [s.layout])
 
   const download = () => {
     const blob = new Blob([s.exportConfig()], { type: 'application/json' })
@@ -69,6 +71,7 @@ export default function App() {
             <button key={n} className={s.activeScenario === i ? 'on' : ''} style={s.activeScenario === i ? { background: s.theme.scenarioColors[i], color: '#111' } : undefined} onClick={() => s.setActiveScenario(i)}>{n}</button>
           ))}
         </div>
+        <button onClick={() => setHypOpen(!hypOpen)} className={hypOpen ? 'primary' : ''} title="Choisir les hypothèses affichées">☰ Hypothèses</button>
         <button onClick={s.resetParams} title="Remettre toutes les hypothèses aux valeurs de l'Excel">↺ Hypothèses Excel</button>
         <button className={s.edit ? 'primary' : ''} onClick={() => { s.setEdit(!s.edit); s.select(null); setMenu(false) }}>{s.edit ? '✓ Terminer la mise en page' : '✎ Modifier la mise en page'}</button>
         <button onClick={() => setGlobalOpen(!globalOpen)} title="Thème, couleurs, import / export">⚙ Options</button>
@@ -76,7 +79,10 @@ export default function App() {
 
       {s.edit && (
         <div className="editbar">
-          <span>Mode édition : glissez les en-têtes pour déplacer, tirez le coin bas-droit pour redimensionner, ⚙ pour changer titre / couleurs.</span>
+          <span>Mode édition : glissez l'en-tête pour déplacer, tirez n'importe quel bord ou coin pour redimensionner, ⚙ pour la taille exacte, le titre et les couleurs.</span>
+          <label className="free" title="Désactive le compactage automatique : les widgets restent là où vous les posez">
+            <input type="checkbox" checked={s.freeLayout} onChange={(e) => s.setFreeLayout(e.target.checked)} /> Placement libre
+          </label>
           <div className="menu">
             <button onClick={() => setMenu(!menu)}>＋ Ajouter un widget</button>
             {menu && (
@@ -106,7 +112,9 @@ export default function App() {
           isResizable={s.edit}
           draggableHandle=".drag-handle"
           onLayoutChange={s.setLayout}
-          compactType="vertical"
+          compactType={s.freeLayout ? null : 'vertical'}
+          preventCollision={s.freeLayout}
+          resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
         >
           {s.widgets.map((w) => (
             <div key={w.id}><Widget cfg={w} /></div>
@@ -114,6 +122,7 @@ export default function App() {
         </Grid>
       </main>
 
+      {hypOpen && <HypMenu onClose={() => setHypOpen(false)} />}
       {s.edit && sel && <SettingsPanel mode="widget" cfg={sel} onClose={() => s.select(null)} />}
       {globalOpen && (
         <SettingsPanel mode="global" onClose={() => setGlobalOpen(false)} onExport={download} onImport={() => fileRef.current?.click()} />

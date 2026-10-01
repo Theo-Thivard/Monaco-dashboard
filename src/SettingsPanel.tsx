@@ -25,10 +25,26 @@ export function SettingsPanel(props: Props) {
     const c = CATALOG[Object.keys(CATALOG).find((k) => CATALOG[k].type === cfg.type && CATALOG[k].group === cfg.group) ?? '']
     const dark = s.theme.mode === 'dark'
     const set = (p: Partial<WidgetCfg>) => s.updateWidget(cfg.id, p)
+    const li = s.layout.find((l) => l.i === cfg.id)
+    const num = (k: 'x' | 'y' | 'w' | 'h', label: string, min: number, max: number) => (
+      <div className="field">
+        <label>{label}</label>
+        <input type="number" min={min} max={max} value={li?.[k] ?? 0} onChange={(e) => { const v = Math.round(Number(e.target.value)); if (!Number.isNaN(v)) s.updateLayoutItem(cfg.id, { [k]: Math.min(max, Math.max(min, v)) }) }} />
+      </div>
+    )
     return (
       <aside className="panel">
         <div className="panel-head"><b>Réglages du widget</b><button onClick={props.onClose}>✕</button></div>
         <div className="field"><label>Titre</label><input type="text" value={cfg.title} onChange={(e) => set({ title: e.target.value })} /></div>
+        <h4>Taille et position</h4>
+        <div className="size-grid">
+          {num('w', 'Largeur (colonnes, 1–24)', 1, 24)}
+          {num('h', 'Hauteur (lignes)', 1, 80)}
+          {num('x', 'Colonne', 0, 23)}
+          {num('y', 'Ligne', 0, 500)}
+        </div>
+        <p className="hint">Vous pouvez aussi tirer les bords et les coins du widget à la souris.</p>
+        <h4>Couleurs</h4>
         <ColorField label="Couleur de fond" value={cfg.bg} fallback={dark ? '#1b2230' : '#ffffff'} onChange={(v) => set({ bg: v })} />
         <ColorField label="Couleur du texte / graphique" value={cfg.fg} fallback={dark ? '#e6e9ef' : '#1d2433'} onChange={(v) => set({ fg: v })} />
         <ColorField label="Couleur de l'en-tête" value={cfg.headerBg} fallback={dark ? '#232c3d' : '#eef1f6'} onChange={(v) => set({ headerBg: v })} />
