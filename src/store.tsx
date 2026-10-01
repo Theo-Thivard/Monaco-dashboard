@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Layout } from 'react-grid-layout'
-import { computeAll, defaultOptions, defaultParams, HORIZON, computeScenario, type Options, type Params, type ScenarioResult } from './model'
+import { HYPS, computeAll, defaultOptions, defaultParams, HORIZON, computeScenario, type Options, type Params, type ScenarioResult } from './model'
 import { CATALOG, defaultWidgets, defaultLayout } from './catalog'
 
 export interface WidgetCfg {
@@ -34,14 +34,21 @@ interface Persisted {
   layout: Layout[]
   theme: Theme
   activeScenario: number
+  /** hypothèses affichées dans le widget « Hypothèses sélectionnées » */
+  shownHyps: string[]
+  /** positionnement libre (pas de compactage vertical automatique) */
+  freeLayout: boolean
 }
 
 const KEY = 'monaco-dashboard-v1'
+const HYP_IDS = new Set(HYPS.map((h) => h.id))
+const HYPS_WIDGET = 'hyps'
 
 function load(): Persisted {
   const fresh: Persisted = {
     params: defaultParams(), options: defaultOptions, widgets: defaultWidgets(),
     layout: defaultLayout(), theme: defaultTheme(), activeScenario: 1,
+    shownHyps: HYPS.map((h) => h.id), freeLayout: false,
   }
   try {
     const raw = localStorage.getItem(KEY)
@@ -69,6 +76,8 @@ export function sanitize(x: Partial<Persisted>, fresh: Persisted): Persisted {
     layout,
     theme: { ...fresh.theme, ...(x.theme ?? {}) },
     activeScenario: [0, 1, 2].includes(x.activeScenario as number) ? (x.activeScenario as number) : 1,
+    shownHyps: Array.isArray(x.shownHyps) ? x.shownHyps.filter((id) => HYP_IDS.has(id)) : fresh.shownHyps,
+    freeLayout: typeof x.freeLayout === 'boolean' ? x.freeLayout : fresh.freeLayout,
   }
 }
 
@@ -88,6 +97,10 @@ interface Ctx extends Persisted {
   removeWidget: (id: string) => void
   addWidget: (catalogKey: string) => void
   resetLayout: () => void
+  setShownHyps: (ids: string[]) => void
+  toggleHyp: (id: string) => void
+  setFreeLayout: (b: boolean) => void
+  updateLayoutItem: (id: string, patch: Partial<Pick<Layout, 'x' | 'y' | 'w' | 'h'>>) => void
   exportConfig: () => string
   importConfig: (json: string) => void
   selected: string | null
@@ -144,18 +157,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
   const resetLayout = useCallback(() => {
-    setState((s) => ({ ...s, widgets: defaultWidgets(), layout: defaultLayout(), theme: defaultTheme() }))
+    setState((s) => ({ ...s, widgets: defaultWidgets(), layout: defaultLayout(), theme: defaultTheme(), freeLayout: false }))
     select(null)
+  }, [])
+  /** Applique une nouvelle sélection et recrée le widget « Hypothèses sélectionnées » s'il a été supprimé. */
+  const applyShown = (s: Persisted, ids: string[]): Persisted => {
+    const next = { ...s, shownHyps: ids }
+    if (ids.length && !s.widgets.some((w) => w.type === HYPS_WIDGET)) {
+      const c = CATALOG[HYPS_WIDGET]
+      const y = s.layout.reduce((m, l) => Math.max(m, l.y + l.h), 0)
+      next.widgets = [...s.widgets, { id: HYPS_WIDGET, type: HYPS_WIDGET, title: c.title, scenario: 'global', legend: true }]
+      next.layout = [...s.layout, { i: HYPS_WIDGET, x: 0, y, w: c.w, h: c.h }]
+    }
+    return next
+  }
+  const setShownHyps = useCallback((ids: string[]) => setState((s) => applyShown(s, ids)), [])
+  const toggleHyp = useCallback((id: string) => {
+    setState((s) => applyShown(s, s.shownHyps.includes(id) ? s.shownHyps.filter((x) => x !== id) : [...s.shownHyps, id]))
+  }, [])
+  const setFreeLayout = useCallback((b: boolean) => setState((s) => ({ ...s, freeLayout: b })), [])
+  const updateLayoutItem = useCallback((id: string, patch: Partial<Pick<Layout, 'x' | 'y' | 'w' | 'h'>>) => {
+    setState((s) => ({ ...s, layout: s.layout.map((l) => (l.i === id ? { ...l, ...patch } : l)) }))
   }, [])
   const exportConfig = useCallback(() => JSON.stringify(state, null, 2), [state])
   const importConfig = useCallback((json: string) => {
     const fresh = load()
-    setState(sanitize(JSON.parse(json), { ...fresh, params: defaultParams(), widgets: defaultWidgets(), layout: defaultLayout(), theme: defaultTheme() }))
+    setState(sanitize(JSON.parse(json), { ...fresh, params: defaultParams(), widgets: defaultWidgets(), layout: defaultLayout(), theme: defaultTheme(), shownHyps: HYPS.map((h) => h.id), freeLayout: false }))
   }, [])
 
   const value: Ctx = {
     ...state, edit, setEdit, results, reference, trajectory, setParam, resetParams, setOptions, setTheme,
-    setActiveScenario, setLayout, updateWidget, removeWidget, addWidget, resetLayout, exportConfig, importConfig,
+    setActiveScenario, setLayout, updateWidget, removeWidget, addWidget, resetLayout, setShownHyps, toggleHyp, setFreeLayout, updateLayoutItem, exportConfig, importConfig,
     selected, select,
   }
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>

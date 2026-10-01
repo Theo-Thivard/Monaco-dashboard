@@ -1,9 +1,11 @@
 import { fmtValue, HYPS, SCENARIOS } from '../model'
 import { useStore } from '../store'
 
-export function Sliders({ group }: { group: string }) {
+/** Affiche soit un groupe d'hypothèses (`group`), soit une liste choisie (`ids`). */
+export function Sliders({ group, ids }: { group?: string; ids?: string[] }) {
   const { params, setParam, theme } = useStore()
-  const hyps = HYPS.filter((h) => h.group === group)
+  const hyps = ids ? HYPS.filter((h) => ids.includes(h.id)) : HYPS.filter((h) => h.group === group)
+  if (!hyps.length) return <p className="hint">Aucune hypothèse sélectionnée. Ouvrez le menu « ☰ Hypothèses » pour en cocher.</p>
   return (
     <div className="sliders">
       {hyps.map((h) => {
