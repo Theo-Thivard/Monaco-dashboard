@@ -46,12 +46,14 @@ export function sensitivityRange(id: string): [number, number] | null {
   return lo === hi ? null : [Math.max(h.min, lo), Math.min(h.max, hi)]
 }
 
-function sensitivity(p: Params, s: number, center: number): SensitivityRow[] {
+/** Sensibilité d'un indicateur (par défaut : demande adressable totale) à chaque hypothèse. */
+export function sensitivityFor(p: Params, s: number, metric: (r: ScenarioResult) => number = (r) => r.addressable): SensitivityRow[] {
+  const center = metric(computeScenario(p, s))
   const rows: SensitivityRow[] = []
   for (const h of HYPS) {
     const r = sensitivityRange(h.id)
     if (!r) continue
-    const run = (v: number) => computeScenario(withValue(p, h.id, s, v), s).addressable - center
+    const run = (v: number) => metric(computeScenario(withValue(p, h.id, s, v), s)) - center
     const low = run(r[0])
     const high = run(r[1])
     if (Math.abs(low) < 1e-9 && Math.abs(high) < 1e-9) continue
@@ -111,7 +113,7 @@ export function buildSnapshot(params: Params, reference: Params, scenario: numbe
   const trajectory = [0, 1, 2].map((s) => Array.from({ length: HORIZON + 1 }, (_, t) => computeScenario(params, s, t)))
   return {
     params, reference, scenario, results, refResults, active, activeRef, trajectory,
-    sensitivity: sensitivity(params, scenario, active.addressable),
+    sensitivity: sensitivityFor(params, scenario),
     changes: changes(params, reference, scenario, active.addressable, activeRef.addressable),
   }
 }

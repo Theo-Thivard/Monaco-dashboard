@@ -6,7 +6,7 @@ import { buildSnapshot } from '../core/snapshot'
 import { diffFromDefault, sanitizeConfig, type AppState } from './store'
 
 const state = (over: Partial<AppState> = {}): AppState => ({
-  params: defaultParams(), reference: defaultParams(), scenario: 1, past: [], future: [],
+  params: defaultParams(), reference: defaultParams(), scenario: 1, route: { kind: 'scenario', scenario: 1 }, past: [], future: [],
   config: createDefaultConfig(),
   ui: { mode: 'client', editLayout: false, expanded: { detail: false, method: false }, panel: null, settingsTab: 'content', selectedWidget: null, toast: null },
   ...over,
@@ -61,17 +61,20 @@ describe('configuration', () => {
     c.labels['scenario:1'] = 'Référence client'
     c.theme.tokens = { primary: '#123456' }
     c.format.powerUnit = 'kW'
-    c.widgets = c.widgets.map((w) => (w.id === 'ch-trajectory' ? { ...w, chartType: 'area' } : w))
-    c.layout = c.layout.map((l) => (l.i === 'kpis' ? { ...l, h: 6 } : l))
+    c.pages.scenario.widgets = c.pages.scenario.widgets.map((w) => (w.id === 'ch-trajectory' ? { ...w, chartType: 'area' } : w))
+    c.pages.scenario.layout = c.pages.scenario.layout.map((l) => (l.i === 'kpis' ? { ...l, h: 6 } : l))
     const d = diffFromDefault(state({ config: c, params: withValue(defaultParams(), 'adrFin', 1, 0.4) }))
     expect(d.assumptions).toHaveLength(1)
     expect(d.labels).toBe(1); expect(d.theme).toBe(1); expect(d.format).toBe(1); expect(d.charts).toBe(1); expect(d.layout).toBe(1)
   })
   it('sanitizeConfig : tolère les données incomplètes ou corrompues', () => {
-    expect(sanitizeConfig(null).widgets.length).toBe(createDefaultConfig().widgets.length)
-    const c = sanitizeConfig({ title: 'X', widgets: [{ id: 'a', kind: 'text', tier: 'client', visible: true }], layout: [{ i: 'zzz', x: 0, y: 0, w: 1, h: 1 }] })
-    expect(c.title).toBe('X')
-    expect(c.layout).toHaveLength(0) // positions orphelines écartées
+    expect(sanitizeConfig(null).pages.scenario.widgets.length).toBe(createDefaultConfig().pages.scenario.widgets.length)
+    // ancienne configuration (v2) : une seule page, devenue la page « Scénario »
+    const c = sanitizeConfig({ brand: 'X', widgets: [{ id: 'a', kind: 'text', tier: 'client', visible: true }], layout: [{ i: 'zzz', x: 0, y: 0, w: 1, h: 1 }] })
+    expect(c.brand).toBe('X')
+    expect(c.pages.scenario.widgets).toHaveLength(1)
+    expect(c.pages.scenario.layout).toHaveLength(0) // positions orphelines écartées
+    expect(c.pages.global.widgets.length).toBeGreaterThan(5) // pages absentes : défaut
     expect(c.kpis.order.length).toBeGreaterThan(5)
   })
 })

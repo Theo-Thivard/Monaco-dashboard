@@ -22,18 +22,19 @@ export function Dashboard({ env }: { env: Env }) {
   const ui = useUI()
   const narrow = useNarrow()
   const { config } = env
+  const page = config.pages[env.route.kind]
   const m = config.theme.metrics
 
   // en édition, tout le dashboard est déplié : les positions enregistrées restent cohérentes
   const edit = ui.editLayout
   const shown = useMemo(
-    () => config.widgets.filter((w) => w.visible && (w.tier === 'client' || edit || ui.expanded[w.tier])),
-    [config.widgets, ui.expanded, edit],
+    () => page.widgets.filter((w) => w.visible && (w.tier === 'client' || edit || ui.expanded[w.tier])),
+    [page.widgets, ui.expanded, edit],
   )
   const layout: Layout[] = useMemo(() => {
-    const byId = new Map(config.layout.map((l) => [l.i, l]))
+    const byId = new Map(page.layout.map((l) => [l.i, l]))
     return shown.map((w, k) => ({ ...(byId.get(w.id) ?? { i: w.id, x: 0, y: 1000 + k, w: 12, h: 8 }), i: w.id, minW: 2, minH: 2 }))
-  }, [config.layout, shown])
+  }, [page.layout, shown])
 
   if (narrow) {
     const ordered = [...layout].sort((a, b) => a.y - b.y || a.x - b.x)
@@ -41,7 +42,7 @@ export function Dashboard({ env }: { env: Env }) {
       <div className="stack" style={{ gap: m.gap }}>
         {ordered.map((l) => {
           const wc = shown.find((w) => w.id === l.i)!
-          const auto = wc.kind === 'section' || wc.kind === 'headline' || wc.kind === 'kpis'
+          const auto = ['section', 'headline', 'kpis', 'scenarioCards', 'actorKpis'].includes(wc.kind)
           return <div key={l.i} className="stack-item" style={auto ? undefined : { height: Math.max(260, l.h * m.rowHeight + (l.h - 1) * m.gap) }}><WidgetFrame wc={wc} env={env} /></div>
         })}
       </div>

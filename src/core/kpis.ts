@@ -3,7 +3,7 @@
 // référence, donc l'écart affiché est cohérent par construction.
 
 import type { FormatKind } from './hypotheses'
-import { groupBlocks, HORIZON, type ScenarioResult } from './engine'
+import { groupBlocks, HORIZON, type BlockResult, type ScenarioResult } from './engine'
 
 export interface KpiView {
   /** résultat du scénario actif */
@@ -62,7 +62,7 @@ export interface KpiDelta {
   tone: 'positive' | 'negative' | 'neutral'
 }
 
-export function kpiDelta(def: KpiDef, cur: number, ref: number): KpiDelta {
+export function kpiDelta(def: Pick<KpiDef, 'delta' | 'higherIsBetter'>, cur: number, ref: number): KpiDelta {
   const abs = cur - ref
   const value = def.delta === 'relative' ? (ref !== 0 ? abs / Math.abs(ref) : 0) : abs
   const flat = Math.abs(abs) < 1e-9
@@ -71,3 +71,23 @@ export function kpiDelta(def: KpiDef, cur: number, ref: number): KpiDelta {
   return { value, abs, direction, tone }
 }
 
+
+// ------------------------------------------------------------------ KPI d'un acteur
+export interface ActorKpiDef {
+  id: string
+  label: string
+  description: string
+  format: FormatKind
+  delta: 'relative' | 'points' | 'absolute'
+  higherIsBetter: boolean | null
+  compute: (v: { b: BlockResult; r: ScenarioResult }) => number
+}
+
+export const ACTOR_KPI_DEFS: ActorKpiDef[] = [
+  { id: 'base', label: 'Besoin 2026', description: 'Puissance IT de l\'acteur en 2026 (baseline)', format: 'power', delta: 'relative', higherIsBetter: null, compute: (v) => v.b.base },
+  { id: 'need', label: 'Besoin 2035', description: 'Puissance IT générée par l\'acteur en 2035', format: 'power', delta: 'relative', higherIsBetter: null, compute: (v) => v.b.total },
+  { id: 'addressable', label: 'Demande adressable 2035', description: 'Puissance IT de l\'acteur hébergeable à Monaco en 2035 (socle + IA)', format: 'power', delta: 'relative', higherIsBetter: true, compute: (v) => v.b.addressable },
+  { id: 'rate', label: 'Part captable', description: 'Demande adressable / besoin 2035 de l\'acteur', format: 'pct', delta: 'points', higherIsBetter: true, compute: (v) => (v.b.total ? v.b.addressable / v.b.total : 0) },
+  { id: 'weight', label: 'Poids dans l\'adressable Monaco', description: 'Part de l\'acteur dans la demande adressable totale', format: 'pct', delta: 'points', higherIsBetter: null, compute: (v) => (v.r.addressable ? v.b.addressable / v.r.addressable : 0) },
+  { id: 'growth', label: 'Multiplicateur 2026 → 2035', description: 'Besoin 2035 / besoin 2026', format: 'ratio', delta: 'absolute', higherIsBetter: null, compute: (v) => (v.b.base ? v.b.total / v.b.base : 0) },
+]

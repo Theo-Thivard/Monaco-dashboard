@@ -16,13 +16,14 @@ const TABS = [['content', 'Contenu'], ['look', 'Apparence'], ['format', 'Formats
 
 function ContentTab({ env }: { env: Env }) {
   const { config } = env
+  const kind = env.route.kind
+  const pageLabel = kind === 'global' ? 'Globale' : kind === 'scenario' ? 'Scénario (Bas, Central et Haut)' : 'Acteurs (les huit acteurs)'
   const [ds, setDs] = useState(DATASETS[0].id)
   const tiers: [string, string][] = [['client', 'Vue client'], ['detail', 'Analyse détaillée'], ['method', 'Méthodologie']]
   return (
     <>
-      <h4>En-tête</h4>
-      <Field label="Titre"><input type="text" value={config.title} onChange={(e) => updateConfig((c) => ({ ...c, title: e.target.value }))} /></Field>
-      <Field label="Sous-titre"><input type="text" value={config.subtitle} onChange={(e) => updateConfig((c) => ({ ...c, subtitle: e.target.value }))} /></Field>
+      <h4>Navigation</h4>
+      <Field label="Nom affiché dans la barre"><input type="text" value={config.brand} onChange={(e) => updateConfig((c) => ({ ...c, brand: e.target.value }))} /></Field>
       <Field label="Pied de page (sources)"><textarea rows={2} value={config.footnote} onChange={(e) => updateConfig((c) => ({ ...c, footnote: e.target.value }))} /></Field>
 
       <h4>Indicateurs (KPI)</h4>
@@ -34,11 +35,12 @@ function ContentTab({ env }: { env: Env }) {
         </div>
       ))}
 
-      <h4>Éléments du dashboard</h4>
+      <h4>Éléments de la page</h4>
+      <p className="drawer-help">Page : {pageLabel}. Les réglages s'appliquent à toutes les pages de ce type.</p>
       {tiers.map(([tier, title]) => (
         <div key={tier} className="cl-group">
           <div className="cl-head"><span className="cl-title static">{title}</span></div>
-          {config.widgets.filter((w) => w.tier === tier && w.kind !== 'section').map((w) => (
+          {config.pages[kind].widgets.filter((w) => w.tier === tier && w.kind !== 'section').map((w) => (
             <div key={w.id} className="cl-item">
               <label><input type="checkbox" checked={w.visible} onChange={(e) => updateWidget(w.id, { visible: e.target.checked })} /><span>{widgetTitle(w) || w.id}</span></label>
               <button className="link" onClick={() => patchUI({ editLayout: true, selectedWidget: w.id, panel: 'widget' })}>réglages</button>
@@ -169,9 +171,9 @@ function SaveTab({ env }: { env: Env }) {
         <button onClick={() => download('monaco-dashboard-config.json', exportJSON(), 'application/json')}>Configuration (JSON)</button>
         <button onClick={() => download('monaco-resultats.csv', buildCSV(env), 'text/csv;charset=utf-8')}>Résultats (CSV pour Excel)</button>
         <button onClick={printPage}>Imprimer / PDF</button>
-        <button onClick={async () => { const u = shareURL(); try { await navigator.clipboard.writeText(u); toast('Lien copié') } catch { window.prompt('Lien :', u) } }}>Copier un lien vers ce scénario</button>
+        <button onClick={async () => { const u = shareURL(); try { await navigator.clipboard.writeText(u); toast('Lien copié') } catch { window.prompt('Lien :', u) } }}>Copier un lien vers cette page</button>
       </div>
-      <p className="drawer-help">Défaut : {createDefaultConfig().widgets.length} éléments · {Object.keys(getState().config.labels).length} libellé(s) personnalisé(s).</p>
+      <p className="drawer-help">Défaut : {createDefaultConfig().pages[env.route.kind].widgets.length} éléments sur cette page · {Object.keys(getState().config.labels).length} libellé(s) personnalisé(s).</p>
     </>
   )
 }

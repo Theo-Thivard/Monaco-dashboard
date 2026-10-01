@@ -41,7 +41,7 @@ function SeriesList({ wc, env }: { wc: WidgetConfig; env: Env }) {
 export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const ds = useDataset(wc.datasetId, env)
   const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
-  const li = env.config.layout.find((l) => l.i === wc.id)
+  const li = env.config.pages[env.route.kind].layout.find((l) => l.i === wc.id)
   const set = (p: Partial<WidgetConfig>) => updateWidget(wc.id, p)
   const ok = ds ? compatibleCharts(ds) : []
   const curType = wc.chartType && ok.includes(wc.chartType) ? wc.chartType : def?.defaultChart

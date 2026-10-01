@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { FormatKind } from '../core/hypotheses'
 import { KPI_BY_ID, kpiDelta, kpiValue, type KpiDef } from '../core/kpis'
 import { moveKpi, toggleKpi, setLabel, useUI } from '../state/store'
 import type { Env } from './env'
@@ -18,30 +19,51 @@ function useFlash(v: number): boolean {
   return on
 }
 
-function deltaText(def: KpiDef, d: ReturnType<typeof kpiDelta>, env: Env): { main: string; sub?: string } {
+function deltaText(mode: 'relative' | 'points' | 'absolute', format: FormatKind, d: ReturnType<typeof kpiDelta>, env: Env): { main: string; sub?: string } {
   if (d.direction === 'flat') return { main: '= référence' }
-  if (def.delta === 'points') return { main: env.fmt('pts', d.abs, { sign: true }) }
-  if (def.delta === 'absolute') return { main: env.fmt(def.format, d.abs, { sign: true }) }
-  return { main: env.fmt(def.format, d.abs, { sign: true }), sub: env.fmt('pct', d.value, { sign: true, decimals: Math.abs(d.value) < 0.1 ? 1 : 0 }) }
+  if (mode === 'points') return { main: env.fmt('pts', d.abs, { sign: true }) }
+  if (mode === 'absolute') return { main: env.fmt(format, d.abs, { sign: true }) }
+  return { main: env.fmt(format, d.abs, { sign: true }), sub: env.fmt('pct', d.value, { sign: true, decimals: Math.abs(d.value) < 0.1 ? 1 : 0 }) }
 }
 
-function Card({ def, env }: { def: KpiDef; env: Env }) {
-  const { snap } = env
-  const cur = kpiValue(def, snap.active, snap.results)
-  const ref = kpiValue(def, snap.activeRef, snap.refResults)
-  const d = kpiDelta(def, cur, ref)
+export interface KpiCardProps {
+  label: string
+  description: string
+  format: FormatKind
+  delta: 'relative' | 'points' | 'absolute'
+  higherIsBetter: boolean | null
+  cur: number
+  /** valeur de référence (comparaison) */
+  reference: number
+  env: Env
+  emphasis?: boolean
+}
+
+/** Carte d'indicateur : valeur, écart vs référence. Partagée par toutes les pages. */
+export function KpiCard({ label, description, format, delta, higherIsBetter, cur, reference, env, emphasis }: KpiCardProps) {
+  const d = kpiDelta({ delta, higherIsBetter }, cur, reference)
   const flash = useFlash(cur)
-  const t = deltaText(def, d, env)
+  const t = deltaText(delta, format, d, env)
   const arrow = d.direction === 'up' ? '▲' : d.direction === 'down' ? '▼' : ''
   return (
-    <div className={'kpi' + (flash ? ' flash' : '')} title={def.description}>
-      <div className="kpi-label">{env.label(`kpi:${def.id}`, def.label)}</div>
-      <div className="kpi-value">{env.fmt(def.format, cur, { unit: false })}<span className="kpi-unit">{env.unit(def.format)}</span></div>
+    <div className={'kpi' + (flash ? ' flash' : '') + (emphasis ? ' emphasis' : '')} title={description}>
+      <div className="kpi-label">{label}</div>
+      <div className="kpi-value">{env.fmt(format, cur, { unit: false })}<span className="kpi-unit">{env.unit(format)}</span></div>
       <div className={'kpi-delta ' + d.tone}>
         {arrow && <span className="arrow">{arrow}</span>}
         <span>{t.main}</span>{t.sub && <span className="sub">{t.sub}</span>}
       </div>
     </div>
+  )
+}
+
+function Card({ def, env }: { def: KpiDef; env: Env }) {
+  const { snap } = env
+  return (
+    <KpiCard
+      label={env.label(`kpi:${def.id}`, def.label)} description={def.description} format={def.format} delta={def.delta} higherIsBetter={def.higherIsBetter}
+      cur={kpiValue(def, snap.active, snap.results)} reference={kpiValue(def, snap.activeRef, snap.refResults)} env={env}
+    />
   )
 }
 
