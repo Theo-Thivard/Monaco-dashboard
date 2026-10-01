@@ -1,6 +1,23 @@
 # Monaco – Besoins IT 2035 · outil de conseil interactif
 
-https://theo-thivard.github.io/Monaco-dashboard/
+## 🔗 Accéder au dashboard
+
+| Version | Lien | Contenu |
+|---|---|---|
+| **Actuelle** (mise à jour à chaque fusion dans `main`) | **[theo-thivard.github.io/Monaco-dashboard](https://theo-thivard.github.io/Monaco-dashboard/)** | Navigation à 3 niveaux : Globale · Scénario ▾ · Acteurs ▾ |
+| V2 – archivée | […/Monaco-dashboard/v2/](https://theo-thivard.github.io/Monaco-dashboard/v2/) | Outil de conseil : vue client / consultant, une page |
+| V1 – archivée | […/Monaco-dashboard/v1/](https://theo-thivard.github.io/Monaco-dashboard/v1/) | Curseurs d'hypothèses et graphiques en direct |
+
+Accès direct aux pages de la version actuelle :
+[Globale](https://theo-thivard.github.io/Monaco-dashboard/#/globale) ·
+Scénario : [Bas](https://theo-thivard.github.io/Monaco-dashboard/#/scenario/bas) · [Central](https://theo-thivard.github.io/Monaco-dashboard/#/scenario/central) · [Haut](https://theo-thivard.github.io/Monaco-dashboard/#/scenario/haut) ·
+Acteurs : [DSP](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/dsp) · [DENJS](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/denjs) · [APDP](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/apdp) · [DITN](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/ditn) · [CHPG](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/chpg) · [Monaco Telecom](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/monaco-telecom) · [Finance](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/finance) · [Privé hors finance](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/prive-hors-finance)
+
+### Les anciennes versions ne sont jamais supprimées
+Chaque version vit à sa propre adresse (`/v1/`, `/v2/`…). Quand un nouveau dashboard remplace la version actuelle, l'ancienne est
+**figée sous une étiquette Git** (`dashboard-v1`, `dashboard-v2`…) et listée dans [`versions.json`](versions.json) ; le déploiement
+([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), script [`scripts/build-versions.sh`](scripts/build-versions.sh)) la reconstruit
+à chaque publication. Les prochaines versions seront ajoutées à ce tableau avec leur lien.
 
 Dashboard interactif construit à partir de `Monaco_Besoins_IT_v2.xlsx` (demande IT de Monaco à l'horizon 2035,
 trois scénarios Bas / Central / Haut), conçu pour être présenté et manipulé en direct avec un client.
