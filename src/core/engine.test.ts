@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeAll, defaultParams, computeScenario, groupBlocks } from './model'
+import { computeAll, computeScenario, groupBlocks } from './engine'
+import { defaultParams } from './hypotheses'
 
 // Valeurs de référence lues dans l'Excel (3_Output, valeurs calculées)
 describe('modèle = Excel', () => {
@@ -18,7 +19,7 @@ describe('modèle = Excel', () => {
     expect(r[1].base / 1000).toBeCloseTo(2.46032, 9)
   })
   it('détail par groupe (central)', () => {
-    const g = groupBlocks(r[1]).map((x) => x.addressable / 1000)
+    const g = groupBlocks(r[1]).map((x: { addressable: number }) => x.addressable / 1000)
     expect(g[0]).toBeCloseTo(0.38532602837246177, 9)
     expect(g[1]).toBeCloseTo(0.1622636001416805, 9) // DENJS + APDP + DITN
     expect(g[4]).toBeCloseTo(0.2648391979621528, 9)
