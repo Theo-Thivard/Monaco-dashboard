@@ -1,4 +1,4 @@
 [
-  { "slug": "v1", "ref": "dashboard-v1", "label": "V1 – Curseurs d'hypothèses et graphiques en direct" },
-  { "slug": "v2", "ref": "dashboard-v2", "label": "V2 – Outil de conseil : vue client / consultant" }
+  { "slug": "v1", "ref": "origin/archive/dashboard-v1", "label": "V1 – Curseurs d'hypothèses et graphiques en direct" },
+  { "slug": "v2", "ref": "origin/archive/dashboard-v2", "label": "V2 – Outil de conseil : vue client / consultant" }
 ]

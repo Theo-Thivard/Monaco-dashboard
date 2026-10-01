@@ -15,7 +15,7 @@ Acteurs : [DSP](https://theo-thivard.github.io/Monaco-dashboard/#/acteur/dsp) ·
 
 ### Les anciennes versions ne sont jamais supprimées
 Chaque version vit à sa propre adresse (`/v1/`, `/v2/`…). Quand un nouveau dashboard remplace la version actuelle, l'ancienne est
-**figée sous une étiquette Git** (`dashboard-v1`, `dashboard-v2`…) et listée dans [`versions.json`](versions.json) ; le déploiement
+**figée dans une branche d'archive** (`archive/dashboard-v1`, `archive/dashboard-v2`…) et listée dans [`versions.json`](versions.json) ; le déploiement
 ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), script [`scripts/build-versions.sh`](scripts/build-versions.sh)) la reconstruit
 à chaque publication. Les prochaines versions seront ajoutées à ce tableau avec leur lien.
 
