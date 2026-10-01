@@ -5,12 +5,12 @@ import { patchUI, toggleExpanded, updateWidget, useUI } from '../state/store'
 import { AssumptionsTable } from './AssumptionsTable'
 import { ChartView } from './ChartView'
 import { DriversWidget } from './DriversWidget'
-import { Headline } from './Headline'
+import { ActorKpis, ActorNote, Headline, ScenarioCards } from './PageWidgets'
 import { KpiStrip } from './KpiStrip'
 import { TextWidget } from './TextWidget'
 import { useDataset, type Env } from './env'
 
-const BARE = new Set(['headline', 'kpis', 'section'])
+const BARE = new Set(['headline', 'kpis', 'scenarioCards', 'actorKpis', 'section'])
 
 export function widgetTitle(wc: WidgetConfig): string {
   if (wc.title !== undefined) return wc.title
@@ -51,6 +51,9 @@ function Body({ wc, env }: { wc: WidgetConfig; env: Env }): ReactNode {
   switch (wc.kind) {
     case 'headline': return <Headline env={env} />
     case 'kpis': return <KpiStrip env={env} />
+    case 'scenarioCards': return <ScenarioCards env={env} />
+    case 'actorKpis': return <ActorKpis env={env} />
+    case 'actorNote': return <ActorNote env={env} />
     case 'drivers': return <DriversWidget wc={wc} env={env} />
     case 'assumptionsTable': return <AssumptionsTable env={env} />
     case 'text': return <TextWidget text={wc.text ?? ''} />

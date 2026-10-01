@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import { applyTheme } from './config/theme'
 import { AssumptionsDrawer } from './ui/AssumptionsDrawer'
+import { ContextBar } from './ui/ContextBar'
 import { Dashboard } from './ui/Dashboard'
-import { Header } from './ui/Header'
 import { SettingsDrawer } from './ui/SettingsDrawer'
 import { Toast } from './ui/Toast'
+import { TopNav } from './ui/TopNav'
 import { WidgetSettings } from './ui/WidgetSettings'
 import { useEnv } from './ui/env'
 import { redo, undo, useUI } from './state/store'
@@ -12,9 +13,13 @@ import { redo, undo, useUI } from './state/store'
 export default function App() {
   const env = useEnv()
   const ui = useUI()
-  const { config, tokens } = env
+  const { config, tokens, route } = env
 
   useEffect(() => { applyTheme(tokens, config.theme.metrics) }, [tokens, config.theme.metrics])
+
+  // titre de l'onglet = page courante
+  const pageTitle = route.kind === 'global' ? 'Globale' : route.kind === 'scenario' ? `Scénario ${env.scenarioName(route.scenario)}` : env.actorLabel(route.actor)
+  useEffect(() => { document.title = `${pageTitle} · ${config.brand}` }, [pageTitle, config.brand])
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -29,15 +34,16 @@ export default function App() {
 
   useEffect(() => { window.dispatchEvent(new Event('resize')) }, [ui.panel, ui.selectedWidget])
 
-  const selected = config.widgets.find((w) => w.id === ui.selectedWidget)
+  const selected = config.pages[route.kind].widgets.find((w) => w.id === ui.selectedWidget)
   const withLeft = ui.panel === 'assumptions'
   const withRight = ui.panel === 'settings' || (ui.panel === 'widget' && !!selected)
 
   return (
     <div className={'app' + (ui.mode === 'consultant' ? ' consultant' : '') + (withLeft ? ' pad-left' : '') + (withRight ? ' pad-right' : '')}>
-      <Header env={env} />
+      <TopNav env={env} />
       <main className="page">
-        <Dashboard env={env} />
+        <ContextBar env={env} />
+        <Dashboard key={route.kind} env={env} />
         {config.footnote && <footer className="footnote">{config.footnote}</footer>}
       </main>
       {ui.panel === 'assumptions' && <AssumptionsDrawer env={env} />}

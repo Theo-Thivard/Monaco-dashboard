@@ -3,10 +3,11 @@
 
 import { useSyncExternalStore } from 'react'
 import type { Layout } from 'react-grid-layout'
-import { createDefaultConfig } from '../config/defaults'
-import type { DashboardConfig, WidgetConfig } from '../config/types'
+import { createDefaultConfig, PAGE_DEFAULTS } from '../config/defaults'
+import type { DashboardConfig, PageConfig, WidgetConfig } from '../config/types'
 import { defaultParams, HYP_BY_ID, HYPS, hypValue, type Params } from '../core/hypotheses'
 import { getSnapshot, type Snapshot } from '../core/snapshot'
+import { DEFAULT_ROUTE, formatRoute, parseRoute, sameRoute, type PageKind, type Route } from './route'
 
 export type Mode = 'client' | 'consultant'
 export type Panel = 'assumptions' | 'settings' | 'widget' | null
@@ -25,13 +26,15 @@ export interface AppState {
   params: Params
   reference: Params
   scenario: number
+  route: Route
   past: Params[]
   future: Params[]
   config: DashboardConfig
   ui: UIState
 }
 
-const KEY = 'monaco-dashboard-v2'
+const KEY = 'monaco-dashboard-v3'
+const KEY_V2 = 'monaco-dashboard-v2'
 const OLD_KEY = 'monaco-dashboard-v1'
 const HISTORY_MAX = 60
 
@@ -52,44 +55,58 @@ function mergeParams(base: Params, x: unknown): Params {
   return out
 }
 
-/** Fusionne une configuration (stockée / importée) avec le défaut : tolérant aux versions. */
+/** Fusionne une configuration (stockée / importée) avec le défaut : tolérant aux versions (v2 -> v3 migrée). */
 export function sanitizeConfig(x: unknown): DashboardConfig {
   const d = createDefaultConfig()
   if (!x || typeof x !== 'object') return d
-  const c = x as Partial<DashboardConfig>
-  const widgets = Array.isArray(c.widgets) ? c.widgets.filter((w) => w && typeof w.id === 'string' && typeof w.kind === 'string') : d.widgets
-  const ids = new Set(widgets.map((w) => w.id))
-  const layout = Array.isArray(c.layout) ? c.layout.filter((l) => ids.has(l.i)) : d.layout
+  const c = x as Partial<DashboardConfig> & { widgets?: WidgetConfig[]; layout?: Layout[]; title?: string }
+  const cleanPage = (p: Partial<PageConfig> | undefined, fallback: PageConfig): PageConfig => {
+    if (!p || !Array.isArray(p.widgets)) return fallback
+    const widgets = p.widgets.filter((w) => w && typeof w.id === 'string' && typeof w.kind === 'string')
+    const ids = new Set(widgets.map((w) => w.id))
+    return { widgets, layout: Array.isArray(p.layout) ? p.layout.filter((l) => ids.has(l.i)) : fallback.layout }
+  }
+  // v2 : une seule page (devenue la page « Scénario »)
+  const legacy: Partial<PageConfig> | undefined = c.widgets ? { widgets: c.widgets, layout: c.layout } : undefined
+  const pages = {
+    global: cleanPage(c.pages?.global, d.pages.global),
+    scenario: cleanPage(c.pages?.scenario ?? legacy, d.pages.scenario),
+    actor: cleanPage(c.pages?.actor, d.pages.actor),
+  }
   const kpiOrder = Array.isArray(c.kpis?.order) ? [...c.kpis!.order, ...d.kpis.order.filter((k) => !c.kpis!.order.includes(k))] : d.kpis.order
   return {
     ...d,
-    ...c,
-    version: 2,
+    version: 3,
+    brand: typeof c.brand === 'string' && c.brand ? c.brand : d.brand,
+    footnote: typeof c.footnote === 'string' ? c.footnote : d.footnote,
     theme: { ...d.theme, ...(c.theme ?? {}), metrics: { ...d.theme.metrics, ...(c.theme?.metrics ?? {}) }, tokens: { ...(c.theme?.tokens ?? {}) } },
     format: { ...d.format, ...(c.format ?? {}) },
     labels: { ...(c.labels ?? {}) },
     kpis: { order: kpiOrder, visible: Array.isArray(c.kpis?.visible) ? c.kpis!.visible : d.kpis.visible },
     hyps: { visible: Array.isArray(c.hyps?.visible) ? c.hyps!.visible.filter((id) => HYP_BY_ID[id]) : d.hyps.visible, notes: { ...(c.hyps?.notes ?? {}) } },
-    widgets, layout,
+    pages,
   }
 }
 
+/** Lien partagé : « #/scenario/central?s=… » (ou ancien format « #s=… »). */
 function readShared(): { params: Params; scenario: number } | null {
   try {
-    const m = /[#&]s=([^&]+)/.exec(location.hash)
+    const m = /[?&#]s=([^&]+)/.exec(location.hash)
     if (!m) return null
     const o = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))))
     return { params: mergeParams(defaultParams(), o.p), scenario: [0, 1, 2].includes(o.sc) ? o.sc : 1 }
   } catch { return null }
 }
 
+const readRoute = (): Route => { try { return parseRoute(location.hash) } catch { return DEFAULT_ROUTE } }
+
 function load(): AppState {
   const base: AppState = {
-    params: defaultParams(), reference: defaultParams(), scenario: 1, past: [], future: [],
+    params: defaultParams(), reference: defaultParams(), scenario: 1, route: readRoute(), past: [], future: [],
     config: createDefaultConfig(), ui: freshUI(),
   }
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(KEY_V2)
     if (raw) {
       const o = JSON.parse(raw)
       base.params = mergeParams(base.params, o.params)
@@ -112,8 +129,10 @@ function load(): AppState {
     base.params = shared.params
     base.scenario = shared.scenario
     base.ui.toast = { id: Date.now(), msg: 'Scénario partagé chargé' }
-    try { history.replaceState(null, '', location.pathname + location.search) } catch { /* noop */ }
   }
+  // le scénario affiché d'une page « Scénario » est celui de la route
+  if (base.route.kind === 'scenario') base.scenario = base.route.scenario
+  if (shared) { try { history.replaceState(null, '', location.pathname + location.search + formatRoute(base.route)) } catch { /* noop */ } }
   return base
 }
 
@@ -202,14 +221,48 @@ export function resetAssumptions() {
 
 export const setReferenceToCurrent = () => { setState((s) => ({ ...s, reference: s.params })); toast('Référence = scénario actuel') }
 export const resetReference = () => { setState((s) => ({ ...s, reference: defaultParams() })); toast('Référence = valeurs d\'origine') }
-export const setScenario = (n: number) => setState((s) => ({ ...s, scenario: n }))
+/** Scénario de contexte (sélecteur d'une page acteur). Sur une page Scénario, on navigue vers la route correspondante. */
+export function setScenario(n: number) {
+  if (getState().route.kind === 'scenario') navigate({ kind: 'scenario', scenario: n })
+  else setState((s) => ({ ...s, scenario: n }))
+}
+
+// ------------------------------------------------------------------ navigation
+function applyRoute(r: Route) {
+  setState((s) => {
+    const scenario = r.kind === 'scenario' ? r.scenario : s.scenario
+    if (sameRoute(s.route, r) && scenario === s.scenario) return s
+    return { ...s, route: r, scenario, ui: { ...s.ui, selectedWidget: null, panel: s.ui.panel === 'widget' ? null : s.ui.panel } }
+  })
+}
+/** Va à une page : l'adresse (#/…) est la source de vérité, le bouton « précédent » fonctionne. */
+export function navigate(r: Route) {
+  if (typeof location !== 'undefined') {
+    const h = formatRoute(r)
+    if (location.hash !== h) { location.hash = h; return }
+  }
+  applyRoute(r)
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('hashchange', () => {
+    applyRoute(parseRoute(location.hash))
+    window.scrollTo(0, 0)
+  })
+}
 export const setMode = (mode: Mode) => setState((s) => ({ ...s, ui: { ...s.ui, mode, editLayout: mode === 'client' ? false : s.ui.editLayout, panel: mode === 'client' && s.ui.panel === 'settings' ? null : s.ui.panel } }), false)
 export const patchUI = (p: Partial<UIState>) => setState((s) => ({ ...s, ui: { ...s.ui, ...p } }), false)
 export const toggleExpanded = (k: 'detail' | 'method') => setState((s) => ({ ...s, ui: { ...s.ui, expanded: { ...s.ui.expanded, [k]: !s.ui.expanded[k] } } }), false)
 
 export const updateConfig = (fn: (c: DashboardConfig) => DashboardConfig) => setState((s) => ({ ...s, config: fn(s.config) }))
+const KINDS: PageKind[] = ['global', 'scenario', 'actor']
+/** Applique `fn` à la page qui contient le widget `id` (les identifiants sont uniques entre pages). */
+const updateOwnPage = (id: string, fn: (p: PageConfig) => PageConfig) =>
+  updateConfig((c) => {
+    const kind = KINDS.find((k) => c.pages[k].widgets.some((w) => w.id === id) || c.pages[k].layout.some((l) => l.i === id))
+    return kind ? { ...c, pages: { ...c.pages, [kind]: fn(c.pages[kind]) } } : c
+  })
 export const updateWidget = (id: string, patch: Partial<WidgetConfig>) =>
-  updateConfig((c) => ({ ...c, widgets: c.widgets.map((w) => (w.id === id ? { ...w, ...patch } : w)) }))
+  updateOwnPage(id, (p) => ({ ...p, widgets: p.widgets.map((w) => (w.id === id ? { ...w, ...patch } : w)) }))
 export const setLabel = (key: string, value: string, def: string) =>
   updateConfig((c) => {
     const labels = { ...c.labels }
@@ -218,31 +271,36 @@ export const setLabel = (key: string, value: string, def: string) =>
     return { ...c, labels }
   })
 
+/** Positions des widgets visibles de la page courante (n'écrase pas les widgets masqués). */
 export function setLayout(visible: Layout[]) {
   setState((s) => {
+    const kind = s.route.kind
+    const page = s.config.pages[kind]
     const strip = (l: Layout) => ({ i: l.i, x: l.x, y: l.y, w: l.w, h: l.h })
     const upd = new Map(visible.map((l) => [l.i, strip(l)]))
     let changed = false
-    const layout = s.config.layout.map((l) => {
+    const layout = page.layout.map((l) => {
       const n = upd.get(l.i)
       if (!n) return l
       if (n.x !== l.x || n.y !== l.y || n.w !== l.w || n.h !== l.h) changed = true
       return n
     })
-    return changed ? { ...s, config: { ...s.config, layout } } : s
+    return changed ? { ...s, config: { ...s.config, pages: { ...s.config.pages, [kind]: { ...page, layout } } } } : s
   })
 }
 export const updateLayoutItem = (id: string, patch: Partial<Pick<Layout, 'x' | 'y' | 'w' | 'h'>>) =>
-  updateConfig((c) => ({ ...c, layout: c.layout.map((l) => (l.i === id ? { ...l, ...patch } : l)) }))
+  updateOwnPage(id, (p) => ({ ...p, layout: p.layout.map((l) => (l.i === id ? { ...l, ...patch } : l)) }))
 
 export function addWidget(w: WidgetConfig, size: { w: number; h: number }) {
   updateConfig((c) => {
-    const y = c.layout.reduce((m, l) => Math.max(m, l.y + l.h), 0)
-    return { ...c, widgets: [...c.widgets, w], layout: [...c.layout, { i: w.id, x: 0, y, ...size }] }
+    const kind = getState().route.kind
+    const p = c.pages[kind]
+    const y = p.layout.reduce((m, l) => Math.max(m, l.y + l.h), 0)
+    return { ...c, pages: { ...c.pages, [kind]: { widgets: [...p.widgets, w], layout: [...p.layout, { i: w.id, x: 0, y, ...size }] } } }
   })
 }
 export const removeWidget = (id: string) =>
-  updateConfig((c) => ({ ...c, widgets: c.widgets.filter((w) => w.id !== id), layout: c.layout.filter((l) => l.i !== id) }))
+  updateOwnPage(id, (p) => ({ widgets: p.widgets.filter((w) => w.id !== id), layout: p.layout.filter((l) => l.i !== id) }))
 
 export const toggleHypVisible = (id: string) =>
   updateConfig((c) => ({ ...c, hyps: { ...c.hyps, visible: c.hyps.visible.includes(id) ? c.hyps.visible.filter((x) => x !== id) : [...c.hyps.visible, id] } }))
@@ -268,30 +326,31 @@ export function resetDashboard() {
   toast('Dashboard remis dans sa configuration par défaut')
 }
 export function resetAll() {
-  setState((s) => ({ ...s, params: defaultParams(), reference: defaultParams(), past: [], future: [], config: createDefaultConfig(), scenario: 1, ui: { ...freshUI(), mode: s.ui.mode } }))
+  setState((s) => ({ ...s, params: defaultParams(), reference: defaultParams(), past: [], future: [], config: createDefaultConfig(), scenario: s.route.kind === 'scenario' ? s.route.scenario : 1, ui: { ...freshUI(), mode: s.ui.mode } }))
   toast('Tout a été remis à l\'état initial')
 }
 
 // ------------------------------------------------------------------ export / import / partage
-export const exportJSON = () => JSON.stringify({ app: 'monaco-dashboard', version: 2, params: state.params, reference: state.reference, scenario: state.scenario, config: state.config }, null, 2)
+export const exportJSON = () => JSON.stringify({ app: 'monaco-dashboard', version: 3, params: state.params, reference: state.reference, scenario: state.scenario, config: state.config }, null, 2)
 
 export function importJSON(text: string) {
   const o = JSON.parse(text)
   if (o?.app !== 'monaco-dashboard') throw new Error('Fichier inconnu')
   setState((s) => ({
     ...s, params: mergeParams(defaultParams(), o.params), reference: mergeParams(defaultParams(), o.reference),
-    scenario: [0, 1, 2].includes(o.scenario) ? o.scenario : 1, config: sanitizeConfig(o.config), past: [], future: [],
+    scenario: s.route.kind === 'scenario' ? s.route.scenario : [0, 1, 2].includes(o.scenario) ? o.scenario : 1,
+    config: sanitizeConfig(o.config), past: [], future: [],
   }))
   toast('Configuration importée')
 }
 
-/** Lien partageable : uniquement les hypothèses qui diffèrent du défaut. */
+/** Lien partageable (page courante + hypothèses qui diffèrent du défaut). */
 export function shareURL(): string {
   const def = defaultParams()
   const p: Params = {}
   for (const h of HYPS) if (state.params[h.id].some((v, i) => v !== def[h.id][i])) p[h.id] = state.params[h.id]
   const enc = btoa(unescape(encodeURIComponent(JSON.stringify({ p, sc: state.scenario }))))
-  return `${location.origin}${location.pathname}#s=${encodeURIComponent(enc)}`
+  return `${location.origin}${location.pathname}${formatRoute(state.route)}?s=${encodeURIComponent(enc)}`
 }
 
 // ------------------------------------------------------------------ comparaison avec le défaut
@@ -314,21 +373,29 @@ export function diffFromDefault(s: AppState): DiffSummary {
     })
   }
   const c = s.config
-  const lay = c.layout.filter((l) => { const o = d.layout.find((x) => x.i === l.i); return !o || o.x !== l.x || o.y !== l.y || o.w !== l.w || o.h !== l.h }).length
-  const metrics = Object.entries(c.theme.metrics).filter(([k, v]) => (d.theme.metrics as unknown as Record<string, number>)[k] !== v).length
-  const vis = c.widgets.filter((w) => w.visible !== (d.widgets.find((x) => x.id === w.id)?.visible ?? true)).length
-    + d.widgets.filter((w) => !c.widgets.some((x) => x.id === w.id)).length
-    + (JSON.stringify([...c.kpis.visible].sort()) !== JSON.stringify([...d.kpis.visible].sort()) ? 1 : 0)
+  let layout = 0, vis = 0, charts = 0, bg = 0, texts = 0
+  for (const k of KINDS) {
+    const cp = c.pages[k]
+    const dp = d.pages[k]
+    layout += cp.layout.filter((l) => { const o = dp.layout.find((x) => x.i === l.i); return !o || o.x !== l.x || o.y !== l.y || o.w !== l.w || o.h !== l.h }).length
+    vis += cp.widgets.filter((w) => w.visible !== (dp.widgets.find((x) => x.id === w.id)?.visible ?? true)).length
+      + dp.widgets.filter((w) => !cp.widgets.some((x) => x.id === w.id)).length
+    charts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.chartType !== w.chartType || JSON.stringify(o.series ?? null) !== JSON.stringify(w.series ?? null) || o.legend !== w.legend) }).length
+    bg += cp.widgets.filter((w) => w.bg || w.fg).length
+    texts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.title !== w.title || o.subtitle !== w.subtitle || o.note !== w.note || o.text !== w.text) }).length
+  }
+  vis += (JSON.stringify([...c.kpis.visible].sort()) !== JSON.stringify([...d.kpis.visible].sort()) ? 1 : 0)
     + (JSON.stringify([...c.hyps.visible].sort()) !== JSON.stringify([...d.hyps.visible].sort()) ? 1 : 0)
-  const charts = c.widgets.filter((w) => { const o = d.widgets.find((x) => x.id === w.id); return o && (o.chartType !== w.chartType || JSON.stringify(o.series ?? null) !== JSON.stringify(w.series ?? null) || o.legend !== w.legend) }).length
+  const metrics = Object.entries(c.theme.metrics).filter(([k, v]) => (d.theme.metrics as unknown as Record<string, number>)[k] !== v).length
   return {
-    assumptions, layout: lay,
-    theme: Object.keys(c.theme.tokens).length + metrics + (c.theme.preset !== d.theme.preset ? 1 : 0)
-      + c.widgets.filter((w) => w.bg || w.fg).length,
-    labels: Object.keys(c.labels).length + c.widgets.filter((w) => { const o = d.widgets.find((x) => x.id === w.id); return o && (o.title !== w.title || o.subtitle !== w.subtitle || o.note !== w.note || o.text !== w.text) }).length
-      + (c.title !== d.title ? 1 : 0) + (c.subtitle !== d.subtitle ? 1 : 0),
+    assumptions, layout,
+    theme: Object.keys(c.theme.tokens).length + metrics + (c.theme.preset !== d.theme.preset ? 1 : 0) + bg,
+    labels: Object.keys(c.labels).length + texts + (c.brand !== d.brand ? 1 : 0),
     visibility: vis, charts, format: Object.entries(c.format).filter(([k, v]) => (d.format as unknown as Record<string, unknown>)[k] !== v).length,
   }
 }
+
+export const pageKind = (r: Route): PageKind => r.kind
+export { PAGE_DEFAULTS }
 
 export const hypNow = (id: string, s: number) => hypValue(getState().params, id, s)

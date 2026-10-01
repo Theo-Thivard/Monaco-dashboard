@@ -3,9 +3,10 @@
 // recalculée côté affichage ; les types de graphiques compatibles dépendent
 // de la nature (kind) du jeu de données.
 
-import { groupBlocks, HORIZON, OUTPUT_GROUPS, SCENARIOS, type ScenarioResult } from './engine'
+import { ACTORS, actorBlock } from './actors'
+import { groupBlocks, HORIZON, OUTPUT_GROUPS, SCENARIOS, type Entity } from './engine'
 import { type FormatKind } from './hypotheses'
-import type { Snapshot } from './snapshot'
+import { sensitivityFor, type Snapshot } from './snapshot'
 
 export type ChartType =
   | 'bar' | 'hbar' | 'stackedBar' | 'line' | 'area' | 'stackedArea'
@@ -53,6 +54,8 @@ export interface DatasetCtx {
   hypLabel: (id: string) => string
   /** formateur d'une valeur d'hypothèse (pour les infobulles) */
   fmtHypValue: (id: string, v: number) => string
+  /** acteur de la page courante (jeux de données « acteur ») */
+  actor?: Entity
 }
 
 export interface DatasetDef {
@@ -63,6 +66,10 @@ export interface DatasetDef {
   defaultChart: ChartType
   build: (c: DatasetCtx) => Dataset
 }
+
+/** Libellé d'un acteur (personnalisable) */
+const actorName = (c: DatasetCtx, id: Entity) => c.label(`actor:${id}`, ACTORS.find((a) => a.id === id)!.short)
+const noActor = (id: string, kind: DatasetKind): Dataset => ({ id, kind, format: 'power', stackable: false, categories: [], series: [{ id: 'v', name: '', values: [] }], steps: kind === 'bridge' ? [] : undefined, empty: 'Sélectionnez un acteur pour afficher ces données.' })
 
 const years = Array.from({ length: HORIZON + 1 }, (_, i) => String(2026 + i))
 const blockName = (c: DatasetCtx, id: string, def: string) => c.label(`block:${id}`, def)
@@ -245,6 +252,112 @@ export const DATASETS: DatasetDef[] = [
           ...names.map((n, i) => ({ id: `need${i}`, name: `${c.label('series:need', 'Besoin total 2035')} – ${n}`, values: g[i].map((x) => x.total), total: c.snap.results[i].total })),
           ...names.map((n, i) => ({ id: `addr${i}`, name: `${c.label('series:addr', 'Demande adressable 2035')} – ${n}`, values: g[i].map((x) => x.addressable), total: c.snap.results[i].addressable })),
         ],
+      }
+    },
+  },
+
+  // ------------------------------------------------------------- page Globale
+  {
+    id: 'actorsAddr', title: 'Qui porte la demande ?', subtitle: 'Demande adressable 2035 par acteur et par scénario', kind: 'comparison', defaultChart: 'hbar',
+    build: (c) => ({
+      id: 'actorsAddr', kind: 'comparison', format: 'power', stackable: false,
+      categories: ACTORS.map((a) => actorName(c, a.id)), categoryIds: ACTORS.map((a) => a.id),
+      series: SCENARIOS.map((s, i) => ({ id: `s${i}`, name: c.label(`scenario:${i}`, s), values: ACTORS.map((a) => actorBlock(c.snap.results[i], a.id).addressable), total: c.snap.results[i].addressable, tone: `scen${i}` })),
+    }),
+  },
+  {
+    id: 'spreadByActor', title: 'Qui explique l\'écart entre scénarios ?', subtitle: 'Écart de demande adressable 2035 entre Haut et Bas, par acteur', kind: 'comparison', defaultChart: 'hbar',
+    build: (c) => {
+      const lo = c.snap.results[0]
+      const hi = c.snap.results[2]
+      return {
+        id: 'spreadByActor', kind: 'comparison', format: 'power', stackable: false,
+        categories: ACTORS.map((a) => actorName(c, a.id)), categoryIds: ACTORS.map((a) => a.id),
+        series: [{ id: 'spread', name: c.label('series:spread', 'Écart Haut − Bas'), values: ACTORS.map((a) => actorBlock(hi, a.id).addressable - actorBlock(lo, a.id).addressable), total: hi.addressable - lo.addressable, tone: 'accent' }],
+      }
+    },
+  },
+
+  // ------------------------------------------------------------- pages Acteurs
+  {
+    id: 'actorBridge', title: 'Du besoin 2026 à la demande adressable', subtitle: 'Lecture en cascade pour cet acteur, scénario actif', kind: 'bridge', defaultChart: 'waterfall',
+    build: (c) => {
+      const b = c.actor ? actorBlock(c.snap.active, c.actor) : null
+      if (!b) return noActor('actorBridge', 'bridge')
+      const steps: { name: string; v: number; t: 'total' | 'delta' }[] = [
+        { name: c.label('bridge:base', 'Besoin 2026'), v: b.base, t: 'total' },
+        { name: c.label('bridge:act', 'Effectifs & activité'), v: b.dAct, t: 'delta' },
+        { name: c.label('bridge:int', 'Intensité numérique'), v: b.dInt, t: 'delta' },
+        { name: c.label('bridge:ia', 'Surcouche IA'), v: b.ia, t: 'delta' },
+        { name: c.label('bridge:total', 'Besoin 2035'), v: b.total, t: 'total' },
+        { name: c.label('bridge:out', 'Hors Monaco'), v: b.addressable - b.total, t: 'delta' },
+        { name: c.label('bridge:addr', 'Adressable 2035'), v: b.addressable, t: 'total' },
+      ]
+      return { id: 'actorBridge', kind: 'bridge', format: 'power', stackable: false, categories: steps.map((x) => x.name), steps: steps.map((x) => x.t), series: [{ id: 'v', name: c.label('series:v', 'Puissance IT'), values: steps.map((x) => x.v) }] }
+    },
+  },
+  {
+    id: 'actorScenarios', title: 'Besoin et demande adressable', subtitle: 'Besoin 2026, besoin 2035 et demande adressable de cet acteur, par scénario', kind: 'comparison', defaultChart: 'bar',
+    build: (c) => {
+      if (!c.actor) return noActor('actorScenarios', 'comparison')
+      const bs = c.snap.results.map((r) => actorBlock(r, c.actor!))
+      return {
+        id: 'actorScenarios', kind: 'comparison', format: 'power', stackable: false,
+        categories: SCENARIOS.map((s, i) => c.label(`scenario:${i}`, s)),
+        series: [
+          { id: 'base', name: c.label('series:base', 'Besoin 2026'), values: bs.map((b) => b.base), tone: 'muted' },
+          { id: 'need', name: c.label('series:need', 'Besoin total 2035'), values: bs.map((b) => b.total), tone: 'primary' },
+          { id: 'addr', name: c.label('series:addr', 'Demande adressable 2035'), values: bs.map((b) => b.addressable), tone: 'accent' },
+        ],
+      }
+    },
+  },
+  {
+    id: 'actorTrajectory', title: 'Trajectoire de la demande adressable', subtitle: '2026 → 2035, par scénario (profil annuel interpolé)', kind: 'timeseries', defaultChart: 'line',
+    build: (c) => {
+      if (!c.actor) return noActor('actorTrajectory', 'timeseries')
+      return {
+        id: 'actorTrajectory', kind: 'timeseries', format: 'power', stackable: false, categories: years,
+        series: SCENARIOS.map((s, i) => ({ id: `s${i}`, name: c.label(`scenario:${i}`, s), values: c.snap.trajectory[i].map((r) => actorBlock(r, c.actor!).addressable), total: actorBlock(c.snap.results[i], c.actor!).addressable, tone: `scen${i}` })),
+      }
+    },
+  },
+  {
+    id: 'actorSensitivity', title: 'Quelles hypothèses comptent le plus ?', subtitle: 'Impact sur la demande adressable de cet acteur, de la valeur basse à la valeur haute', kind: 'sensitivity', defaultChart: 'tornado',
+    build: (c) => {
+      if (!c.actor) return noActor('actorSensitivity', 'sensitivity')
+      const id = c.actor
+      const rows = sensitivityFor(c.snap.params, c.snap.scenario, (r) => actorBlock(r, id).addressable).slice(0, 8)
+      return {
+        id: 'actorSensitivity', kind: 'sensitivity', format: 'power', stackable: false,
+        categories: rows.map((r) => c.hypLabel(r.id)),
+        series: [
+          { id: 'low', name: c.label('series:low', 'Valeur basse'), values: rows.map((r) => r.low), tone: 'scen0' },
+          { id: 'high', name: c.label('series:high', 'Valeur haute'), values: rows.map((r) => r.high), tone: 'scen2' },
+        ],
+        hints: rows.map((r) => `${c.fmtHypValue(r.id, r.lowVal)} → ${c.fmtHypValue(r.id, r.highVal)}`),
+        empty: rows.length ? undefined : 'Aucune hypothèse du modèle ne fait varier cet acteur.',
+      }
+    },
+  },
+  {
+    id: 'actorTable', title: 'Détail du calcul', subtitle: 'De la baseline à la demande adressable, par scénario', kind: 'matrix', defaultChart: 'table',
+    build: (c) => {
+      if (!c.actor) return noActor('actorTable', 'matrix')
+      const bs = c.snap.results.map((r) => actorBlock(r, c.actor!))
+      const rows: { name: string; f: (b: (typeof bs)[number]) => number }[] = [
+        { name: 'Besoin 2026 (baseline)', f: (b) => b.base },
+        { name: 'Besoin 2035 hors IA', f: (b) => b.need },
+        { name: 'Surcouche IA', f: (b) => b.ia },
+        { name: 'Besoin total 2035', f: (b) => b.total },
+        { name: 'Adressable – socle', f: (b) => b.addrBase },
+        { name: 'Adressable – IA', f: (b) => b.addrIa },
+        { name: 'Demande adressable 2035', f: (b) => b.addressable },
+      ]
+      return {
+        id: 'actorTable', kind: 'matrix', format: 'power', stackable: false,
+        categories: rows.map((r) => r.name),
+        series: SCENARIOS.map((s, i) => ({ id: `s${i}`, name: c.label(`scenario:${i}`, s), values: rows.map((r) => r.f(bs[i])), tone: `scen${i}` })),
       }
     },
   },

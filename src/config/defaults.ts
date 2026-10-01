@@ -5,7 +5,7 @@ import type { Layout } from 'react-grid-layout'
 import { defaultKpiOrder, defaultKpiVisible } from '../core/kpis'
 import { defaultFormat } from '../core/format'
 import { defaultMetrics } from './theme'
-import type { DashboardConfig, WidgetConfig } from './types'
+import type { DashboardConfig, PageConfig, WidgetConfig } from './types'
 
 /** Six leviers qui pèsent le plus sur la demande adressable (classement par sensibilité, scénarios Bas/Central/Haut). */
 export const DEFAULT_DRIVERS = ['adrPriv', 'adrFin', 'gIntPriv', 'iaPriv', 'adrIaPriv', 'wPriv']
@@ -25,7 +25,7 @@ const NOTES_TEXT = `- Le surcroît « santé » du CHPG n'a aucun effet dans l'E
 
 const w = (c: WidgetConfig): WidgetConfig => c
 
-export const defaultWidgets = (): WidgetConfig[] => [
+export const scenarioWidgets = (): WidgetConfig[] => [
   w({ id: 'headline', kind: 'headline', tier: 'client', visible: true }),
   w({ id: 'kpis', kind: 'kpis', tier: 'client', visible: true }),
 
@@ -57,7 +57,7 @@ export const defaultWidgets = (): WidgetConfig[] => [
 ]
 
 // Grille de 24 colonnes ; positions déjà compactées (le compactage vertical de la grille ne les modifie pas).
-export const defaultLayout = (): Layout[] => [
+export const scenarioLayout = (): Layout[] => [
   { i: 'headline', x: 0, y: 0, w: 24, h: 5 },
   { i: 'kpis', x: 0, y: 5, w: 24, h: 4 },
   { i: 'sec-levers', x: 0, y: 9, w: 24, h: 2 },
@@ -83,16 +83,91 @@ export const defaultLayout = (): Layout[] => [
   { i: 'tx-notes', x: 0, y: 109, w: 9, h: 10 },
 ]
 
+/** Empile des rangées de widgets : y = somme des hauteurs précédentes (positions déjà compactes). */
+function stack(rows: [id: string, x: number, w: number, h: number, dy?: number][][]): Layout[] {
+  const out: Layout[] = []
+  let y = 0
+  for (const row of rows) {
+    for (const [i, x, w, h, dy = 0] of row) out.push({ i, x, y: y + dy, w, h })
+    y += Math.max(...row.map((r) => (r[4] ?? 0) + r[3]))
+  }
+  return out
+}
+
+const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.
+
+Besoin 2035 = baseline 2026 × croissance des effectifs × croissance de l'intensité numérique (hors IA), augmenté d'une surcouche IA. La demande adressable applique ensuite la part hébergeable à Monaco, séparément pour le socle et pour l'IA.`
+
+export const globalWidgets = (): WidgetConfig[] => [
+  w({ id: 'g-headline', kind: 'headline', tier: 'client', visible: true }),
+  w({ id: 'g-cards', kind: 'scenarioCards', tier: 'client', visible: true }),
+  w({ id: 'g-sec-compare', kind: 'section', tier: 'client', visible: true, title: 'Comparer les scénarios', subtitle: 'Un même modèle, trois jeux d\'hypothèses' }),
+  w({ id: 'g-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true }),
+  w({ id: 'g-scenarios', kind: 'chart', tier: 'client', visible: true, datasetId: 'scenarios', chartType: 'bar', legend: true }),
+  w({ id: 'g-sec-actors', kind: 'section', tier: 'client', visible: true, title: 'Qui porte la demande ?', subtitle: 'Contribution de chaque acteur à la demande adressable' }),
+  w({ id: 'g-actors', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorsAddr', chartType: 'hbar', legend: true }),
+  w({ id: 'g-spread', kind: 'chart', tier: 'client', visible: true, datasetId: 'spreadByActor', chartType: 'hbar', legend: false }),
+  w({ id: 'g-sec-detail', kind: 'section', tier: 'client', visible: true, collapse: 'detail', title: 'Analyse détaillée', subtitle: 'Tableau de synthèse et vues complémentaires' }),
+  w({ id: 'g-detail', kind: 'chart', tier: 'detail', visible: true, datasetId: 'detailTable', chartType: 'table' }),
+  w({ id: 'g-blocks', kind: 'chart', tier: 'detail', visible: true, datasetId: 'addrByBlockScenario', chartType: 'stackedBar', legend: true }),
+  w({ id: 'g-socle', kind: 'chart', tier: 'detail', visible: true, datasetId: 'socleAi', chartType: 'stackedBar', legend: true }),
+  w({ id: 'g-sec-method', kind: 'section', tier: 'client', visible: true, collapse: 'method', title: 'Méthodologie', subtitle: 'Comment le modèle relie hypothèses, scénarios et acteurs' }),
+  w({ id: 'g-method', kind: 'text', tier: 'method', visible: true, title: 'Principe', text: GLOBAL_METHOD }),
+  w({ id: 'g-notes', kind: 'text', tier: 'method', visible: true, title: 'Points d\'attention', text: NOTES_TEXT }),
+]
+export const globalLayout = (): Layout[] => stack([
+  [['g-headline', 0, 24, 5]],
+  [['g-cards', 0, 24, 6]],
+  [['g-sec-compare', 0, 24, 2]],
+  [['g-trajectory', 0, 14, 13], ['g-scenarios', 14, 10, 13]],
+  [['g-sec-actors', 0, 24, 2]],
+  [['g-actors', 0, 14, 15], ['g-spread', 14, 10, 15]],
+  [['g-sec-detail', 0, 24, 2]],
+  [['g-detail', 0, 24, 12]],
+  [['g-blocks', 0, 12, 12], ['g-socle', 12, 12, 12]],
+  [['g-sec-method', 0, 24, 2]],
+  [['g-method', 0, 12, 10], ['g-notes', 12, 12, 10]],
+])
+
+export const actorWidgets = (): WidgetConfig[] => [
+  w({ id: 'a-headline', kind: 'headline', tier: 'client', visible: true }),
+  w({ id: 'a-kpis', kind: 'actorKpis', tier: 'client', visible: true }),
+  w({ id: 'a-sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Leviers de l\'acteur', subtitle: 'Les hypothèses qui font réellement varier cet acteur' }),
+  w({ id: 'a-drivers', kind: 'drivers', tier: 'client', visible: true, title: 'Hypothèses de l\'acteur', hypSource: 'actor' }),
+  w({ id: 'a-bridge', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorBridge', chartType: 'waterfall', legend: false }),
+  w({ id: 'a-sens', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorSensitivity', chartType: 'tornado', legend: false }),
+  w({ id: 'a-sec-scen', kind: 'section', tier: 'client', visible: true, title: 'Selon les scénarios', subtitle: 'La même analyse pour Bas, Central et Haut' }),
+  w({ id: 'a-scenarios', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorScenarios', chartType: 'bar', legend: true }),
+  w({ id: 'a-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorTrajectory', chartType: 'line', legend: true }),
+  w({ id: 'a-sec-detail', kind: 'section', tier: 'client', visible: true, collapse: 'detail', title: 'Détail du calcul', subtitle: 'De la baseline 2026 à la demande adressable 2035' }),
+  w({ id: 'a-table', kind: 'chart', tier: 'detail', visible: true, datasetId: 'actorTable', chartType: 'table' }),
+  w({ id: 'a-note', kind: 'actorNote', tier: 'detail', visible: true, title: 'Méthode de calcul' }),
+]
+export const actorLayout = (): Layout[] => stack([
+  [['a-headline', 0, 24, 5]],
+  [['a-kpis', 0, 24, 4]],
+  [['a-sec-levers', 0, 24, 2]],
+  [['a-drivers', 0, 9, 18], ['a-bridge', 9, 15, 9], ['a-sens', 9, 15, 9, 9]],
+  [['a-sec-scen', 0, 24, 2]],
+  [['a-scenarios', 0, 10, 13], ['a-trajectory', 10, 14, 13]],
+  [['a-sec-detail', 0, 24, 2]],
+  [['a-table', 0, 12, 12], ['a-note', 12, 12, 12]],
+])
+
+export const PAGE_DEFAULTS: Record<'global' | 'scenario' | 'actor', () => PageConfig> = {
+  global: () => ({ widgets: globalWidgets(), layout: globalLayout() }),
+  scenario: () => ({ widgets: scenarioWidgets(), layout: scenarioLayout() }),
+  actor: () => ({ widgets: actorWidgets(), layout: actorLayout() }),
+}
+
 export const createDefaultConfig = (): DashboardConfig => ({
-  version: 2,
-  title: 'Besoins IT de Monaco à l\'horizon 2035',
-  subtitle: 'Schéma directeur cloud & datacenters — modélisation de la demande IT',
+  version: 3,
+  brand: 'Monaco · Besoins IT 2035',
   footnote: 'Source : modèle Monaco_Besoins_IT_v2 · IMSEE 2024 · hypothèses de travail. Puissances exprimées en puissance IT. Les totaux peuvent différer légèrement de la somme des éléments affichés (arrondis d\'affichage uniquement ; les calculs sont réalisés en pleine précision).',
   theme: { preset: 'cabinet', tokens: {}, metrics: defaultMetrics() },
   format: defaultFormat(),
   labels: {},
   kpis: { order: defaultKpiOrder(), visible: defaultKpiVisible() },
   hyps: { visible: [...DEFAULT_DRIVERS], notes: {} },
-  widgets: defaultWidgets(),
-  layout: defaultLayout(),
+  pages: { global: PAGE_DEFAULTS.global(), scenario: PAGE_DEFAULTS.scenario(), actor: PAGE_DEFAULTS.actor() },
 })

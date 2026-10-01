@@ -5,12 +5,28 @@ https://theo-thivard.github.io/Monaco-dashboard/
 Dashboard interactif construit à partir de `Monaco_Besoins_IT_v2.xlsx` (demande IT de Monaco à l'horizon 2035,
 trois scénarios Bas / Central / Haut), conçu pour être présenté et manipulé en direct avec un client.
 
+## Navigation : Vue globale → Vue scénario → Vue acteur
+Une barre fixe en haut, exactement trois entrées : **Globale** · **Scénario ▾** · **Acteurs ▾** (+ ⚙).
+
+| Entrée | Contenu |
+|---|---|
+| **Globale** | vue Executive : message clé, une carte par scénario (cliquable), trajectoire et comparaison des trois scénarios, contribution de chaque acteur, écart Haut − Bas par acteur |
+| **Scénario → Bas / Central / Haut** | pages détaillées : message clé, KPI, leviers pilotables (curseurs), sensibilité, « ce qui a changé », cascade, répartition par bloc ; analyse détaillée et méthodologie repliées |
+| **Acteurs → DSP, DENJS, APDP, DITN, CHPG, Monaco Telecom – besoins propres, Finance, Privé hors finance** | pages légères : KPI de l'acteur, ses seules hypothèses, cascade et sensibilité propres, trajectoire et comparaison selon les scénarios, détail du calcul |
+
+- Le contexte courant est toujours visible : l'entrée active affiche sa valeur dans la barre (« Scénario | Central », « Acteurs | DSP »), le fil d'Ariane indique la page (`Acteurs / DSP · Central`) et le menu ouvert coche la page courante.
+- Sur une page acteur, un petit sélecteur **Bas / Central / Haut** permet de croiser acteur et scénario sans créer d'entrées de navigation.
+- Adresses lisibles et partageables : `#/globale`, `#/scenario/central`, `#/acteur/dsp` (boutons précédent / suivant et liens directs fonctionnent).
+- Menus : clavier (↑ ↓ Début Fin, Entrée, Échap), fermeture au clic extérieur, état coché, largeur adaptée aux libellés longs.
+- Tout passe par les jetons de thème (Navy Consulting, Minimal, Executive, Financial, Modern, Warm, Sombre) : fond, texte, état actif, survol, menus, bordures, focus.
+- **Une seule source de vérité** : les pages ne contiennent aucun calcul ; elles sélectionnent des données du même modèle (`scénario` = index 0..2, `acteur` = bloc du moteur). La configuration (mise en page, couleurs, widgets) est partagée par type de page : les trois scénarios ont la même disposition, comme les huit acteurs.
+
 ## Trois niveaux de lecture
 | Niveau | Où | Contenu |
 |---|---|---|
-| **1 – Vue client** (défaut) | page d'ouverture | message clé généré, 4 KPI avec écart vs référence, 6 leviers pilotables, sensibilité, « ce qui a changé », trajectoire, scénarios, cascade, répartition par bloc |
-| **2 – Exploration** | sections repliables + bouton « Vue consultant » | analyse détaillée (tableau, trajectoire par bloc, socle vs IA…), registre complet des hypothèses avec sources, KPI personnalisables, type de graphique, 3 scénarios côte à côte |
-| **3 – Configuration** | « Personnaliser », « Mise en page » | contenu, thème & jetons de design, formats & libellés, réinitialisations, import/export |
+| **1 – Vue client** (défaut) | pages ouvertes par défaut | message clé généré, KPI avec écart vs référence, leviers pilotables, sensibilité, « ce qui a changé », graphiques principaux |
+| **2 – Exploration** | sections repliables + vue consultant (⚙) | analyse détaillée, registre complet des hypothèses avec sources, KPI personnalisables, type de graphique |
+| **3 – Configuration** | ⚙ → Personnaliser / Modifier la mise en page | contenu, jetons de design, formats & libellés, réinitialisations, import/export |
 
 ## Architecture : une seule source de vérité
 ```
@@ -18,13 +34,14 @@ Hypothèses ──► moteur ──► instantané ──► KPI / jeux de donn�
 core/hypotheses.ts  core/engine.ts  core/snapshot.ts  core/kpis.ts · core/datasets.ts · core/insights.ts
 ```
 - `src/core/` — **pur, sans React, entièrement testé**.
+  - `actors.ts` : registre des acteurs (libellé, groupe, description, méthode, hypothèses qui comptent) ; un test vérifie que la liste d'hypothèses de chaque acteur est exactement celle qui agit dans le moteur.
   - `hypotheses.ts` : registre des hypothèses (libellé, catégorie, contrôle, bornes, défaut, source, ligne Excel).
   - `engine.ts` : formules de l'Excel (aucun arrondi).
   - `snapshot.ts` : tout ce qui dérive du modèle (scénarios, trajectoires, référence, sensibilité, attribution des écarts par valeurs de Shapley), calculé **une fois** par modification.
   - `kpis.ts` / `datasets.ts` : registres des indicateurs et des jeux de données ; chaque graphique, tableau et infobulle lit un jeu de données, jamais le modèle directement. Les types de graphiques proposés dépendent de la nature des données (`compatibleCharts`).
   - `format.ts` : **seul** endroit où l'on arrondit (affichage). Les calculs gardent la pleine précision.
 - `src/config/` — configuration pilotée par données : `defaults.ts` (vue client par défaut : widgets, grille, KPI, leviers), `theme.ts` (jetons de design, variables CSS), `types.ts`.
-- `src/state/store.ts` — état central (hypothèses + historique annuler/rétablir, référence, configuration), réinitialisations, import/export, lien de partage, comparaison avec le défaut.
+- `src/state/route.ts` — routes (`global`, `scenario`, `actor`) et adresses ; `src/state/store.ts` — état central (hypothèses + historique annuler/rétablir, référence, configuration), réinitialisations, import/export, lien de partage, comparaison avec le défaut.
 - `src/ui/` — composants génériques ; aucun calcul, aucune couleur en dur.
 
 ## Fonctionnalités
@@ -38,8 +55,8 @@ core/hypotheses.ts  core/engine.ts  core/snapshot.ts  core/kpis.ts · core/datas
 - Annuler / rétablir (Ctrl+Z), lien de partage d'un scénario, export CSV (valeurs brutes), impression / PDF, plein écran.
 
 ## Qualité
-`npm test` exécute 99 tests : fidélité à l'Excel, identités comptables, **cohérence KPI = graphiques = tableaux**
-(jeux d'hypothèses par défaut et aléatoires), sensibilité, attribution des écarts, configuration, performance.
+`npm test` exécute plus de 330 tests : fidélité à l'Excel, identités comptables, **cohérence KPI = graphiques = tableaux**
+(jeux d'hypothèses par défaut et aléatoires, pour chaque scénario et chaque acteur), routes, sensibilité, attribution des écarts, configuration, performance.
 
 ## Développement
 ```
