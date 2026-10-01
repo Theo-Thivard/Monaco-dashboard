@@ -1,9 +1,8 @@
 // Message clé généré à partir de l'instantané (mêmes valeurs, même formateur
 // que les KPI et les graphiques).
 
-import { groupBlocks, SCENARIOS } from './engine'
+import { groupBlocks } from './engine'
 import { fmt, type FormatSettings } from './format'
-import { HYP_BY_ID } from './hypotheses'
 import { KPI_BY_ID, kpiValue } from './kpis'
 import type { Snapshot } from './snapshot'
 
@@ -40,5 +39,3 @@ export function buildHeadline(snap: Snapshot, f: FormatSettings, scenarioName: s
   return { kicker: `Scénario ${scenarioName}`, title, bullets }
 }
 
-export const scenarioNames = SCENARIOS
-export const hypName = (id: string) => HYP_BY_ID[id]?.label ?? id

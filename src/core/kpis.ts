@@ -3,7 +3,7 @@
 // référence, donc l'écart affiché est cohérent par construction.
 
 import type { FormatKind } from './hypotheses'
-import { groupBlocks, HORIZON, SCENARIOS, type ScenarioResult } from './engine'
+import { groupBlocks, HORIZON, type ScenarioResult } from './engine'
 
 export interface KpiView {
   /** résultat du scénario actif */
@@ -71,4 +71,3 @@ export function kpiDelta(def: KpiDef, cur: number, ref: number): KpiDelta {
   return { value, abs, direction, tone }
 }
 
-export const SCENARIO_NAMES = SCENARIOS

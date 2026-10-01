@@ -19,7 +19,7 @@ export interface ChangeRow {
   id: string
   from: number
   to: number
-  /** Δ de demande adressable (kW) imputable à cette seule hypothèse */
+  /** Δ de demande adressable (kW) imputable à cette hypothèse (valeur de Shapley : effets croisés répartis) */
   delta: number
 }
 
@@ -60,18 +60,47 @@ function sensitivity(p: Params, s: number, center: number): SensitivityRow[] {
   return rows.sort((a, b) => Math.max(Math.abs(b.low), Math.abs(b.high)) - Math.max(Math.abs(a.low), Math.abs(a.high)))
 }
 
+/**
+ * Écart actif − référence réparti entre les hypothèses modifiées.
+ * Jusqu'à SHAPLEY_MAX hypothèses : valeurs de Shapley (répartition équitable des effets croisés,
+ * somme exacte). Au-delà : effet isolé de chaque hypothèse + résidu « effets croisés ».
+ */
+const SHAPLEY_MAX = 10
+
 function changes(p: Params, ref: Params, s: number, cur: number, base: number) {
-  const rows: ChangeRow[] = []
-  for (const h of HYPS) {
-    if (!hypDiffers(p, ref, h.id, s)) continue
-    const to = hypValue(p, h.id, s)
-    const only = computeScenario(withValue(ref, h.id, s, to), s).addressable
-    rows.push({ id: h.id, from: hypValue(ref, h.id, s), to, delta: only - base })
-  }
+  const ids = HYPS.filter((h) => hypDiffers(p, ref, h.id, s)).map((h) => h.id)
+  const n = ids.length
   const total = cur - base
-  const sum = rows.reduce((a, r) => a + r.delta, 0)
+  const from = (id: string) => hypValue(ref, id, s)
+  const to = (id: string) => hypValue(p, id, s)
+  let delta: number[]
+  if (n === 0) delta = []
+  else if (n <= SHAPLEY_MAX) {
+    const val = new Float64Array(1 << n)
+    for (let mask = 0; mask < 1 << n; mask++) {
+      let q = ref
+      for (let k = 0; k < n; k++) if (mask & (1 << k)) q = withValue(q, ids[k], s, to(ids[k]))
+      val[mask] = computeScenario(q, s).addressable
+    }
+    const fact = [1]
+    for (let k = 1; k <= n; k++) fact[k] = fact[k - 1] * k
+    delta = ids.map((_, i) => {
+      let phi = 0
+      for (let mask = 0; mask < 1 << n; mask++) {
+        if (mask & (1 << i)) continue
+        let size = 0
+        for (let m = mask; m; m &= m - 1) size++
+        phi += (fact[size] * fact[n - size - 1]) / fact[n] * (val[mask | (1 << i)] - val[mask])
+      }
+      return phi
+    })
+  } else {
+    delta = ids.map((id) => computeScenario(withValue(ref, id, s, to(id)), s).addressable - base)
+  }
+  const rows: ChangeRow[] = ids.map((id, i) => ({ id, from: from(id), to: to(id), delta: delta[i] }))
+  const residual = total - delta.reduce((a, b) => a + b, 0)
   rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-  return { rows, residual: total - sum, total }
+  return { rows, residual: Math.abs(residual) < 1e-9 ? 0 : residual, total }
 }
 
 export function buildSnapshot(params: Params, reference: Params, scenario: number): Snapshot {

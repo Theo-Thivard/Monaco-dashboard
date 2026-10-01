@@ -19,6 +19,8 @@ export interface ChartEnv {
   unit: (kind: FormatKind) => string
   legend: boolean
   decimals?: number
+  /** largeur du conteneur en px (adaptation des libellés) */
+  width: number
 }
 
 const FONT = 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif'
@@ -219,13 +221,14 @@ function waterfall(p: PreparedDataset, env: ChartEnv): EChartsCoreOption {
 function tornado(p: PreparedDataset, env: ChartEnv): EChartsCoreOption {
   const { ds } = p
   const t = env.tokens
+  const labelW = Math.round(Math.min(240, Math.max(80, env.width * 0.4)))
   return {
     ...frame(env),
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: t.surfaceAlt, opacity: 0.6 } }, formatter: axisTooltip(p, env, false) },
     legend: { ...(frame(env).legend as P), show: env.legend },
-    grid: { left: 4, right: 24, top: env.legend ? 34 : 10, bottom: 4, containLabel: true },
+    grid: { left: labelW + 14, right: 24, top: env.legend ? 34 : 10, bottom: 4, containLabel: false },
     xAxis: valueAxis(ds, env, true, { axisLabel: { color: t.axis, fontSize: 11, formatter: (v: number) => env.fmt(ds.format, v, { unit: false, sign: true, decimals: env.powerUnit === 'MW' ? 1 : 0 }) } }),
-    yAxis: catAxis(ds.categories, env, { inverse: true, axisLabel: { color: t.text, fontSize: 11, width: 250, overflow: 'truncate' }, axisLine: { lineStyle: { color: t.axis } } }),
+    yAxis: catAxis(ds.categories, env, { inverse: true, axisLabel: { color: t.text, fontSize: 11, width: labelW, overflow: 'truncate', ellipsis: '…', margin: 10 }, axisLine: { lineStyle: { color: t.axis } } }),
     series: ds.series.map((s) => ({
       id: s.id, seriesId: s.id, name: s.name, type: 'bar', barGap: '-100%', barMaxWidth: 16, itemStyle: { color: p.colors[s.id] },
       label: { show: false }, data: s.values,

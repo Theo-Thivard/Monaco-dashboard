@@ -156,7 +156,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'whatChanged', title: 'Ce qui a changé vs la référence', subtitle: 'Impact de chaque hypothèse modifiée sur la demande adressable 2035', kind: 'bridge', defaultChart: 'waterfall',
+    id: 'whatChanged', title: 'Ce qui a changé vs la référence', subtitle: 'Impact de chaque hypothèse modifiée sur la demande adressable 2035 (effets croisés répartis)', kind: 'bridge', defaultChart: 'waterfall',
     build: (c) => {
       const ch = c.snap.changes
       const rows = ch.rows.filter((r) => Math.abs(r.delta) > 1e-9)

@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from 'react'
+import { memo, useDeferredValue, type ReactNode } from 'react'
 import { DATASET_BY_ID, CHART_LABELS, compatibleCharts, type ChartType } from '../core/datasets'
 import type { WidgetConfig } from '../config/types'
 import { patchUI, toggleExpanded, updateWidget, useUI } from '../state/store'
@@ -23,7 +23,9 @@ export function widgetSubtitle(wc: WidgetConfig): string {
   return ''
 }
 
-function ChartWidget({ wc, env }: { wc: WidgetConfig; env: Env }) {
+function ChartWidget({ wc, env: liveEnv }: { wc: WidgetConfig; env: Env }) {
+  // les graphiques se redessinent après les contrôles : le curseur reste fluide pendant le glissement
+  const env = useDeferredValue(liveEnv)
   const ds = useDataset(wc.datasetId, env)
   const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
   if (!ds || !def) return <p className="empty small">Jeu de données inconnu.</p>
