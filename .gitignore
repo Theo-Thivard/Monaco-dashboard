@@ -1,5 +1,5 @@
 node_modules
 dist
 *.local
-public/model.xlsx
+app/public/model.xlsx
 .build-cache

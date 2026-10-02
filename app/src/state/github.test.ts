@@ -14,7 +14,7 @@ function stub(opts: { index?: unknown[]; mergeStatus?: number } = {}) {
     const method = init?.method ?? 'GET'
     calls.push({ url, method, body: init?.body ? JSON.parse(init.body as string) : undefined })
     if (url.includes('/git/ref/')) return new Response(JSON.stringify({ object: { sha: 'abc' } }))
-    if (method === 'GET' && url.includes('variants/index.json')) return new Response(JSON.stringify({ sha: 'idx', content: b64(JSON.stringify(opts.index ?? [])) }))
+    if (method === 'GET' && url.includes('app/variants/index.json')) return new Response(JSON.stringify({ sha: 'idx', content: b64(JSON.stringify(opts.index ?? [])) }))
     if (url.endsWith('/pulls')) return new Response(JSON.stringify({ number: 7, html_url: 'https://github.com/x/pull/7' }))
     if (url.includes('/merge')) return new Response('{}', { status: opts.mergeStatus ?? 200 })
     return new Response('{}')
@@ -34,7 +34,7 @@ describe('enregistrement d\'un affichage comme nouvelle publication', () => {
     const r = await saveVariant({ token: 't', name: 'Client', base: { slug: 'v6', label: 'V6' }, config, now: new Date('2026-10-02T10:00:00Z') })
     expect(r).toMatchObject({ slug: 'v6-client', label: 'V6 · Client', merged: true, prUrl: 'https://github.com/x/pull/7', url: `${PAGES_URL}v6-client/` })
     const puts = calls.filter((c) => c.method === 'PUT' && c.url.includes('/contents/'))
-    expect(puts.map((c) => c.url.split('/contents/')[1])).toEqual(['variants/v6-client.json', 'variants/index.json'])
+    expect(puts.map((c) => c.url.split('/contents/')[1])).toEqual(['app/variants/v6-client.json', 'app/variants/index.json'])
     expect(JSON.parse(decodeURIComponent(escape(atob(puts[0].body.content))))).toEqual(JSON.parse(variantFileContent(config)))
     const idx = JSON.parse(decodeURIComponent(escape(atob(puts[1].body.content))))
     expect(idx.map((e: { slug: string }) => e.slug)).toEqual(['v6-ancien', 'v6-client']) // l'ancien affichage reste dans la liste

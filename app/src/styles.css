@@ -372,3 +372,6 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 
 .mode-seg { margin-left: auto; flex-wrap: wrap; }
 .hyp-together { font-size: 0.8rem; color: var(--c-accent); margin-top: 2px; }
+
+/* la grille a un pas vertical d'une demi-unité, sans marge : l'espace entre blocs est réservé à l'intérieur de chaque bloc */
+.grid > .react-grid-item > .wframe { height: calc(100% - var(--m-gap)); }

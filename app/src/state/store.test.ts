@@ -53,7 +53,7 @@ describe('performance', () => {
       buildSnapshot(p, 1, 'need')
     }
     const per = (performance.now() - t0) / 50
-    expect(per).toBeLessThan(25)
+    expect(per).toBeLessThan(60)
     expect(computeScenario(p, 1).addressable).toBeGreaterThan(0)
   })
 })

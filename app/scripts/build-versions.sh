@@ -3,15 +3,16 @@
 # puis les AFFICHAGES enregistrés (variants/index.json) : même code que leur version, configuration enregistrée comme défaut,
 # afin qu'une nouvelle version ne remplace jamais l'ancienne : chacune garde son adresse.
 # Les archives sont FIGÉES : elles lisent la copie de l'Excel embarquée dans leur propre version (pas le fichier en ligne).
-# Usage : scripts/build-versions.sh <dossier dist> <préfixe d'adresse, p. ex. /Monaco-dashboard>
+# Usage : app/scripts/build-versions.sh <dossier dist> <préfixe d'adresse, p. ex. /Monaco-dashboard>
 set -euo pipefail
 DIST="$(cd "$1" && pwd)"
 PREFIX="${2:-/Monaco-dashboard}"
-ROOT="$(git rev-parse --show-toplevel)"
+REPO="$(git rev-parse --show-toplevel)"      # dépôt (branches des archives)
+APP="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" # dossier app/ : versions.json, variants/…
 WORK="$(mktemp -d)"
-trap 'cd "$ROOT"; git worktree prune; rm -rf "$WORK"' EXIT
+trap 'cd "$REPO"; git worktree prune; rm -rf "$WORK"' EXIT
 
-export REGISTRY_ROOT="$ROOT" SITE_ROOT="$PREFIX/"
+export REGISTRY_ROOT="$APP" SITE_ROOT="$PREFIX/"
 
 # Cache des constructions d'archives (dossier BUILD_CACHE, conservé d'une publication à l'autre par le workflow)
 CACHE="${BUILD_CACHE:-}"
@@ -27,16 +28,17 @@ save_cache() { # <clé> <source> <préfixe>
   rm -rf "$CACHE/$1"; cp -r "$2" "$CACHE/$1"
 }
 
-jq -c '.[]' "$ROOT/versions.json" | while read -r v; do
+jq -c '.[]' "$APP/versions.json" | while read -r v; do
   slug="$(jq -r .slug <<<"$v")"
   ref="$(jq -r .ref <<<"$v")"
   echo "::group::Version $slug ($ref)"
   # une archive est figée : si son code n'a pas changé depuis la dernière publication, on réutilise sa construction
-  key="$slug-$(git -C "$ROOT" rev-parse "$ref")"
+  key="$slug-$(git -C "$REPO" rev-parse "$ref")"
   if restore_cache "$key" "$DIST/$slug"; then echo "(inchangée : réutilisée)"; echo "::endgroup::"; continue; fi
-  git -C "$ROOT" worktree add --detach "$WORK/$slug" "$ref" >/dev/null
+  git -C "$REPO" worktree add --detach "$WORK/$slug" "$ref" >/dev/null
   (
     cd "$WORK/$slug"
+    [ -f app/package.json ] && cd app # dispositions récentes : le code est dans app/
     npm ci --no-audit --no-fund --loglevel=error
     # copie embarquée du classeur (versions qui lisent l'Excel) ; adresse « en ligne » volontairement inaccessible
     [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs
@@ -47,23 +49,24 @@ jq -c '.[]' "$ROOT/versions.json" | while read -r v; do
 done
 
 # Affichages enregistrés : « <version>-<nom> ». Le code est celui de la version de base (version actuelle = ce dépôt).
-CURRENT="$(jq -r .slug "$ROOT/version.json")"
-[ -f "$ROOT/variants/index.json" ] && jq -c '.[]' "$ROOT/variants/index.json" | while read -r v; do
+CURRENT="$(jq -r .slug "$APP/version.json")"
+[ -f "$APP/variants/index.json" ] && jq -c '.[]' "$APP/variants/index.json" | while read -r v; do
   slug="$(jq -r .slug <<<"$v")"
   base="$(jq -r .base <<<"$v")"
   echo "::group::Affichage $slug (base $base)"
   if [ "$base" != "$CURRENT" ]; then
-    vkey="aff-$slug-$(git -C "$ROOT" rev-parse "$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$ROOT/versions.json")")-$(sha1sum "$ROOT/variants/$slug.json" | cut -c1-12)"
+    vkey="aff-$slug-$(git -C "$REPO" rev-parse "$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$APP/versions.json")")-$(sha1sum "$APP/variants/$slug.json" | cut -c1-12)"
     if restore_cache "$vkey" "$DIST/$slug"; then echo "(inchangé : réutilisé)"; echo "::endgroup::"; continue; fi
   fi
   if [ "$base" = "$CURRENT" ]; then
-    src="$ROOT"
+    src="$APP"
   else
-    ref="$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$ROOT/versions.json")"
+    ref="$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$APP/versions.json")"
     [ -n "$ref" ] || { echo "version de base inconnue : $base"; exit 1; }
-    src="$WORK/base-$base"
-    if [ ! -d "$src" ]; then
-      git -C "$ROOT" worktree add --detach "$src" "$ref" >/dev/null
+    wt="$WORK/base-$base"
+    src="$wt"; [ -f "$wt/app/package.json" ] && src="$wt/app" # dispositions récentes : le code est dans app/
+    if [ ! -d "$wt" ]; then
+      git -C "$REPO" worktree add --detach "$wt" "$ref" >/dev/null
       (cd "$src" && npm ci --no-audit --no-fund --loglevel=error && { [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs || true; })
     fi
   fi
@@ -71,7 +74,7 @@ CURRENT="$(jq -r .slug "$ROOT/version.json")"
     cd "$src"
     # base figée (ancienne version) : copie embarquée du classeur ; version actuelle : classeur en ligne comme le site principal
     [ "$base" = "$CURRENT" ] || export MODEL_LIVE_URL="http://archive.invalid/model.xlsx"
-    VARIANT_CONFIG="$ROOT/variants/$slug.json" APP_SLUG="$slug" \
+    VARIANT_CONFIG="$APP/variants/$slug.json" APP_SLUG="$slug" \
       npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
   )
   [ "$base" = "$CURRENT" ] || save_cache "$vkey" "$DIST/$slug" "aff-$slug-"
@@ -79,7 +82,7 @@ CURRENT="$(jq -r .slug "$ROOT/version.json")"
 done
 
 # Bandeau « Autres versions » sur les versions figées (versions archivées et affichages de versions archivées)
-ARCHIVED_SLUGS="$(jq -r '.[].slug' "$ROOT/versions.json" | tr '\n' ' ')"
+ARCHIVED_SLUGS="$(jq -r '.[].slug' "$APP/versions.json" | tr '\n' ' ')"
 OLD_VARIANTS=""
-[ -f "$ROOT/variants/index.json" ] && OLD_VARIANTS="$(jq -r --arg c "$CURRENT" '.[] | select(.base != $c) | .slug' "$ROOT/variants/index.json" | tr '\n' ' ')"
-(cd "$ROOT" && node scripts/inject-banner.mjs "$DIST" "$PREFIX" $ARCHIVED_SLUGS $OLD_VARIANTS)
+[ -f "$APP/variants/index.json" ] && OLD_VARIANTS="$(jq -r --arg c "$CURRENT" '.[] | select(.base != $c) | .slug' "$APP/variants/index.json" | tr '\n' ' ')"
+(cd "$APP" && node scripts/inject-banner.mjs "$DIST" "$PREFIX" $ARCHIVED_SLUGS $OLD_VARIANTS)

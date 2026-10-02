@@ -102,9 +102,10 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const setL = (p: LensOverride) => updateWidgetLens(wc.id, env.snap.lens, p)
   const ok = ds ? compatibleCharts(ds) : []
   const curType = eff.chartType && ok.includes(eff.chartType) ? eff.chartType : def?.defaultChart
-  const num = (k: 'x' | 'y' | 'w' | 'h', label: string, min: number, max: number) => (
-    <Field label={label}><NumberInput value={li?.[k]} min={min} max={max} onChange={(v) => v !== undefined && updateLayoutItem(wc.id, { [k]: Math.round(v) })} /></Field>
-  )
+  const num = (k: 'x' | 'y' | 'w' | 'h', label: string, min: number, max: number) => {
+    const half = k === 'y' || k === 'h' // hauteurs et positions verticales : demi-unités acceptées (2,5)
+    return <Field label={label}><NumberInput value={li?.[k]} min={min} max={max} step={half ? 0.5 : 1} onChange={(v) => v !== undefined && updateLayoutItem(wc.id, { [k]: half ? Math.round(v * 2) / 2 : Math.round(v) })} /></Field>
+  }
   return (
     <Drawer title="Réglages du bloc" onClose={() => patchUI({ panel: null, selectedWidget: null })}>
       {wc.kind === 'headline' && <HeadlineEditor wc={wc} env={env} />}
@@ -142,8 +143,8 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
         <>
           <h4>Hypothèses</h4>
           <Field label="Scénarios modifiés par les curseurs">
-            <select value={wc.hypMode ?? (wc.showAllScenarios ? 'three' : 'one')} onChange={(e) => set({ hypMode: e.target.value as HypMode, showAllScenarios: undefined })}>
-              <option value="one">Le scénario affiché</option><option value="together">Les trois ensemble (même %)</option><option value="three">Trois curseurs séparés</option>
+            <select value={wc.hypMode === 'three' || (!wc.hypMode && wc.showAllScenarios) ? 'three' : 'together'} onChange={(e) => set({ hypMode: e.target.value as HypMode, showAllScenarios: undefined })}>
+              <option value="together">Les trois ensemble (valeur du Central, même %)</option><option value="three">Trois curseurs séparés</option>
             </select>
           </Field>
           {env.route.kind === 'actor' && (

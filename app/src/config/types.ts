@@ -9,7 +9,8 @@ export type WidgetKind = 'section' | 'headline' | 'kpis' | 'scenarioCards' | 'ac
 /** client = vue par défaut ; detail / method = repliés derrière leur section */
 export type Tier = 'client' | 'detail' | 'method'
 
-export type HypMode = 'one' | 'together' | 'three'
+/** les trois scénarios ensemble (un curseur, variation proportionnelle, valeur du Central affichée) ou un curseur par scénario */
+export type HypMode = 'together' | 'three'
 
 export interface SeriesStyle { name?: string; color?: string; hidden?: boolean }
 
@@ -44,7 +45,7 @@ export interface WidgetConfig {
   headline?: { kicker?: string; title?: string; bullets?: string; hideTitle?: boolean; hideBullets?: boolean }
   /** drivers : montrer les trois scénarios */
   showAllScenarios?: boolean
-  /** drivers : un scénario (affiché), les trois ensemble (même variation en %) ou trois curseurs séparés */
+  /** drivers : les trois scénarios ensemble ou trois curseurs séparés */
   hypMode?: HypMode
   /** drivers : hypothèses choisies par l'utilisateur (défaut) ou hypothèses de l'acteur affiché */
   hypSource?: 'visible' | 'actor'

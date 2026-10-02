@@ -53,7 +53,7 @@ export const ACTORS: ActorDef[] = [
     method: 'Activité hospitalière et digitalisation de la santé, puis surcouche IA.',
   },
   {
-    id: 'MT', slug: 'monaco-telecom', label: 'Monaco Telecom – besoins propres', short: 'Monaco Telecom', group: 'public',
+    id: 'MT', slug: 'monaco-telecom', label: 'Monaco Telecom', short: 'Monaco Telecom', group: 'public',
     description: 'Besoins propres de Monaco Telecom',
     method: 'Croissance des effectifs et de l\'intensité du privé hors finance, surcouche IA du privé hors finance ; part captable du socle conventionnelle (secteur public).',
   },
