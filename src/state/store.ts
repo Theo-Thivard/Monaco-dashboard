@@ -21,6 +21,8 @@ export interface UIState {
   panel: Panel
   settingsTab: string
   selectedWidget: string | null
+  /** panneau d'hypothèses épinglé à gauche */
+  sidebar: boolean
   toast: { id: number; msg: string; undo?: () => void } | null
 }
 
@@ -41,9 +43,24 @@ export interface AppState {
 const KEY = 'monaco-dashboard-v5'
 const HISTORY_MAX = 60
 
+const SIDEBAR_KEY = 'monaco-dashboard-sidebar'
+/** Ouvert par défaut sur grand écran ; le choix de l'utilisateur est mémorisé. */
+function readSidebar(): boolean {
+  try {
+    const v = localStorage.getItem(SIDEBAR_KEY)
+    if (v !== null) return v === '1'
+  } catch { /* noop */ }
+  return typeof window === 'undefined' ? true : window.innerWidth >= 1200
+}
+export const toggleSidebar = () => setState((s) => {
+  const sidebar = !s.ui.sidebar
+  try { localStorage.setItem(SIDEBAR_KEY, sidebar ? '1' : '0') } catch { /* noop */ }
+  return { ...s, ui: { ...s.ui, sidebar } }
+}, false)
+
 const freshUI = (): UIState => ({
   mode: 'client', editLayout: false, expanded: { detail: false, method: false },
-  panel: null, settingsTab: 'content', selectedWidget: null, toast: null,
+  panel: null, settingsTab: 'content', selectedWidget: null, sidebar: readSidebar(), toast: null,
 })
 
 /** Affichage par défaut du site : configuration enregistrée dans le dépôt (src/config/saved.json) si elle existe, sinon l'affichage d'origine. */

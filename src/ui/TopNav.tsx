@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { ACTORS, ACTOR_GROUPS, actorBlock, arrangeActors } from '../core/actors'
 import { buildCSV, download, printPage } from '../state/exporters'
-import { navigate } from '../state/store'
+import { navigate, toggleSidebar, useUI } from '../state/store'
 import { diffFromDefault, exportJSON, importJSON, patchUI, redo, resetAll, resetAssumptions, resetDashboard, setMode, shareURL, toast, undo, useAppState } from '../state/store'
 import type { Env } from './env'
 import { NavDropdown } from './NavDropdown'
@@ -58,6 +58,7 @@ function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
 export function TopNav({ env }: { env: Env }) {
   const route = env.route
   const { snap, tokens } = env
+  const ui = useUI()
   const past = useAppState((x) => x.past.length)
   const future = useAppState((x) => x.future.length)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -77,6 +78,7 @@ export function TopNav({ env }: { env: Env }) {
   return (
     <header className="topnav">
       <nav className="topnav-inner" aria-label="Navigation principale">
+        <button className={'nav-icon side-toggle' + (ui.sidebar ? ' open' : '')} onClick={toggleSidebar} aria-pressed={ui.sidebar} aria-label="Panneau d'hypothèses" title={ui.sidebar ? 'Masquer les hypothèses' : 'Afficher les hypothèses'}>☰</button>
         <button className="brand" onClick={() => navigate({ kind: 'global' })} title="Retour à la vue globale">{env.config.brand}</button>
         <div className="nav-items">
           <button className={'nav-item' + (route.kind === 'global' ? ' active' : '')} aria-current={route.kind === 'global' ? 'page' : undefined} onClick={() => navigate({ kind: 'global' })}>Globale</button>

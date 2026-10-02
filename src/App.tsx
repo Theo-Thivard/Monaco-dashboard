@@ -4,6 +4,7 @@ import { SOURCE_LABEL } from './ui/ModelInfo'
 import { applyTheme } from './config/theme'
 import { AssumptionsDrawer } from './ui/AssumptionsDrawer'
 import { ContextBar } from './ui/ContextBar'
+import { HypSidebar } from './ui/HypSidebar'
 import { Dashboard } from './ui/Dashboard'
 import { SettingsDrawer } from './ui/SettingsDrawer'
 import { Toast } from './ui/Toast'
@@ -50,11 +51,11 @@ export default function App() {
   useEffect(() => { window.dispatchEvent(new Event('resize')) }, [ui.panel, ui.selectedWidget])
 
   const selected = config.pages[route.kind].widgets.find((w) => w.id === ui.selectedWidget)
-  const withLeft = ui.panel === 'assumptions'
+  const withLeft = ui.panel === 'assumptions' && !ui.sidebar
   const withRight = ui.panel === 'settings' || (ui.panel === 'widget' && !!selected)
 
   return (
-    <div className={'app' + (ui.mode === 'consultant' ? ' consultant' : '') + (withLeft ? ' pad-left' : '') + (withRight ? ' pad-right' : '')}>
+    <div className={'app' + (ui.mode === 'consultant' ? ' consultant' : '') + (withLeft ? ' pad-left' : '') + (ui.sidebar ? ' with-side' : '') + (withRight ? ' pad-right' : '')}>
       <TopNav env={env} />
       <main className="page">
         <ModelBanner />
@@ -65,6 +66,7 @@ export default function App() {
           {config.footnote && <div>{config.footnote}</div>}
         </footer>
       </main>
+      {ui.sidebar && <HypSidebar env={env} />}
       {ui.panel === 'assumptions' && <AssumptionsDrawer env={env} />}
       {ui.panel === 'settings' && <SettingsDrawer env={env} />}
       {ui.panel === 'widget' && selected && <WidgetSettings wc={selected} env={env} />}
