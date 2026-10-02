@@ -69,6 +69,17 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
         </>
       )}
 
+      {wc.kind === 'drivers' && (
+        <>
+          <h4>Hypothèses</h4>
+          <label className="inline"><input type="checkbox" checked={!!wc.showAllScenarios} onChange={(e) => set({ showAllScenarios: e.target.checked })} /> Afficher les trois scénarios</label>
+          {env.route.kind === 'actor' && (
+            <label className="inline"><input type="checkbox" checked={wc.hypSource === 'actor'} onChange={(e) => set({ hypSource: e.target.checked ? 'actor' : 'visible' })} /> Seulement les hypothèses de l'acteur</label>
+          )}
+          <p className="drawer-help">Choisissez les hypothèses affichées avec « Afficher / masquer » dans le bloc.</p>
+        </>
+      )}
+
       <h4>Taille et position</h4>
       <div className="grid2">
         {num('w', 'Largeur (colonnes, 1–24)', 1, 24)}
@@ -76,7 +87,7 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
         {num('x', 'Colonne', 0, 23)}
         {num('y', 'Ligne', 0, 500)}
       </div>
-      <p className="drawer-help">Vous pouvez aussi tirer les bords et les coins du widget à la souris.</p>
+      <p className="drawer-help">Vous pouvez aussi tirer les bords et les coins du bloc à la souris.</p>
 
       <h4>Couleurs de la carte</h4>
       <ColorField label="Fond" value={wc.bg} fallback={env.tokens.surface} onChange={(v) => set({ bg: v })} />

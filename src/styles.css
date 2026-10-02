@@ -14,6 +14,11 @@ button { cursor: pointer; }
 .app { min-height: 100vh; }
 .app.pad-left { padding-left: 400px; }
 .app.pad-right { padding-right: 400px; }
+/* panneau d'hypothèses épinglé */
+.hypside { position: fixed; top: 48px; bottom: 0; left: 0; width: 400px; z-index: 20; background: var(--c-surface); border-right: 1px solid var(--c-border); display: flex; flex-direction: column; }
+.hypside-tools { display: flex; gap: 12px; align-items: center; }
+.side-toggle { color: var(--c-navText); }
+.app.with-side > .page { width: calc(100% - 400px); max-width: none; margin-left: 400px; }
 .page { max-width: var(--m-maxw); margin: 0 auto; padding: 24px 32px 56px; }
 .footnote { margin-top: 32px; padding-top: 14px; border-top: 1px solid var(--c-border); color: var(--c-textMuted); font-size: 0.85rem; }
 
@@ -163,7 +168,7 @@ button.wide { width: 100%; margin-top: 10px; padding: 8px; background: var(--c-s
 .kpi.flash { animation: flash .9s ease-out; }
 @keyframes flash { from { background: color-mix(in srgb, var(--c-accent) 14%, var(--c-surface)); } to { background: var(--c-surface); } }
 .kpi-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--c-textMuted); font-weight: 500; }
-.kpi-value { font-size: 2.35rem; line-height: 1.1; font-weight: 600; color: var(--c-heading); letter-spacing: -0.02em; white-space: nowrap; }
+.kpi-value { font-size: 2.1rem; line-height: 1.1; font-weight: 400; color: var(--c-heading); letter-spacing: -0.02em; white-space: nowrap; }
 .kpi-unit { font-size: 0.95rem; font-weight: 400; color: var(--c-textMuted); margin-left: 8px; letter-spacing: 0; }
 .kpi-custom { align-self: flex-end; margin-bottom: 6px; }
 .kpis-wrap .kpi-custom .tool { padding: 3px 10px; font-size: 0.86rem; }
@@ -287,6 +292,8 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 /* ---------------------------------------------------------------- responsive */
 @media (max-width: 1100px) {
   .app.pad-left, .app.pad-right { padding: 0; }
+  .hypside { top: 0; width: 100%; z-index: 45; }
+  .app.with-side > .page { width: auto; margin-left: auto; }
   .drawer { width: min(400px, 100vw); }
 }
 @media (max-width: 640px) {
@@ -315,6 +322,8 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 
 /* ---------------------------------------------------------------- impression */
 @media print {
+  .hypside { display: none; }
+  .app.with-side > .page { width: auto; margin: 0; }
   @page { size: A3 landscape; margin: 12mm; }
   body { background: #fff; }
   .topnav, .ctx-right, .drawer, .toast, .wtools, .grip, .section-toggle, .kpi-custom, .drivers-tools, .type-select, .react-resizable-handle { display: none !important; }

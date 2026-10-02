@@ -22,7 +22,7 @@ async function start() {
         <h1>Le modèle Excel n'a pas pu être chargé</h1>
         <p>{e instanceof ModelError ? e.message : String(e)}</p>
         {diag.length > 0 && <ul>{diag.map((d, i) => <li key={i}>{d.message}{d.where ? <> (<code>{d.where}</code>)</> : null}</li>)}</ul>}
-        <p>Le dashboard lit l'Excel par ses intitulés de lignes et de colonnes : vérifiez qu'ils n'ont pas été renommés, ou demandez la mise à jour du dashboard.</p>
+        <p>Le tableau de bord lit l'Excel par ses intitulés de lignes et de colonnes : vérifiez qu'ils n'ont pas été renommés, ou demandez la mise à jour du tableau de bord.</p>
       </Boot>,
     )
     return

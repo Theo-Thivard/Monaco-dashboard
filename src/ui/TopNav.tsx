@@ -1,7 +1,7 @@
 import { useRef } from 'react'
-import { ACTORS, ACTOR_GROUPS, actorBlock } from '../core/actors'
+import { ACTORS, ACTOR_GROUPS, actorBlock, arrangeActors } from '../core/actors'
 import { buildCSV, download, printPage } from '../state/exporters'
-import { navigate } from '../state/store'
+import { navigate, toggleSidebar, useUI } from '../state/store'
 import { diffFromDefault, exportJSON, importJSON, patchUI, redo, resetAll, resetAssumptions, resetDashboard, setMode, shareURL, toast, undo, useAppState } from '../state/store'
 import type { Env } from './env'
 import { NavDropdown } from './NavDropdown'
@@ -28,7 +28,7 @@ function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
           <div className="pop-title">Affichage</div>
           <button onClick={() => { setMode(consultant ? 'client' : 'consultant'); close() }}>{consultant ? 'Passer en vue client' : 'Passer en vue consultant'}</button>
           <button onClick={() => { patchUI({ panel: 'assumptions' }); close() }}>Toutes les hypothèses{modified ? ` (${modified} modifiée${modified > 1 ? 's' : ''})` : ''}</button>
-          {consultant && <button onClick={() => { patchUI({ panel: 'settings' }); close() }}>Personnaliser le dashboard</button>}
+          {consultant && <button onClick={() => { patchUI({ panel: 'settings' }); close() }}>Personnaliser le tableau de bord</button>}
           {consultant && <button onClick={() => { patchUI({ panel: 'settings', settingsTab: 'save' }); close() }}>Enregistrer l'affichage sur GitHub…</button>}
           {consultant && <button onClick={() => { patchUI({ editLayout: !s.ui.editLayout, selectedWidget: null, panel: null }); close() }}>{s.ui.editLayout ? 'Terminer la mise en page' : 'Modifier la mise en page'}</button>}
           <div className="pop-sep" />
@@ -43,9 +43,9 @@ function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
             <>
               <div className="pop-sep" />
               <div className="pop-title">Réinitialiser</div>
-              <ConfirmButton label="Reset assumptions" confirmLabel="Confirmer : hypothèses par défaut" onConfirm={() => { resetAssumptions(); close() }} />
-              <ConfirmButton label="Reset dashboard" confirmLabel="Confirmer : mise en page par défaut" onConfirm={() => { resetDashboard(); close() }} />
-              <ConfirmButton className="danger" label="Reset all" confirmLabel="Confirmer : tout réinitialiser" onConfirm={() => { resetAll(); close() }} />
+              <ConfirmButton label="Réinitialiser les hypothèses" confirmLabel="Confirmer : hypothèses par défaut" onConfirm={() => { resetAssumptions(); close() }} />
+              <ConfirmButton label="Réinitialiser l'affichage" confirmLabel="Confirmer : mise en page par défaut" onConfirm={() => { resetDashboard(); close() }} />
+              <ConfirmButton className="danger" label="Tout réinitialiser" confirmLabel="Confirmer : tout réinitialiser" onConfirm={() => { resetAll(); close() }} />
             </>
           )}
         </div>
@@ -58,6 +58,7 @@ function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
 export function TopNav({ env }: { env: Env }) {
   const route = env.route
   const { snap, tokens } = env
+  const ui = useUI()
   const past = useAppState((x) => x.past.length)
   const future = useAppState((x) => x.future.length)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -66,9 +67,10 @@ export function TopNav({ env }: { env: Env }) {
   const scenarioGroups = [{ items: [0, 1, 2].map((i) => ({
     id: String(i), label: env.scenarioName(i), color: scenColors[i], hint: SCENARIO_HINTS[i], meta: env.fmt('power', snap.results[i].addressable),
   })) }]
+  const shownActors = arrangeActors(env.config.actors, () => 0)
   const actorGroups = ACTOR_GROUPS.map((g) => ({
     heading: g.title,
-    items: ACTORS.filter((a) => a.group === g.id).map((a) => ({
+    items: shownActors.map((id) => ACTORS.find((a) => a.id === id)!).filter((a) => a.group === g.id).map((a) => ({
       id: a.id, label: env.actorLabel(a.id), meta: env.fmt('power', actorBlock(snap.active, a.id).addressable),
     })),
   }))
@@ -76,6 +78,7 @@ export function TopNav({ env }: { env: Env }) {
   return (
     <header className="topnav">
       <nav className="topnav-inner" aria-label="Navigation principale">
+        <button className={'nav-icon side-toggle' + (ui.sidebar ? ' open' : '')} onClick={toggleSidebar} aria-pressed={ui.sidebar} aria-label="Panneau d'hypothèses" title={ui.sidebar ? 'Masquer les hypothèses' : 'Afficher les hypothèses'}>☰</button>
         <button className="brand" onClick={() => navigate({ kind: 'global' })} title="Retour à la vue globale">{env.config.brand}</button>
         <div className="nav-items">
           <button className={'nav-item' + (route.kind === 'global' ? ' active' : '')} aria-current={route.kind === 'global' ? 'page' : undefined} onClick={() => navigate({ kind: 'global' })}>Globale</button>

@@ -1,5 +1,27 @@
 [
-  { "slug": "v1", "ref": "origin/archive/dashboard-v1", "label": "V1" },
-  { "slug": "v2", "ref": "origin/archive/dashboard-v2", "label": "V2" },
-  { "slug": "v3", "ref": "origin/archive/dashboard-v3", "label": "V3" }
+  {
+    "slug": "v1",
+    "ref": "origin/archive/dashboard-v1",
+    "label": "V1"
+  },
+  {
+    "slug": "v2",
+    "ref": "origin/archive/dashboard-v2",
+    "label": "V2"
+  },
+  {
+    "slug": "v3",
+    "ref": "origin/archive/dashboard-v3",
+    "label": "V3"
+  },
+  {
+    "slug": "v4",
+    "ref": "origin/archive/dashboard-v4",
+    "label": "V4"
+  },
+  {
+    "slug": "v5",
+    "ref": "origin/archive/dashboard-v5",
+    "label": "V5"
+  }
 ]

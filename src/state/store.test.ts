@@ -8,7 +8,7 @@ import { diffFromDefault, sanitizeConfig, type AppState } from './store'
 const state = (over: Partial<AppState> = {}): AppState => ({
   params: defaultParams(), scenario: 1, lens: 'need', route: { kind: 'scenario', scenario: 1 }, past: [], future: [],
   config: createDefaultConfig(),
-  ui: { mode: 'client', editLayout: false, expanded: { detail: false, method: false }, panel: null, settingsTab: 'content', selectedWidget: null, toast: null },
+  ui: { mode: 'client', editLayout: false, expanded: { detail: false, method: false }, panel: null, settingsTab: 'content', selectedWidget: null, sidebar: true, toast: null },
   ...over,
 })
 

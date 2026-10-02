@@ -21,7 +21,9 @@ function needDrivers(): string[] {
   return needDriversCache
 }
 
-export function DriversWidget({ wc, env }: { wc: WidgetConfig; env: Env }) {
+export function DriversWidget({ wc, env, pinned }: { wc: WidgetConfig; env: Env; pinned?: boolean }) {
+  const [allLocal, setAllLocal] = useState(env.route.kind === 'global')
+  const allScenarios = pinned ? allLocal : !!wc.showAllScenarios
   const ui = useUI()
   const consultant = ui.mode === 'consultant'
   // liste par défaut (non personnalisée) : adaptée à la lentille ; sinon choix de l'utilisateur
@@ -48,8 +50,8 @@ export function DriversWidget({ wc, env }: { wc: WidgetConfig; env: Env }) {
             </div>
           )}
         </Popover> : <span className="muted small">{ids.length} hypothèse{ids.length > 1 ? 's' : ''}</span>}
-        {consultant && (
-          <label className="chk"><input type="checkbox" checked={!!wc.showAllScenarios} onChange={(e) => updateWidget(wc.id, { showAllScenarios: e.target.checked })} /> 3 scénarios</label>
+        {(consultant || pinned) && (
+          <label className="chk"><input type="checkbox" checked={allScenarios} onChange={(e) => (pinned ? setAllLocal(e.target.checked) : updateWidget(wc.id, { showAllScenarios: e.target.checked }))} /> 3 scénarios</label>
         )}
       </div>
       {!ids.length && <p className="empty small">Aucune hypothèse affichée. Utilisez « Afficher / masquer ».</p>}
@@ -57,10 +59,10 @@ export function DriversWidget({ wc, env }: { wc: WidgetConfig; env: Env }) {
         ? cats.map(({ c, ids: g }) => (
           <section key={c.id}>
             <h4 className="cat">{c.title}</h4>
-            {g.map((id) => <HypControl key={id} id={id} env={env} allScenarios={wc.showAllScenarios} consultant={consultant} />)}
+            {g.map((id) => <HypControl key={id} id={id} env={env} allScenarios={allScenarios} consultant={consultant} />)}
           </section>
         ))
-        : ids.map((id) => <HypControl key={id} id={id} env={env} allScenarios={wc.showAllScenarios} consultant={consultant} />)}
+        : ids.map((id) => <HypControl key={id} id={id} env={env} allScenarios={allScenarios} consultant={consultant} />)}
     </div>
   )
 }

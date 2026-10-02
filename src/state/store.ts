@@ -21,6 +21,8 @@ export interface UIState {
   panel: Panel
   settingsTab: string
   selectedWidget: string | null
+  /** panneau d'hypothèses épinglé à gauche */
+  sidebar: boolean
   toast: { id: number; msg: string; undo?: () => void } | null
 }
 
@@ -41,9 +43,24 @@ export interface AppState {
 const KEY = 'monaco-dashboard-v5'
 const HISTORY_MAX = 60
 
+const SIDEBAR_KEY = 'monaco-dashboard-sidebar'
+/** Ouvert par défaut sur grand écran ; le choix de l'utilisateur est mémorisé. */
+function readSidebar(): boolean {
+  try {
+    const v = localStorage.getItem(SIDEBAR_KEY)
+    if (v !== null) return v === '1'
+  } catch { /* noop */ }
+  return typeof window === 'undefined' ? true : window.innerWidth >= 1200
+}
+export const toggleSidebar = () => setState((s) => {
+  const sidebar = !s.ui.sidebar
+  try { localStorage.setItem(SIDEBAR_KEY, sidebar ? '1' : '0') } catch { /* noop */ }
+  return { ...s, ui: { ...s.ui, sidebar } }
+}, false)
+
 const freshUI = (): UIState => ({
   mode: 'client', editLayout: false, expanded: { detail: false, method: false },
-  panel: null, settingsTab: 'content', selectedWidget: null, toast: null,
+  panel: null, settingsTab: 'content', selectedWidget: null, sidebar: readSidebar(), toast: null,
 })
 
 /** Affichage par défaut du site : configuration enregistrée dans le dépôt (src/config/saved.json) si elle existe, sinon l'affichage d'origine. */
@@ -114,6 +131,10 @@ export function sanitizeConfig(x: unknown): DashboardConfig {
     format: { ...d.format, ...(c.format ?? {}) },
     labels: { ...(c.labels ?? {}) },
     kpis: { order: kpiOrder, visible: Array.isArray(c.kpis?.visible) ? c.kpis!.visible : d.kpis.visible },
+    actors: {
+      order: Array.isArray(c.actors?.order) ? c.actors!.order.filter((id) => typeof id === 'string') : null,
+      hidden: Array.isArray(c.actors?.hidden) ? c.actors!.hidden.filter((id) => typeof id === 'string') : [],
+    },
     hyps: { visible: Array.isArray(c.hyps?.visible) ? c.hyps!.visible.filter((id) => HYP_BY_ID[id]) : d.hyps.visible, notes: { ...(c.hyps?.notes ?? {}) } },
     pages,
   }
@@ -328,6 +349,23 @@ export const toggleHypVisible = (id: string) =>
   updateConfig((c) => ({ ...c, hyps: { ...c.hyps, visible: c.hyps.visible.includes(id) ? c.hyps.visible.filter((x) => x !== id) : [...c.hyps.visible, id] } }))
 export const setHypsVisible = (ids: string[]) => updateConfig((c) => ({ ...c, hyps: { ...c.hyps, visible: ids } }))
 
+export const setActorsAuto = () => updateConfig((c) => ({ ...c, actors: { ...c.actors, order: null } }))
+export const setActorsManual = (current: string[]) => updateConfig((c) => (c.actors.order ? c : { ...c, actors: { ...c.actors, order: current } }))
+export const toggleActorHidden = (id: string) =>
+  updateConfig((c) => ({ ...c, actors: { ...c.actors, hidden: c.actors.hidden.includes(id) ? c.actors.hidden.filter((x) => x !== id) : [...c.actors.hidden, id] } }))
+/** Déplace un acteur dans l'ordre manuel (l'ordre manuel part de l'ordre affiché `current`). */
+export function moveActor(id: string, dir: -1 | 1, current: string[]) {
+  updateConfig((c) => {
+    const o = [...(c.actors.order ?? current)]
+    for (const a of current) if (!o.includes(a)) o.push(a)
+    const i = o.indexOf(id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= o.length) return c
+    ;[o[i], o[j]] = [o[j], o[i]]
+    return { ...c, actors: { ...c.actors, order: o } }
+  })
+}
+
 export const toggleKpi = (id: string) =>
   updateConfig((c) => ({ ...c, kpis: { ...c.kpis, visible: c.kpis.visible.includes(id) ? c.kpis.visible.filter((x) => x !== id) : [...c.kpis.visible, id] } }))
 export function moveKpi(id: string, dir: -1 | 1) {
@@ -345,7 +383,7 @@ export function moveKpi(id: string, dir: -1 | 1) {
 /** Remet layout, couleurs, formats, libellés, visibilité et types de graphiques par défaut (hypothèses conservées). */
 export function resetDashboard() {
   setState((s) => ({ ...s, config: userDefaultConfig(), ui: { ...s.ui, selectedWidget: null, expanded: { detail: false, method: false } } }))
-  toast('Dashboard remis dans sa configuration par défaut')
+  toast('Affichage remis dans sa configuration par défaut')
 }
 export function resetAll() {
   setState((s) => ({ ...s, params: defaultParams(), lens: 'need', past: [], future: [], config: userDefaultConfig(), scenario: s.route.kind === 'scenario' ? s.route.scenario : 1, ui: { ...freshUI(), mode: s.ui.mode } }))
@@ -410,6 +448,7 @@ export function diffFromDefault(s: AppState): DiffSummary {
   }
   vis += (JSON.stringify([...c.kpis.visible].sort()) !== JSON.stringify([...d.kpis.visible].sort()) ? 1 : 0)
     + (JSON.stringify([...c.hyps.visible].sort()) !== JSON.stringify([...d.hyps.visible].sort()) ? 1 : 0)
+  vis += JSON.stringify(c.actors) !== JSON.stringify(d.actors) ? 1 : 0
   const metrics = Object.entries(c.theme.metrics).filter(([k, v]) => (d.theme.metrics as unknown as Record<string, number>)[k] !== v).length
   return {
     assumptions, layout,

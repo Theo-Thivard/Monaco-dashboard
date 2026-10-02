@@ -11,7 +11,7 @@ import type { DashboardConfig, PageConfig, WidgetConfig } from './types'
 /** Six leviers qui pèsent le plus sur la demande adressable (classement par sensibilité, scénarios Bas/Central/Haut). */
 export const DEFAULT_DRIVERS = ['adrPriv', 'adrFin', 'gIntPriv', 'iaPriv', 'adrIaPriv', 'wPriv']
 
-const METHOD_TEXT = `Le modèle de calcul est le classeur Excel lui-même : valeurs et formules sont lues à chaque lancement du dashboard, puis recalculées avec les hypothèses que vous modifiez ici. Modifier une valeur ou une formule dans l'Excel est donc repris automatiquement.
+const METHOD_TEXT = `Le modèle de calcul est le classeur Excel lui-même : valeurs et formules sont lues à chaque lancement du tableau de bord, puis recalculées avec les hypothèses que vous modifiez ici. Modifier une valeur ou une formule dans l'Excel est donc repris automatiquement.
 
 Pour chaque acteur (DSP, DENJS, APDP, DITN, CHPG, Monaco Telecom, finance, privé hors finance), l'Excel projette le besoin IT 2035 à partir de la baseline 2026, de la croissance des effectifs et de l'intensité numérique, puis d'une surcouche IA ; la demande adressable applique ensuite la part hébergeable à Monaco, séparément pour le socle et pour l'IA.
 
@@ -39,8 +39,7 @@ export const scenarioWidgets = (): WidgetConfig[] => [
   w({ id: 'headline', kind: 'headline', tier: 'client', visible: true }),
   w({ id: 'kpis', kind: 'kpis', tier: 'client', visible: true }),
 
-  w({ id: 'sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Hypothèses et trajectoire', subtitle: 'Modifiez une hypothèse : la cascade et la trajectoire se mettent à jour en direct' }),
-  w({ id: 'drivers', kind: 'drivers', tier: 'client', visible: true, title: 'Hypothèses clés' }),
+  w({ id: 'sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Cascade et trajectoire', subtitle: 'Modifiez les hypothèses dans le panneau de gauche : tout se met à jour en direct' }),
   w({ id: 'ch-bridge', kind: 'chart', tier: 'client', visible: true, datasetId: 'bridge', chartType: 'waterfall', legend: false }),
   w({ id: 'ch-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true }),
 
@@ -67,7 +66,7 @@ export const scenarioLayout = (): Layout[] => stack([
   [['headline', 0, 24, 5]],
   [['kpis', 0, 24, 4]],
   [['sec-levers', 0, 24, 2]],
-  [['drivers', 0, 9, 22], ['ch-bridge', 9, 15, 11], ['ch-trajectory', 9, 15, 11, 11]],
+  [['ch-bridge', 0, 12, 14], ['ch-trajectory', 12, 12, 14]],
   [['sec-why', 0, 24, 2]],
   [['ch-addrByBlock', 0, 12, 13], ['ch-scenarios', 12, 12, 13]],
   [['sec-detail', 0, 24, 2]],
@@ -78,7 +77,7 @@ export const scenarioLayout = (): Layout[] => stack([
   [['tx-method', 0, 9, 12], ['tb-assumptions', 9, 15, 22], ['tx-notes', 0, 9, 10, 12]],
 ])
 
-const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le dashboard s'adapte automatiquement : aucun calcul n'est écrit dans le dashboard.`
+const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le tableau de bord s'adapte automatiquement : aucun calcul n'est écrit dans le tableau de bord.`
 
 export const globalWidgets = (): WidgetConfig[] => [
   w({ id: 'g-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true, title: 'Évolution du besoin IT 2026 → 2035', subtitle: 'Trois scénarios (profil annuel interpolé entre 2026 et 2035)' }),
@@ -115,8 +114,7 @@ export const globalLayout = (): Layout[] => stack([
 export const actorWidgets = (): WidgetConfig[] => [
   w({ id: 'a-headline', kind: 'headline', tier: 'client', visible: true }),
   w({ id: 'a-kpis', kind: 'actorKpis', tier: 'client', visible: true }),
-  w({ id: 'a-sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Leviers de l\'acteur', subtitle: 'Les hypothèses qui font réellement varier cet acteur' }),
-  w({ id: 'a-drivers', kind: 'drivers', tier: 'client', visible: true, title: 'Hypothèses de l\'acteur', hypSource: 'actor' }),
+  w({ id: 'a-sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Cascade et trajectoire de l\'acteur', subtitle: 'Le panneau de gauche ne montre que les hypothèses qui font varier cet acteur' }),
   w({ id: 'a-bridge', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorBridge', chartType: 'waterfall', legend: false }),
   w({ id: 'a-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorTrajectory', chartType: 'line', legend: true }),
   w({ id: 'a-sec-scen', kind: 'section', tier: 'client', visible: true, title: 'Selon les scénarios', subtitle: 'La même analyse pour Bas, Central et Haut' }),
@@ -129,7 +127,7 @@ export const actorLayout = (): Layout[] => stack([
   [['a-headline', 0, 24, 5]],
   [['a-kpis', 0, 24, 4]],
   [['a-sec-levers', 0, 24, 2]],
-  [['a-drivers', 0, 9, 22], ['a-bridge', 9, 15, 11], ['a-trajectory', 9, 15, 11, 11]],
+  [['a-bridge', 0, 12, 14], ['a-trajectory', 12, 12, 14]],
   [['a-sec-scen', 0, 24, 2]],
   [['a-scenarios', 0, 24, 12]],
   [['a-sec-detail', 0, 24, 2]],
@@ -150,6 +148,7 @@ export const createDefaultConfig = (): DashboardConfig => ({
   format: defaultFormat(),
   labels: {},
   kpis: { order: defaultKpiOrder(), visible: defaultKpiVisible() },
+  actors: { order: null, hidden: [] },
   hyps: { visible: [...DEFAULT_DRIVERS], notes: {} },
   pages: { global: PAGE_DEFAULTS.global(), scenario: PAGE_DEFAULTS.scenario(), actor: PAGE_DEFAULTS.actor() },
 })

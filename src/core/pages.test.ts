@@ -120,3 +120,31 @@ describe('un seul modèle pour tous les scénarios et tous les acteurs', () => {
     expect(fmt('power', b.addressable, defaultFormat())).toMatch(/^\d+,\d{2} MW IT$/)
   })
 })
+
+describe('classement décroissant et préférences d\'acteurs', () => {
+  const nonIncreasing = (v: number[]) => v.every((x, i) => i === 0 || v[i - 1] >= x - 1e-12)
+  for (const lens of ['need', 'addressable'] as const) {
+    const snap = buildSnapshot(defaultParams(), 1, lens)
+    it(`graphiques triés du plus important au plus faible (${lens})`, () => {
+      expect(nonIncreasing(ds(snap, 'addrByBlock').series[0].values)).toBe(true)
+      expect(nonIncreasing(ds(snap, 'blockOverview').series[1].values)).toBe(true)
+      expect(nonIncreasing(ds(snap, 'detailTable').series[lens === 'need' ? 2 : 5].values)).toBe(true) // scénario central, selon la lentille
+      expect(nonIncreasing(ds(snap, 'actorsAddr').series[1].values)).toBe(true)
+      expect(nonIncreasing(ds(snap, 'spreadByActor').series[0].values)).toBe(true)
+      const stack = ds(snap, 'addrByBlockScenario')
+      expect(nonIncreasing(stack.series.map((s) => s.values[1]))).toBe(true)
+    })
+  }
+  it('acteurs masqués retirés, ordre manuel respecté, totaux du modèle inchangés', () => {
+    const snap = buildSnapshot(defaultParams(), 1, 'need')
+    const c = (actors: { order: string[] | null; hidden: string[] }) => ({ ...ctx(snap), actors })
+    const get = (a: { order: string[] | null; hidden: string[] }) => DATASETS.find((d) => d.id === 'actorsAddr')!.build(c(a))
+    const hidden = get({ order: null, hidden: ['DSP', 'CHPG'] })
+    expect(hidden.categories).toHaveLength(6)
+    expect(hidden.categoryIds).not.toContain('DSP')
+    close(hidden.series[1].total!, snap.results[1].total)
+    const manual = get({ order: ['CHPG', 'DSP'], hidden: [] })
+    expect(manual.categoryIds!.slice(0, 2)).toEqual(['CHPG', 'DSP'])
+    expect(manual.categoryIds).toHaveLength(8)
+  })
+})

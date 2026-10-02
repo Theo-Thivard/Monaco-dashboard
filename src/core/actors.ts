@@ -111,3 +111,18 @@ export function deadHyps(): string[] {
   return HYPS.filter((h) => !used.has(h.id)).map((h) => h.id)
 }
 export const isDeadHyp = (id: string) => deadHyps().includes(id)
+
+/** Réglage d'affichage des acteurs : ordre manuel (null = classement automatique décroissant) et acteurs masqués. */
+export interface ActorPrefs { order: string[] | null; hidden: string[] }
+export const defaultActorPrefs = (): ActorPrefs => ({ order: null, hidden: [] })
+
+/** Acteurs à afficher : masqués retirés ; ordre manuel s'il existe, sinon plus important d'abord (`value` décroissant). */
+export function arrangeActors(prefs: ActorPrefs | undefined, value: (id: Entity) => number): Entity[] {
+  const ids = ACTORS.map((a) => a.id).filter((id) => !prefs?.hidden.includes(id))
+  const order = prefs?.order
+  if (order) {
+    const pos = (id: string) => { const i = order.indexOf(id); return i < 0 ? order.length + ACTORS.findIndex((a) => a.id === id) : i }
+    return ids.sort((a, b) => pos(a) - pos(b))
+  }
+  return ids.sort((a, b) => value(b) - value(a))
+}
