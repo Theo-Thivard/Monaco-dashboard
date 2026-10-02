@@ -4,5 +4,11 @@
     "label": "V4 · 2eme affichage main",
     "base": "v4",
     "created": "2026-10-02"
+  },
+  {
+    "slug": "v4-plein-ecran",
+    "label": "V4 · plein ecran",
+    "base": "v4",
+    "created": "2026-10-02"
   }
 ]
