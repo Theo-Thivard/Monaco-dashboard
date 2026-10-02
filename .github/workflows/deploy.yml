@@ -21,23 +21,28 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: app/package-lock.json
       - uses: actions/configure-pages@v5
         with:
           enablement: true
       - run: npm ci
+        working-directory: app
       - run: npm test
+        working-directory: app
       - run: npm run build
+        working-directory: app
       # Anciennes versions (versions.json) : publiées sous /v1/, /v2/… sans jamais être supprimées
       # Les archives sont figées : leur construction est conservée d'une publication à l'autre (seules les versions modifiées sont reconstruites)
       - uses: actions/cache@v4
         with:
-          path: .build-cache
+          path: app/.build-cache
           key: archives-${{ github.sha }}
           restore-keys: archives-
       - run: BUILD_CACHE="$PWD/.build-cache" scripts/build-versions.sh dist /Monaco-dashboard
+        working-directory: app
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: app/dist
   deploy:
     needs: build
     runs-on: ubuntu-latest

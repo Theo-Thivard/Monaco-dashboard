@@ -3,8 +3,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // Fichier Excel du modèle : Monaco_Besoins_IT_v<N>.xlsx (version la plus élevée du dépôt)
+// (à la racine du dépôt, un niveau au-dessus de ce dossier ; ou ici pour les anciennes dispositions)
+const modelDir = ['..', '.'].find((d) => readdirSync(d).some((f) => /^Monaco_Besoins_IT_v\d+\.xlsx$/.test(f))) ?? '..'
 const modelFile =
-  readdirSync('.')
+  readdirSync(modelDir)
     .filter((f) => /^Monaco_Besoins_IT_v\d+\.xlsx$/.test(f))
     .sort((a, b) => Number(b.match(/v(\d+)/)![1]) - Number(a.match(/v(\d+)/)![1]))[0] ?? 'Monaco_Besoins_IT_v3.xlsx'
 

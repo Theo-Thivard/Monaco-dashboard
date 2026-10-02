@@ -22,13 +22,19 @@ Dashboard interactif construit à partir du classeur Excel [`Monaco_Besoins_IT_v
 **Mes affichages enregistrés** (copies d'une version avec une mise en page personnalisée, nommées « V6 · nom ») : ils sont listés dans le menu ⚙ › *Versions et affichages* du tableau de bord, avec toutes les versions ci-dessus.
 
 ## Mettre à jour le modèle
-Remplacez le fichier dans le dépôt (*Add file › Upload files*, **même nom** `Monaco_Besoins_IT_v3.xlsx` ; si vous créez `…_v4.xlsx`, le plus élevé est utilisé). Le dashboard reprend valeurs et formules au lancement suivant. Détails et limites : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Remplacez le fichier dans le dépôt (*Add file › Upload files*, **même nom** `Monaco_Besoins_IT_v3.xlsx` ; si vous créez `…_v4.xlsx`, le plus élevé est utilisé). Le dashboard reprend valeurs et formules au lancement suivant. Détails et limites : [app/docs/ARCHITECTURE.md](app/docs/ARCHITECTURE.md).
+
+## Organisation du dépôt
+- **`Monaco_Besoins_IT_v3.xlsx`** : votre modèle Excel (le seul fichier à modifier à la main).
+- **`app/`** : tout le code du tableau de bord, les affichages enregistrés (`app/variants/`) et la documentation technique.
+- **`.github/`** : la publication automatique du site.
 
 ## Pour les développeurs
 ```
+cd app
 npm install
 npm run dev     # http://localhost:5173/Monaco-dashboard/
 npm test
 npm run build
 ```
-Le déploiement (GitHub Pages) se fait à chaque fusion dans `main` ; les anciennes versions sont reconstruites depuis les branches `archive/dashboard-vN` listées dans [`versions.json`](versions.json). Architecture : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Le déploiement (GitHub Pages) se fait à chaque fusion dans `main` ; les anciennes versions sont reconstruites depuis les branches `archive/dashboard-vN` listées dans [`app/versions.json`](app/versions.json). Architecture : [app/docs/ARCHITECTURE.md](app/docs/ARCHITECTURE.md).

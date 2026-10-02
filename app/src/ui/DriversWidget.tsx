@@ -22,8 +22,8 @@ function needDrivers(): string[] {
 }
 
 export function DriversWidget({ wc, env, pinned }: { wc: WidgetConfig; env: Env; pinned?: boolean }) {
-  const [localMode, setLocalMode] = useState<HypMode>(env.route.kind === 'global' ? 'three' : 'one')
-  const mode: HypMode = pinned ? localMode : wc.hypMode ?? (wc.showAllScenarios ? 'three' : 'one')
+  const [localMode, setLocalMode] = useState<HypMode>(env.route.kind === 'global' ? 'three' : 'together')
+  const mode: HypMode = pinned ? localMode : wc.hypMode === 'three' || (!wc.hypMode && wc.showAllScenarios) ? 'three' : 'together'
   const setMode = (m: HypMode) => (pinned ? setLocalMode(m) : updateWidget(wc.id, { hypMode: m, showAllScenarios: undefined }))
   const ui = useUI()
   const consultant = ui.mode === 'consultant'
@@ -53,9 +53,9 @@ export function DriversWidget({ wc, env, pinned }: { wc: WidgetConfig; env: Env;
         </Popover> : <span className="muted small">{ids.length} hypothèse{ids.length > 1 ? 's' : ''}</span>}
         {(consultant || pinned) && (
           <div className="seg small mode-seg" role="radiogroup" aria-label="Scénarios modifiés">
-            {([['one', env.scenarioName(env.snap.scenario)], ['together', 'Les 3 ensemble'], ['three', '3 curseurs']] as [HypMode, string][]).map(([m, label]) => (
+            {([['together', 'Les 3 ensemble'], ['three', '3 curseurs']] as [HypMode, string][]).map(([m, label]) => (
               <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}
-                title={m === 'one' ? 'Modifier uniquement le scénario affiché' : m === 'together' ? 'Un seul curseur : les trois scénarios varient du même pourcentage' : 'Un curseur par scénario'}>{label}</button>
+                title={m === 'together' ? 'Un seul curseur (valeur du scénario Central) : les trois scénarios varient du même pourcentage' : 'Un curseur par scénario'}>{label}</button>
             ))}
           </div>
         )}

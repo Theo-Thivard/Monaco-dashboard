@@ -1,6 +1,6 @@
 // Enregistrement d'un affichage comme NOUVELLE publication du tableau de bord (« V6 · nom »), sans toucher à l'existante.
 // Appels directs à l'API GitHub depuis le navigateur avec un jeton personnel de l'utilisateur (jamais stocké dans le dépôt) :
-// branche → fichiers `variants/` → pull request → fusion. Le déploiement publie ensuite https://…/<slug>/.
+// branche → fichiers `app/variants/` → pull request → fusion. Le déploiement publie ensuite https://…/<slug>/.
 
 import type { DashboardConfig } from '../config/types'
 
@@ -66,7 +66,7 @@ export async function saveVariant(opts: { token: string; name: string; base: { s
   const now = opts.now ?? new Date()
 
   const ref = await call<{ object: { sha: string } }>(token, `/git/ref/heads/${BASE_BRANCH}`)
-  const idx = await call<{ sha: string; content: string }>(token, `/contents/variants/index.json?ref=${BASE_BRANCH}`).catch(() => null)
+  const idx = await call<{ sha: string; content: string }>(token, `/contents/app/variants/index.json?ref=${BASE_BRANCH}`).catch(() => null)
   const entries: VariantEntry[] = idx ? (JSON.parse(unb64(idx.content)) as VariantEntry[]) : []
   const slug = variantSlug(base.slug, name, entries.map((e) => e.slug))
   const label = `${base.label} · ${name}`
@@ -76,8 +76,8 @@ export async function saveVariant(opts: { token: string; name: string; base: { s
   await call(token, '/git/refs', { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: ref.object.sha }) })
   const put = (path: string, content: string, message: string, sha?: string) =>
     call(token, `/contents/${path}`, { method: 'PUT', body: JSON.stringify({ message, content: b64(content), branch, ...(sha ? { sha } : {}) }) })
-  await put(`variants/${slug}.json`, variantFileContent(config), `Affichage « ${label} »`)
-  await put('variants/index.json', JSON.stringify([...entries, entry], null, 2) + '\n', `Ajouter « ${label} » à la liste des affichages`, idx?.sha)
+  await put(`app/variants/${slug}.json`, variantFileContent(config), `Affichage « ${label} »`)
+  await put('app/variants/index.json', JSON.stringify([...entries, entry], null, 2) + '\n', `Ajouter « ${label} » à la liste des affichages`, idx?.sha)
 
   const pr = await call<{ number: number; html_url: string }>(token, '/pulls', {
     method: 'POST',

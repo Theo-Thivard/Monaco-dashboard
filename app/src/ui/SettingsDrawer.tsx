@@ -92,7 +92,7 @@ function ContentTab({ env }: { env: Env }) {
         }}>＋ Graphique</button>
       </div>
       <button className="wide" onClick={() => {
-        addWidget({ id: `hy-${Date.now().toString(36)}`, kind: 'drivers', tier: 'client', visible: true, title: 'Hypothèses', hypMode: getState().route.kind === 'global' ? 'three' : 'one' }, { w: 9, h: 22 })
+        addWidget({ id: `hy-${Date.now().toString(36)}`, kind: 'drivers', tier: 'client', visible: true, title: 'Hypothèses', hypMode: getState().route.kind === 'global' ? 'three' : 'together' }, { w: 9, h: 22 })
         toast('Bloc d\'hypothèses ajouté en bas de la page')
       }}>＋ Bloc d'hypothèses (curseurs)</button>
       <button className="wide" onClick={() => {

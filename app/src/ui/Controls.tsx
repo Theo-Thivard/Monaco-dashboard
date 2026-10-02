@@ -72,12 +72,13 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
 interface Props { id: string; env: Env; mode?: HypMode; consultant?: boolean }
 
 /** Contrôle d'une hypothèse : valeur, bornes, référence, impact sur le résultat, source. */
-export function HypControl({ id, env, mode = 'one', consultant }: Props) {
+export function HypControl({ id, env, mode = 'together', consultant }: Props) {
   const allScenarios = mode === 'three'
   const together = mode === 'together'
   const h = HYP_BY_ID[id]
   const { snap, f, tokens } = env
-  const s = snap.scenario
+  // « les 3 ensemble » : le curseur et l'encadré montrent la valeur du scénario Central ; les autres suivent proportionnellement
+  const s = together ? 1 : snap.scenario
   const [open, setOpen] = useState(false)
   const note = env.config.hyps.notes[id]
   const v = hypValue(snap.params, id, s)
@@ -94,7 +95,7 @@ export function HypControl({ id, env, mode = 'one', consultant }: Props) {
         <button className="hyp-name" onClick={() => setOpen(!open)} aria-expanded={open} title="Afficher la source et le contexte">
           {env.hypLabel(id)}{isDeadHyp(id) && <span className="dead" title="Sans effet dans l'Excel actuel"> ⚠</span>}<span className="chev">{open ? '▴' : '▾'}</span>
         </button>
-        {changed && <button className="reset" onClick={() => (h.single || mode === 'one' ? resetParam(id) : [0, 1, 2].forEach((k) => resetParam(id, k)))} title="Revenir à la valeur de l'Excel">↺</button>}
+        {changed && <button className="reset" onClick={() => (h.single ? resetParam(id) : [0, 1, 2].forEach((k) => resetParam(id, k)))} title="Revenir à la valeur de l'Excel">↺</button>}
       </div>
 
       {h.control === 'radio' ? (
@@ -106,7 +107,7 @@ export function HypControl({ id, env, mode = 'one', consultant }: Props) {
       ) : (
         <SliderRow h={h} idx={s} together={together && !h.single} />
       )}
-      {together && !h.single && h.control === 'slider' && <div className="hyp-together">Les 3 scénarios varient du même pourcentage</div>}
+      {together && !h.single && h.control === 'slider' && <div className="hyp-together">Valeur du Central · les autres scénarios varient dans les mêmes proportions</div>}
 
       {h.control === 'slider' && (
         <div className="hyp-meta">

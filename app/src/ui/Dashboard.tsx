@@ -8,6 +8,9 @@ import { WidgetFrame } from './WidgetFrame'
 
 const Grid = WidthProvider(GridLayout)
 
+/** Sous-divisions de la grille verticale : les hauteurs et positions peuvent être des demi-unités (2,5). */
+const K = 2
+
 function useNarrow(limit = 900) {
   const [narrow, setNarrow] = useState(() => window.innerWidth < limit)
   useEffect(() => {
@@ -53,15 +56,15 @@ export function Dashboard({ env }: { env: Env }) {
     <Grid
       className={'grid' + (edit ? ' editing' : '')}
       cols={24}
-      rowHeight={m.rowHeight}
-      margin={[m.gap, m.gap]}
+      rowHeight={(m.rowHeight + m.gap) / K}
+      margin={[m.gap, 0]}
       containerPadding={[0, 0]}
-      layout={layout}
+      layout={layout.map((l) => ({ ...l, y: Math.round(l.y * K), h: Math.max(1, Math.round(l.h * K)), minH: K }))}
       isDraggable={edit}
       isResizable={edit}
       draggableHandle=".drag-handle"
       draggableCancel=".wtools,.card-tools,input,select,textarea,button:not(.grip)"
-      onLayoutChange={(l) => { if (edit) setLayout(l) }}
+      onLayoutChange={(l) => { if (edit) setLayout(l.map((x) => ({ ...x, y: x.y / K, h: x.h / K }))) }}
       compactType="vertical"
       resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
       useCSSTransforms
