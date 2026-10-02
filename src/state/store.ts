@@ -39,8 +39,8 @@ export interface AppState {
 }
 
 // On ne stocke que les hypothèses que l'utilisateur a MODIFIÉES par rapport à l'Excel (les autres suivent l'Excel).
-// v5 : nouvelles mises en page (lentille « besoins générés ») ; les anciennes configurations ne sont pas reprises.
-const KEY = 'monaco-dashboard-v5'
+// v6 : repart à zéro (les anciennes configurations ne sont pas reprises) ; une configuration jamais modifiée n'est plus stockée, elle suit le défaut du site.
+const KEY = 'monaco-dashboard-v6'
 const HISTORY_MAX = 60
 
 const SIDEBAR_KEY = 'monaco-dashboard-sidebar'
@@ -164,7 +164,8 @@ function load(): AppState {
       base.params = applyOverrides(base.params, o.overrides)
       if (o.lens === 'need' || o.lens === 'addressable') base.lens = o.lens
       base.scenario = [0, 1, 2].includes(o.scenario) ? o.scenario : 1
-      base.config = sanitizeConfig(o.config)
+      // config absente = « jamais personnalisée » : on suit toujours l'affichage par défaut le plus récent du site
+      base.config = o.config ? sanitizeConfig(o.config) : userDefaultConfig()
     }
   } catch { /* stockage indisponible ou corrompu : on repart du défaut */ }
   const shared = readShared()
@@ -189,7 +190,7 @@ function persist() {
   clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ overrides: toOverrides(state.params), scenario: state.scenario, lens: state.lens, config: state.config }))
+      localStorage.setItem(KEY, JSON.stringify({ overrides: toOverrides(state.params), scenario: state.scenario, lens: state.lens, config: JSON.stringify(state.config) === JSON.stringify(userDefaultConfig()) ? null : state.config }))
     } catch { /* noop */ }
   }, 250)
 }
