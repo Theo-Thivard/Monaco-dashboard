@@ -17,7 +17,7 @@ const current = readJson<{ slug: string; label: string }>(`${registryRoot}/versi
 const archived = readJson<{ slug: string; label: string }[]>(`${registryRoot}/versions.json`, [])
 const variants = readJson<{ slug: string; label: string }[]>(`${registryRoot}/variants/index.json`, [])
 const registry = [
-  { slug: current.slug, label: `${current.label} (actuelle)`, path: '', kind: 'version' },
+  { slug: current.slug, label: current.label, path: '', kind: 'version' },
   ...variants.map((v) => ({ slug: v.slug, label: v.label, path: `${v.slug}/`, kind: 'affichage' })),
   ...archived.slice().reverse().map((v) => ({ slug: v.slug, label: v.label, path: `${v.slug}/`, kind: 'version' })),
 ]

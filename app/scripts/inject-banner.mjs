@@ -9,7 +9,7 @@ const current = read('version.json', { slug: 'v4', label: 'V4' })
 const archived = read('versions.json', [])
 const variants = read('variants/index.json', [])
 const entries = [
-  { label: `${current.label} (actuelle)`, path: '' },
+  { label: current.label, path: '' },
   ...variants.map((v) => ({ label: v.label, path: `${v.slug}/` })),
   ...archived.slice().reverse().map((v) => ({ label: v.label, path: `${v.slug}/` })),
 ]

@@ -1,11 +1,12 @@
 import { CHART_LABELS, compatibleCharts, DATASET_BY_ID, type ChartType } from '../core/datasets'
-import type { HypMode, LensOverride, SeriesStyle, WidgetConfig } from '../config/types'
+import type { EntityText, HypMode, LensOverride, SeriesStyle, WidgetConfig } from '../config/types'
 import { headlineTokens } from '../core/headlineText'
 import { KPI_BY_ID } from '../core/kpis'
 import { LABEL_DEFS } from './labels'
-import { resolveWidget } from '../config/resolve'
+import { entityKey, resolveEntityText, resolveWidget } from '../config/resolve'
+import { useState } from 'react'
 import { LENS_LABEL } from '../core/lens'
-import { patchUI, removeWidget, updateWidgetLens, setLabel, updateLayoutItem, updateWidget } from '../state/store'
+import { patchUI, removeWidget, updateWidgetEntity, updateWidgetLens, setLabel, updateLayoutItem, updateWidget } from '../state/store'
 import { useDataset, type Env } from './env'
 import { ColorField, Drawer, Field, NumberInput } from './fields'
 import { prepareDataset } from './prepare'
@@ -46,14 +47,16 @@ function SeriesList({ wc, env }: { wc: WidgetConfig; env: Env }) {
 }
 
 /** Message clé : texte généré (par défaut) ou texte libre avec jetons vivants. */
-function HeadlineEditor({ wc, env }: { wc: WidgetConfig; env: Env }) {
+function HeadlineEditor({ wc, env, entity, onPatch, onReset }: { wc: WidgetConfig; env: Env; entity: boolean; onPatch: (p: NonNullable<WidgetConfig['headline']>) => void; onReset: () => void }) {
   const route = env.route
   const tokens = headlineTokens(env.snap, env.f, env.scenarioName, route.kind === 'actor' ? { id: route.actor, name: env.actorLabel(route.actor) } : undefined)
   const h = wc.headline ?? {}
+  // textes communs : les champs vides sont retirés ; textes propres à un scénario / acteur : un champ vide = texte généré
   const patch = (p: Partial<NonNullable<WidgetConfig['headline']>>) => {
+    if (entity) return onPatch(p)
     const next = { ...h, ...p }
     for (const k of Object.keys(next) as (keyof typeof next)[]) if (!next[k]) delete next[k]
-    updateWidget(wc.id, { headline: Object.keys(next).length ? next : undefined })
+    onPatch(next)
   }
   return (
     <>
@@ -64,7 +67,7 @@ function HeadlineEditor({ wc, env }: { wc: WidgetConfig; env: Env }) {
       <Field label="Surtitre"><input type="text" value={h.kicker ?? ''} placeholder="ex. Vue d'ensemble" onChange={(e) => patch({ kicker: e.target.value })} /></Field>
       <Field label="Titre"><textarea rows={4} value={h.title ?? ''} placeholder="ex. Le besoin atteint **{central}** en 2035…" onChange={(e) => patch({ title: e.target.value })} /></Field>
       <Field label="Puces (une par ligne)"><textarea rows={6} value={h.bullets ?? ''} placeholder={'ex. De {2026} en 2026 à {haut} dans le scénario haut'} onChange={(e) => patch({ bullets: e.target.value })} /></Field>
-      {wc.headline && <button className="link" onClick={() => updateWidget(wc.id, { headline: undefined })}>Revenir au texte généré</button>}
+      {wc.headline && <button className="link" onClick={onReset}>Revenir au texte généré</button>}
       <h4>Chiffres disponibles</h4>
       <div className="token-list">
         {tokens.map((t) => <div key={t.key} className="token-row"><code>{`{${t.key}}`}</code><span>{t.label}</span><b>{t.value}</b></div>)}
@@ -98,6 +101,18 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
   const li = env.config.pages[env.route.kind].layout.find((l) => l.i === wc.id)
   const set = (p: Partial<WidgetConfig>) => updateWidget(wc.id, p)
+  // textes : propres au scénario / à l'acteur affiché par défaut ; « tous » = textes communs (les saisies propres à une page sont alors retirées)
+  const ekey = entityKey(env.route)
+  const [shared, setShared] = useState(false)
+  const rw = resolveEntityText(wc, shared ? null : ekey)
+  const setText = (p: EntityText) => {
+    if (ekey && !shared) return updateWidgetEntity(wc.id, ekey, p)
+    const keys = Object.keys(p) as (keyof EntityText)[]
+    const entityText = wc.entityText
+      ? Object.fromEntries(Object.entries(wc.entityText).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([f]) => !keys.includes(f as keyof EntityText)))]))
+      : undefined
+    updateWidget(wc.id, { ...p, ...(entityText ? { entityText } : {}) })
+  }
   const eff = resolveWidget(wc, env.snap.lens)
   const setL = (p: LensOverride) => updateWidgetLens(wc.id, env.snap.lens, p)
   const ok = ds ? compatibleCharts(ds) : []
@@ -108,12 +123,22 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
   }
   return (
     <Drawer title="Réglages du bloc" onClose={() => patchUI({ panel: null, selectedWidget: null })}>
-      {wc.kind === 'headline' && <HeadlineEditor wc={wc} env={env} />}
+      {ekey && (
+        <>
+          <p className="drawer-help">Textes de <b>{env.route.kind === 'scenario' ? `Scénario ${env.scenarioName(env.route.scenario)}` : env.route.kind === 'actor' ? env.actorLabel(env.route.actor) : ''}</b> : ce qui est saisi ici ne concerne que cette page.</p>
+          <label className="inline"><input type="checkbox" checked={shared} onChange={(e) => setShared(e.target.checked)} /> Modifier le texte de tous les {env.route.kind === 'scenario' ? 'scénarios' : 'acteurs'}</label>
+        </>
+      )}
+      {wc.kind === 'headline' && (
+        <HeadlineEditor wc={rw} env={env} entity={!!ekey && !shared}
+          onPatch={(p) => (ekey && !shared ? updateWidgetEntity(wc.id, ekey, { headline: p }) : setText({ headline: Object.keys(p).length ? p : undefined }))}
+          onReset={() => (ekey && !shared ? updateWidgetEntity(wc.id, ekey, { headline: { kicker: '', title: '', bullets: '' } }) : setText({ headline: undefined }))} />
+      )}
       <LabelFields wc={wc} env={env} />
-      {wc.kind !== 'headline' && <Field label="Titre"><input type="text" value={widgetTitle(wc)} onChange={(e) => set({ title: e.target.value })} /></Field>}
-      {wc.kind !== 'headline' && <Field label="Sous-titre"><input type="text" value={widgetSubtitle(wc)} onChange={(e) => set({ subtitle: e.target.value })} /></Field>}
-      {wc.kind === 'text' && <Field label="Contenu"><textarea rows={9} value={wc.text ?? ''} onChange={(e) => set({ text: e.target.value })} /></Field>}
-      {wc.kind !== 'section' && wc.kind !== 'headline' && <Field label="Note de bas de carte" hint="Annotation ou précision méthodologique affichée sous le widget"><textarea rows={2} value={wc.note ?? ''} onChange={(e) => set({ note: e.target.value || undefined })} /></Field>}
+      {wc.kind !== 'headline' && <Field label="Titre"><input type="text" value={widgetTitle(rw)} onChange={(e) => setText({ title: e.target.value })} /></Field>}
+      {wc.kind !== 'headline' && <Field label="Sous-titre"><input type="text" value={widgetSubtitle(rw)} onChange={(e) => setText({ subtitle: e.target.value })} /></Field>}
+      {wc.kind === 'text' && <Field label="Contenu"><textarea rows={9} value={rw.text ?? ''} onChange={(e) => setText({ text: e.target.value })} /></Field>}
+      {wc.kind !== 'section' && wc.kind !== 'headline' && <Field label="Note de bas de carte" hint="Annotation ou précision méthodologique affichée sous le widget"><textarea rows={2} value={rw.note ?? ''} onChange={(e) => setText({ note: e.target.value || undefined })} /></Field>}
 
       {wc.kind === 'chart' && ds && (
         <>

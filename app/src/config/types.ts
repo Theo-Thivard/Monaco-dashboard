@@ -17,6 +17,9 @@ export interface SeriesStyle { name?: string; color?: string; hidden?: boolean }
 /** Réglages de graphique propres à une lecture (Besoins générés / adressables) : échelles, type, légende, séries… */
 export type LensOverride = Partial<Pick<WidgetConfig, 'chartType' | 'legend' | 'decimals' | 'axisMin' | 'axisMax' | 'series' | 'seriesOrder'>>
 
+/** Textes propres à un scénario (« scenario:0 ») ou à un acteur (« actor:MT ») : ils l'emportent sur les textes communs de la page. */
+export type EntityText = Partial<Pick<WidgetConfig, 'title' | 'subtitle' | 'note' | 'text' | 'headline'>>
+
 export interface WidgetConfig {
   id: string
   kind: WidgetKind
@@ -33,6 +36,8 @@ export interface WidgetConfig {
   /** bornes de l'axe des valeurs (unité affichée) ; vide = automatique */
   axisMin?: number
   axisMax?: number
+  /** textes propres à chaque scénario / acteur */
+  entityText?: Record<string, EntityText>
   /** réglages propres à chaque lecture : ils l'emportent sur les réglages ci-dessus */
   lensOverrides?: Partial<Record<Lens, LensOverride>>
   series?: Record<string, SeriesStyle>

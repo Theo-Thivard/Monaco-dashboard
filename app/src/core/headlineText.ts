@@ -27,9 +27,14 @@ export function headlineTokens(snap: Snapshot, f: FormatSettings, scen: (i: numb
     { key: 'hausse_central', label: `Hausse du besoin ${scen(1)}`, value: rise(mid) },
     { key: 'hausse_haut', label: `Hausse du besoin ${scen(2)}`, value: rise(hi) },
     { key: 'actif', label: 'Scénario affiché · 2035', value: power(v(act)) },
+    { key: 'hausse', label: 'Hausse du besoin, scénario affiché (sans signe)', value: fmt('pct', pick(act).base ? pick(act).total / pick(act).base - 1 : 0, f, { decimals: 0 }) },
+    { key: 'taux', label: 'Taux adressable, scénario affiché', value: fmt('pct', pick(act).total ? pick(act).addressable / pick(act).total : 0, f) },
     { key: 'scenario', label: 'Nom du scénario affiché', value: scen(snap.scenario) },
   ]
-  if (actor) out.push({ key: 'acteur', label: 'Nom de l\'acteur', value: actor.name })
+  if (actor) {
+    out.push({ key: 'acteur', label: 'Nom de l\'acteur', value: actor.name })
+    out.push({ key: 'poids', label: 'Poids de l\'acteur dans le total, scénario affiché', value: fmt('pct', lensValue(act, snap.lens) ? v(act) / lensValue(act, snap.lens) : 0, f) })
+  }
   return out
 }
 

@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Layout } from 'react-grid-layout'
 import { createDefaultConfig, PAGE_DEFAULTS } from '../config/defaults'
-import type { DashboardConfig, LensOverride, PageConfig, WidgetConfig } from '../config/types'
+import type { DashboardConfig, EntityText, LensOverride, PageConfig, WidgetConfig } from '../config/types'
 import { defaultParams, HYP_BY_ID, HYPS, hypValue, type Params } from '../core/hypotheses'
 import type { Lens } from '../core/lens'
 import { getSnapshot, type Snapshot } from '../core/snapshot'
@@ -341,6 +341,16 @@ export const updateWidgetLens = (id: string, lens: Lens, patch: LensOverride) =>
       return { ...w, lensOverrides: Object.keys(all).length ? all : undefined }
     }),
   }))
+/** Modifie les textes d'un bloc pour UN scénario / UN acteur seulement. */
+export const updateWidgetEntity = (id: string, key: string, patch: EntityText) =>
+  updateOwnPage(id, (p) => ({
+    ...p,
+    widgets: p.widgets.map((w) => {
+      if (w.id !== id) return w
+      const cur = { ...w.entityText?.[key], ...patch, ...(patch.headline ? { headline: { ...w.entityText?.[key]?.headline, ...patch.headline } } : {}) }
+      return { ...w, entityText: { ...w.entityText, [key]: cur } }
+    }),
+  }))
 export const setLabel = (key: string, value: string, def: string) =>
   updateConfig((c) => {
     const labels = { ...c.labels }
@@ -497,7 +507,7 @@ export function diffFromDefault(s: AppState): DiffSummary {
       + dp.widgets.filter((w) => !cp.widgets.some((x) => x.id === w.id)).length
     charts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.chartType !== w.chartType || JSON.stringify(o.series ?? null) !== JSON.stringify(w.series ?? null) || o.legend !== w.legend || JSON.stringify(o.lensOverrides ?? null) !== JSON.stringify(w.lensOverrides ?? null)) }).length
     bg += cp.widgets.filter((w) => w.bg || w.fg).length
-    texts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.title !== w.title || o.subtitle !== w.subtitle || o.note !== w.note || o.text !== w.text) }).length
+    texts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.title !== w.title || o.subtitle !== w.subtitle || o.note !== w.note || o.text !== w.text || JSON.stringify(o.entityText ?? null) !== JSON.stringify(w.entityText ?? null)) }).length
   }
   vis += (JSON.stringify([...c.kpis.visible].sort()) !== JSON.stringify([...d.kpis.visible].sort()) ? 1 : 0)
     + (JSON.stringify([...c.hyps.visible].sort()) !== JSON.stringify([...d.hyps.visible].sort()) ? 1 : 0)
