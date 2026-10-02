@@ -5,7 +5,7 @@ import { defaultFormat, displayedNumber, fmt } from './format'
 import { deadHyps } from './actors'
 import { defaultParams, HYPS, hypValue, withValue, type Params } from './hypotheses'
 import { buildHeadline } from './insights'
-import { KPI_DEFS, kpiDelta, kpiValue } from './kpis'
+import { KPI_DEFS, kpiValue, kpisForLens } from './kpis'
 import { buildSnapshot } from './snapshot'
 
 const ctx = (snap: ReturnType<typeof buildSnapshot>) => ({
@@ -31,9 +31,8 @@ const cases: [string, Params, number][] = [
   ...[1, 2, 3, 4, 5, 6].map((i): [string, Params, number] => [`aléatoire ${i}`, randomParams(i), i % 3]),
 ]
 
-describe.each(cases)('cohérence : %s', (_n, params, s) => {
-  const ref = defaultParams()
-  const snap = buildSnapshot(params, ref, s)
+describe.each(cases)('cohérence (lentille adressable) : %s', (_n, params, s) => {
+  const snap = buildSnapshot(params, s, 'addressable')
   const d = ds(snap)
   const a = snap.active
 
@@ -72,15 +71,6 @@ describe.each(cases)('cohérence : %s', (_n, params, s) => {
     close(sum(v.slice(a, b)), v[b]) // base + écarts = besoin 2035
     close(v[b] + sum(v.slice(b + 1, c)), v[c]) // besoin + écarts = adressable
   })
-  it('« ce qui a changé » : référence + Σ impacts + effets croisés = actuel', () => {
-    const v = d.whatChanged.series[0].values
-    if (!v.length) { expect(snap.changes.rows.length).toBe(0); return }
-    const st = d.whatChanged.steps!
-    let run = 0
-    v.forEach((x, i) => { run = st[i] === 'total' ? x : run + x })
-    close(run, a.addressable)
-    close(v[0] + sum(v.slice(1, -1)), v[v.length - 1])
-  })
   it('sensibilité : recalcul direct', () => {
     for (const row of snap.sensitivity.slice(0, 5)) {
       close(computeScenario(withValue(params, row.id, s, row.lowVal), s).addressable - a.addressable, row.low)
@@ -108,30 +98,49 @@ describe.each(cases)('cohérence : %s', (_n, params, s) => {
   })
 })
 
-describe('référence', () => {
-  it('sans modification : aucun écart, KPI à plat', () => {
-    const snap = buildSnapshot(defaultParams(), defaultParams(), 1)
-    expect(snap.changes.rows).toHaveLength(0)
-    close(snap.changes.residual, 0)
-    for (const def of KPI_DEFS) {
-      const d = kpiDelta(def, kpiValue(def, snap.active, snap.results), kpiValue(def, snap.activeRef, snap.refResults))
-      expect(d.direction).toBe('flat')
+describe.each(cases)('cohérence (lentille besoins générés, livrable 2) : %s', (_n, params, s) => {
+  const snap = buildSnapshot(params, s, 'need')
+  const d = ds(snap)
+  const a = snap.active
+  const k = (id: string) => kpiValue(KPI_DEFS.find((x) => x.id === id)!, a, snap.results)
+
+  it('trajectoire, scénarios, cascade et détail = besoin du modèle', () => {
+    close(k('need'), d.trajectory.series[s].values[9])
+    close(k('need'), d.scenarios.series[1].values[s])
+    expect(d.scenarios.series).toHaveLength(2) // pas de série adressable
+    close(k('need'), sum(d.trajectoryBlocks.series.map((x) => x.values[9])))
+    close(k('need'), sum(d.addrByBlockScenario.series.map((x) => x.values[s])))
+    close(k('need'), sum(d.socleAi.series.map((x) => x.values[s])))
+    close(k('need'), sum(d.addrByBlock.series[0].values))
+    close(k('need'), sum(d.blockOverview.series[1].values))
+    expect(d.detailTable.series).toHaveLength(4) // 2026 + besoin des 3 scénarios
+  })
+  it('la cascade s\'arrête au besoin 2035 et somme exactement', () => {
+    const v = d.bridge.series[0].values
+    const st = d.bridge.steps!
+    expect(st[st.length - 1]).toBe('total')
+    expect(st.filter((t) => t === 'total')).toHaveLength(2)
+    close(sum(v.slice(0, -1)), v[v.length - 1])
+    close(v[v.length - 1], k('need'))
+  })
+  it('sensibilité : recalcul direct sur le besoin', () => {
+    for (const row of snap.sensitivity.slice(0, 5)) {
+      close(computeScenario(withValue(params, row.id, s, row.lowVal), s).total - a.total, row.low)
+      close(computeScenario(withValue(params, row.id, s, row.highVal), s).total - a.total, row.high)
     }
   })
+  it('indicateurs de la lentille : aucun écart de référence, aucun NaN', () => {
+    for (const id of kpisForLens(KPI_DEFS.map((x) => x.id), 'need')) expect(Number.isFinite(k(id))).toBe(true)
+    expect(JSON.stringify(buildHeadline(snap, defaultFormat(), 'x', (i) => i))).not.toMatch(/NaN|undefined|Infinity/)
+    for (const def of DATASETS) expect(compatibleCharts(d[def.id])).toContain(def.defaultChart)
+  })
+})
+
+describe('précision', () => {
   it('l\'impact du changement d\'une hypothèse n\'est jamais arrondi', () => {
     const base = computeScenario(defaultParams(), 1).addressable
     const p = withValue(defaultParams(), 'adrFin', 1, defaultParams().adrFin[1] + 1e-7)
     expect(computeScenario(p, 1).addressable).toBeGreaterThan(base)
-  })
-  it('plusieurs changements : écart exact', () => {
-    let p = withValue(defaultParams(), 'adrFin', 1, 0.5)
-    p = withValue(p, 'iaFin', 1, 0.4)
-    p = withValue(p, 'wFin', 1, 100)
-    const snap = buildSnapshot(p, defaultParams(), 1)
-    const tot = snap.active.addressable - snap.activeRef.addressable
-    close(tot, snap.changes.total)
-    close(tot, sum(snap.changes.rows.map((r) => r.delta)) + snap.changes.residual)
-    expect(snap.changes.rows.length).toBe(3)
   })
 })
 

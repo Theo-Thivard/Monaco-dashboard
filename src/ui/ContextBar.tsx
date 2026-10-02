@@ -1,5 +1,6 @@
 import { ACTOR_BY_ID } from '../core/actors'
-import { diffFromDefault, patchUI, resetReference, setScenario, useAppState } from '../state/store'
+import { LENSES, LENS_HINT, LENS_LABEL } from '../core/lens'
+import { diffFromDefault, patchUI, resetAssumptions, setLens, setScenario, useAppState } from '../state/store'
 import type { Env } from './env'
 
 /** Contexte courant : où suis-je ? (+ sélecteur de scénario sur une page acteur). */
@@ -25,6 +26,13 @@ export function ContextBar({ env }: { env: Env }) {
         {description && <p className="ctx-desc">{description}</p>}
       </div>
       <div className="ctx-right">
+        <div className="ctx-seg" role="tablist" aria-label="Lecture des résultats">
+          <div className="seg lens">
+            {LENSES.map((l) => (
+              <button key={l} role="tab" aria-selected={snap.lens === l} className={snap.lens === l ? 'on' : ''} onClick={() => setLens(l)} title={LENS_HINT[l]}>{LENS_LABEL[l]}</button>
+            ))}
+          </div>
+        </div>
         {route.kind === 'actor' && (
           <div className="ctx-seg" role="radiogroup" aria-label="Scénario">
             <span className="ctx-label">Scénario</span>
@@ -38,7 +46,7 @@ export function ContextBar({ env }: { env: Env }) {
         {route.kind !== 'global' && n > 0 && (
           <span className="ctx-mod">
             <button className="link" onClick={() => patchUI({ panel: 'assumptions' })}>{n} hypothèse{n > 1 ? 's' : ''} modifiée{n > 1 ? 's' : ''}</button>
-            <button className="link muted" onClick={resetReference} title="Revenir à la référence d'origine">↺</button>
+            <button className="link muted" onClick={resetAssumptions} title="Revenir aux valeurs de l'Excel">↺</button>
           </span>
         )}
       </div>

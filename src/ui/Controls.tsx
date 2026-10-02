@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fmtHyp } from '../core/format'
 import { isDeadHyp } from '../core/actors'
-import { HYP_BY_ID, hypValue, type HypDef } from '../core/hypotheses'
+import { defaultParams, HYP_BY_ID, hypValue, type HypDef } from '../core/hypotheses'
 import { resetParam, setLabel, setParam, updateConfig, useAppState } from '../state/store'
 import { useEnv, type Env } from './env'
 
@@ -37,17 +37,16 @@ function NumField({ h, value, onCommit }: { h: HypDef; value: number; onCommit: 
 
 export function SliderRow({ h, idx, color, name }: { h: HypDef; idx: number; color?: string; name?: string }) {
   const params = useAppState((s) => s.params)
-  const reference = useAppState((s) => s.reference)
   const i = h.single ? 0 : idx
   const v = params[h.id][i]
-  const ref = reference[h.id][i]
+  const ref = defaultParams()[h.id][i]
   const at = (x: number) => `calc(8px + (100% - 16px) * ${(x - h.min) / (h.max - h.min)})`
   return (
     <div className="slider-row">
       {name && <span className="scen-dot" style={{ background: color }} title={name}>{name}</span>}
       <div className="range" style={{ ['--pct' as string]: at(v) }}>
         <input type="range" min={h.min} max={h.max} step={h.step} value={v} aria-label={h.label} onChange={(e) => setParam(h.id, parseFloat(e.target.value), idx)} />
-        <span className="ref-tick" style={{ left: at(ref) }} title="Référence" />
+        <span className="ref-tick" style={{ left: at(ref) }} title="Valeur de l'Excel" />
       </div>
       <NumField h={h} value={v} onCommit={(x) => setParam(h.id, x, idx)} />
     </div>
@@ -78,8 +77,9 @@ export function HypControl({ id, env, allScenarios, consultant }: Props) {
   const [open, setOpen] = useState(false)
   const note = env.config.hyps.notes[id]
   const v = hypValue(snap.params, id, s)
-  const ref = hypValue(snap.reference, id, s)
-  const changed = h.single ? snap.params[id][0] !== snap.reference[id][0] : snap.params[id].some((x, k) => x !== snap.reference[id][k])
+  const orig = defaultParams()
+  const ref = hypValue(orig, id, s)
+  const changed = snap.params[id].some((x, k) => x !== orig[id][k])
   const sens = snap.sensitivity.find((r) => r.id === id)
   const delta = v - ref
   const scenColors = [tokens.scen0, tokens.scen1, tokens.scen2]
@@ -90,7 +90,7 @@ export function HypControl({ id, env, allScenarios, consultant }: Props) {
         <button className="hyp-name" onClick={() => setOpen(!open)} aria-expanded={open} title="Afficher la source et le contexte">
           {env.hypLabel(id)}{isDeadHyp(id) && <span className="dead" title="Sans effet dans l'Excel actuel"> ⚠</span>}<span className="chev">{open ? '▴' : '▾'}</span>
         </button>
-        {changed && <button className="reset" onClick={() => (h.single || !allScenarios ? resetParam(id) : [0, 1, 2].forEach((k) => resetParam(id, k)))} title="Revenir à la référence">↺</button>}
+        {changed && <button className="reset" onClick={() => (h.single || !allScenarios ? resetParam(id) : [0, 1, 2].forEach((k) => resetParam(id, k)))} title="Revenir à la valeur de l'Excel">↺</button>}
       </div>
 
       {h.control === 'radio' ? (
@@ -106,10 +106,10 @@ export function HypControl({ id, env, allScenarios, consultant }: Props) {
       {h.control === 'slider' && (
         <div className="hyp-meta">
           <span>{changed && !(allScenarios && !h.single) && delta !== 0
-            ? <b className="chg">{h.unit === 'pct' ? env.fmt('pts', delta, { sign: true, decimals: 1 }) : (delta > 0 ? '+' : '−') + fmtHyp(h.unit, Math.abs(delta), f)} vs réf. ({fmtHyp(h.unit, ref, f)})</b>
-            : <>Réf. {fmtHyp(h.unit, ref, f)}</>}</span>
+            ? <b className="chg">{h.unit === 'pct' ? env.fmt('pts', delta, { sign: true, decimals: 1 }) : (delta > 0 ? '+' : '−') + fmtHyp(h.unit, Math.abs(delta), f)} vs Excel ({fmtHyp(h.unit, ref, f)})</b>
+            : <>Excel : {fmtHyp(h.unit, ref, f)}</>}</span>
           {sens && !allScenarios && (
-            <span className="impact" title={`Effet sur la demande adressable 2035 quand l'hypothèse passe de ${env.fmtHypValue(id, sens.lowVal)} à ${env.fmtHypValue(id, sens.highVal)}`}>
+            <span className="impact" title={`Effet sur le résultat 2035 quand l'hypothèse passe de ${env.fmtHypValue(id, sens.lowVal)} à ${env.fmtHypValue(id, sens.highVal)}`}>
               {env.fmt('power', sens.low, { sign: true, unit: false })} / {env.fmt('power', sens.high, { sign: true })}
             </span>
           )}

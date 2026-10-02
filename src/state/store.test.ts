@@ -1,47 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { createDefaultConfig } from '../config/defaults'
 import { computeScenario } from '../core/engine'
-import { defaultParams, HYPS, withValue, type Params } from '../core/hypotheses'
+import { defaultParams, withValue } from '../core/hypotheses'
 import { buildSnapshot } from '../core/snapshot'
 import { diffFromDefault, sanitizeConfig, type AppState } from './store'
 
 const state = (over: Partial<AppState> = {}): AppState => ({
-  params: defaultParams(), reference: defaultParams(), scenario: 1, route: { kind: 'scenario', scenario: 1 }, past: [], future: [],
+  params: defaultParams(), scenario: 1, lens: 'need', route: { kind: 'scenario', scenario: 1 }, past: [], future: [],
   config: createDefaultConfig(),
   ui: { mode: 'client', editLayout: false, expanded: { detail: false, method: false }, panel: null, settingsTab: 'content', selectedWidget: null, toast: null },
   ...over,
-})
-
-describe('attribution des écarts (valeurs de Shapley)', () => {
-  const sum = (a: number[]) => a.reduce((x, y) => x + y, 0)
-  it('efficacité : la somme des impacts = écart total, sans résidu', () => {
-    let p: Params = defaultParams()
-    p = withValue(p, 'adrFin', 1, 0.5)
-    p = withValue(p, 'iaFin', 1, 0.4)
-    p = withValue(p, 'gIntFin', 1, 0.07)
-    p = withValue(p, 'wFin', 1, 100)
-    const snap = buildSnapshot(p, defaultParams(), 1)
-    expect(snap.changes.rows).toHaveLength(4)
-    expect(Math.abs(sum(snap.changes.rows.map((r) => r.delta)) - snap.changes.total)).toBeLessThan(1e-9)
-    expect(snap.changes.residual).toBe(0)
-  })
-  it('interaction répartie équitablement entre deux hypothèses qui ne produisent un effet qu\'ensemble', () => {
-    // intensité et IA du privé hors finance : avec IA = 0 l'intensité reste sans effet sur l'IA ; ici on teste la symétrie sur une paire à effet croisé
-    const ref = withValue(withValue(defaultParams(), 'iaFin', 1, 0), 'adrIaFin', 1, 0)
-    const p = withValue(withValue(ref, 'iaFin', 1, 0.2), 'adrIaFin', 1, 0.5)
-    const snap = buildSnapshot(p, ref, 1)
-    const [a, b] = snap.changes.rows
-    expect(a.delta).toBeGreaterThan(0)
-    expect(Math.abs(a.delta - b.delta)).toBeLessThan(1e-9 * Math.max(1, a.delta))
-    expect(Math.abs(a.delta + b.delta - snap.changes.total)).toBeLessThan(1e-9)
-  })
-  it('au-delà de 10 changements : effets isolés + résidu, écart total exact', () => {
-    let p: Params = defaultParams()
-    for (const h of HYPS.filter((x) => x.control === 'slider' && !x.single).slice(0, 12)) p = withValue(p, h.id, 1, Math.min(h.max, h.def[1] + (h.max - h.min) * 0.05))
-    const snap = buildSnapshot(p, defaultParams(), 1)
-    expect(snap.changes.rows.length).toBeGreaterThan(10)
-    expect(Math.abs(sum(snap.changes.rows.map((r) => r.delta)) + snap.changes.residual - snap.changes.total)).toBeLessThan(1e-9)
-  })
 })
 
 describe('configuration', () => {
@@ -82,7 +50,7 @@ describe('performance', () => {
       p = withValue(p, 'iaFin', 1, 0.2 + (i % 7) / 100)
       p = withValue(p, 'gIntFin', 1, 0.04 + (i % 5) / 1000)
       p = withValue(p, 'wFin', 1, 80 + (i % 9))
-      buildSnapshot(p, defaultParams(), 1)
+      buildSnapshot(p, 1, 'need')
     }
     const per = (performance.now() - t0) / 50
     expect(per).toBeLessThan(25)

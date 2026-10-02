@@ -5,7 +5,7 @@ import { computeScenario } from './engine'
 import { defaultFormat, fmt } from './format'
 import { defaultParams, withValue, type Params } from './hypotheses'
 import { buildActorHeadline, buildGlobalHeadline } from './insights'
-import { ACTOR_KPI_DEFS, kpiDelta } from './kpis'
+import { ACTOR_KPI_DEFS } from './kpis'
 import { buildSnapshot } from './snapshot'
 
 const close = (a: number, b: number, tol = 1e-9) => expect(Math.abs(a - b)).toBeLessThanOrEqual(tol * Math.max(1, Math.abs(a), Math.abs(b)))
@@ -19,7 +19,7 @@ const modified: Params = withValue(withValue(withValue(defaultParams(), 'adrFin'
 
 describe.each([['défaut', defaultParams()], ['modifié', modified]])('pages Globale / Acteurs – cohérence (%s)', (_n, params) => {
   for (const s of [0, 1, 2]) {
-    const snap = buildSnapshot(params, defaultParams(), s)
+    const snap = buildSnapshot(params, s, 'addressable')
 
     it(`Globale : acteurs et écarts cohérents avec le modèle (scénario ${s})`, () => {
       const a = ds(snap, 'actorsAddr')
@@ -55,9 +55,6 @@ describe.each([['défaut', defaultParams()], ['modifié', modified]])('pages Glo
         close(k('need'), ds(snap, 'actorScenarios', actor.id).series[1].values[s])
         close(k('weight'), b.addressable / snap.active.addressable)
         close(k('rate'), b.addressable / b.total)
-        // deltas à plat quand la référence = actuel
-        const same = buildSnapshot(params, params, s)
-        for (const def of ACTOR_KPI_DEFS) expect(kpiDelta(def, def.compute({ b, r: snap.active }), def.compute({ b: actorBlock(same.activeRef, actor.id), r: same.activeRef })).direction).toBe('flat')
       })
       it(`sensibilité de l'acteur : uniquement ses hypothèses (scénario ${s})`, () => {
         const sen = ds(snap, 'actorSensitivity', actor.id)
@@ -80,7 +77,7 @@ describe.each([['défaut', defaultParams()], ['modifié', modified]])('pages Glo
   }
 
   it('chaque jeu de données « acteur » est vide sans acteur et son type par défaut est compatible', () => {
-    const snap = buildSnapshot(params, defaultParams(), 1)
+    const snap = buildSnapshot(params, 1, 'addressable')
     for (const id of ['actorBridge', 'actorScenarios', 'actorTrajectory', 'actorSensitivity', 'actorTable']) {
       expect(ds(snap, id).empty).toBeTruthy()
       const def = DATASETS.find((d) => d.id === id)!
@@ -90,14 +87,35 @@ describe.each([['défaut', defaultParams()], ['modifié', modified]])('pages Glo
   })
 })
 
+describe('page acteur – lentille besoins générés', () => {
+  const snap = buildSnapshot(defaultParams(), 1, 'need')
+  it.each(ACTORS)('$id : cascade jusqu\'au besoin 2035, KPI = bloc du moteur', (actor) => {
+    const b = actorBlock(snap.active, actor.id)
+    const bd = ds(snap, 'actorBridge', actor.id)
+    const v = bd.series[0].values
+    expect(bd.steps!.filter((t) => t === 'total')).toHaveLength(2)
+    close(v[v.length - 1], b.total); close(sum(v.slice(0, -1)), b.total)
+    expect(ds(snap, 'actorScenarios', actor.id).series).toHaveLength(2)
+    close(ds(snap, 'actorTrajectory', actor.id).series[1].values[9], b.total)
+    expect(JSON.stringify(buildActorHeadline(snap, actor, defaultFormat(), 'x', actor.label, (id) => id))).not.toMatch(/NaN|undefined|Infinity/)
+    const w = ACTOR_KPI_DEFS.find((k) => k.id === 'weightNeed')!.compute({ b, r: snap.active })
+    close(w, b.total / snap.active.total)
+  })
+  it('besoin : la somme des acteurs = besoin total', () => {
+    for (const r of snap.results) close(sum(ACTORS.map((x) => actorBlock(r, x.id).total)), r.total)
+    const a = ds(snap, 'actorsAddr')
+    snap.results.forEach((r, i) => close(sum(a.series[i].values), r.total))
+  })
+})
+
 describe('un seul modèle pour tous les scénarios et tous les acteurs', () => {
   it('une page Scénario n\'est qu\'un choix d\'index : mêmes formules, hypothèses différentes', () => {
     const p = defaultParams()
-    const snap = buildSnapshot(p, p, 0)
+    const snap = buildSnapshot(p, 0, 'addressable')
     for (const s of [0, 1, 2]) expect(snap.results[s]).toEqual(computeScenario(p, s))
   })
   it('l\'affichage d\'un acteur passe par le formateur central', () => {
-    const snap = buildSnapshot(defaultParams(), defaultParams(), 1)
+    const snap = buildSnapshot(defaultParams(), 1, 'addressable')
     const b = actorBlock(snap.active, 'DSP')
     expect(fmt('power', b.addressable, defaultFormat())).toMatch(/^\d+,\d{2} MW IT$/)
   })
