@@ -23,5 +23,10 @@
     "slug": "v5",
     "ref": "origin/archive/dashboard-v5",
     "label": "V5"
+  },
+  {
+    "slug": "v6",
+    "ref": "origin/archive/dashboard-v6",
+    "label": "V6"
   }
 ]
