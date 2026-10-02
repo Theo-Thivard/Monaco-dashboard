@@ -16,9 +16,6 @@ Dashboard interactif construit à partir du classeur Excel [`Monaco_Besoins_IT_v
 - **Toutes les versions à partir de la V2** lisent l'Excel (valeurs et formules) à chaque ouverture : modifier le classeur dans GitHub met le dashboard à jour, sans rien d'autre à faire. La V1, figée, a le modèle de l'ancien Excel v2 en dur et **ne reflète pas** la formule CHPG modifiée depuis.
 - Toutes les versions restent en ligne à leur propre adresse ; un nouveau dashboard n'efface jamais les précédents.
 
-## Mes affichages enregistrés
-Copies d'une version avec une mise en page personnalisée (« V4 · nom »). Cliquez sur un nom pour l'ouvrir directement. Cette liste se met à jour **toute seule** quelques minutes après chaque enregistrement ; ils sont aussi dans le menu ⚙ › *Versions et affichages* du tableau de bord (vue consultant).
-
 ## Mettre à jour le modèle
 Remplacez le fichier dans le dépôt (*Add file › Upload files*, **même nom** `Monaco_Besoins_IT_v3.xlsx` ; si vous créez `…_v4.xlsx`, le plus élevé est utilisé). Le dashboard reprend valeurs et formules au lancement suivant. Détails et limites : [app/docs/ARCHITECTURE.md](app/docs/ARCHITECTURE.md).
 
@@ -26,13 +23,3 @@ Remplacez le fichier dans le dépôt (*Add file › Upload files*, **même nom**
 - **`Monaco_Besoins_IT_v3.xlsx`** : votre modèle Excel (le seul fichier à modifier à la main).
 - **`app/`** : tout le code du tableau de bord, les affichages enregistrés (`app/variants/`) et la documentation technique.
 - **`.github/`** : la publication automatique du site.
-
-## Pour les développeurs
-```
-cd app
-npm install
-npm run dev     # http://localhost:5173/Monaco-dashboard/
-npm test
-npm run build
-```
-Le déploiement (GitHub Pages) se fait à chaque fusion dans `main` ; les anciennes versions sont reconstruites depuis les branches `archive/dashboard-vN` listées dans [`app/versions.json`](app/versions.json). Architecture : [app/docs/ARCHITECTURE.md](app/docs/ARCHITECTURE.md).
