@@ -1,6 +1,9 @@
 import { CHART_LABELS, compatibleCharts, DATASET_BY_ID, type ChartType } from '../core/datasets'
 import type { SeriesStyle, WidgetConfig } from '../config/types'
-import { patchUI, removeWidget, updateLayoutItem, updateWidget } from '../state/store'
+import { headlineTokens } from '../core/headlineText'
+import { KPI_BY_ID } from '../core/kpis'
+import { LABEL_DEFS } from './labels'
+import { patchUI, removeWidget, setLabel, updateLayoutItem, updateWidget } from '../state/store'
 import { useDataset, type Env } from './env'
 import { ColorField, Drawer, Field, NumberInput } from './fields'
 import { prepareDataset } from './prepare'
@@ -38,6 +41,48 @@ function SeriesList({ wc, env }: { wc: WidgetConfig; env: Env }) {
   )
 }
 
+/** Message clé : texte généré (par défaut) ou texte libre avec jetons vivants. */
+function HeadlineEditor({ wc, env }: { wc: WidgetConfig; env: Env }) {
+  const route = env.route
+  const tokens = headlineTokens(env.snap, env.f, env.scenarioName, route.kind === 'actor' ? { id: route.actor, name: env.actorLabel(route.actor) } : undefined)
+  const h = wc.headline ?? {}
+  const patch = (p: Partial<NonNullable<WidgetConfig['headline']>>) => {
+    const next = { ...h, ...p }
+    for (const k of Object.keys(next) as (keyof typeof next)[]) if (!next[k]) delete next[k]
+    updateWidget(wc.id, { headline: Object.keys(next).length ? next : undefined })
+  }
+  return (
+    <>
+      <h4>Message clé</h4>
+      <p className="drawer-help">Laissez un champ vide pour garder le texte généré. Écrivez librement : <code>{'{central}'}</code>, <code>{'{bas}'}</code>… sont remplacés par les chiffres du modèle (ils suivent les hypothèses), <code>**mot**</code> met en gras.</p>
+      <Field label="Surtitre"><input type="text" value={h.kicker ?? ''} placeholder="ex. Vue d'ensemble" onChange={(e) => patch({ kicker: e.target.value })} /></Field>
+      <Field label="Titre"><textarea rows={4} value={h.title ?? ''} placeholder="ex. Le besoin atteint **{central}** en 2035…" onChange={(e) => patch({ title: e.target.value })} /></Field>
+      <Field label="Puces (une par ligne)"><textarea rows={6} value={h.bullets ?? ''} placeholder={'ex. De {2026} en 2026 à {haut} dans le scénario haut'} onChange={(e) => patch({ bullets: e.target.value })} /></Field>
+      {wc.headline && <button className="link" onClick={() => updateWidget(wc.id, { headline: undefined })}>Revenir au texte généré</button>}
+      <h4>Chiffres disponibles</h4>
+      <div className="token-list">
+        {tokens.map((t) => <div key={t.key} className="token-row"><code>{`{${t.key}}`}</code><span>{t.label}</span><b>{t.value}</b></div>)}
+      </div>
+    </>
+  )
+}
+
+/** Textes (libellés) propres à certains blocs : panneau des scénarios, indicateurs. */
+function LabelFields({ wc, env }: { wc: WidgetConfig; env: Env }) {
+  const rows: { key: string; def: string; title: string }[] =
+    wc.kind === 'scenarioCards' ? LABEL_DEFS.filter((l) => l.group === 'Panneau des trois scénarios').map((l) => ({ ...l, title: l.def }))
+    : wc.kind === 'actorKpis' ? LABEL_DEFS.filter((l) => l.group === 'Indicateurs d\'acteur').map((l) => ({ ...l, title: l.def }))
+    : wc.kind === 'kpis' ? env.config.kpis.order.filter((id) => KPI_BY_ID[id]?.lenses.includes(env.snap.lens)).map((id) => ({ key: `kpi:${id}`, def: KPI_BY_ID[id].label, title: KPI_BY_ID[id].label }))
+    : []
+  if (!rows.length) return null
+  return (
+    <>
+      <h4>Textes du bloc</h4>
+      {rows.map((l) => <Field key={l.key} label={l.title}><input type="text" value={env.label(l.key, l.def)} onChange={(e) => setLabel(l.key, e.target.value, l.def)} /></Field>)}
+    </>
+  )
+}
+
 export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const ds = useDataset(wc.datasetId, env)
   const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
@@ -49,9 +94,11 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
     <Field label={label}><NumberInput value={li?.[k]} min={min} max={max} onChange={(v) => v !== undefined && updateLayoutItem(wc.id, { [k]: Math.round(v) })} /></Field>
   )
   return (
-    <Drawer title="Réglages du widget" onClose={() => patchUI({ panel: null, selectedWidget: null })}>
-      <Field label="Titre"><input type="text" value={widgetTitle(wc)} onChange={(e) => set({ title: e.target.value })} /></Field>
-      <Field label="Sous-titre"><input type="text" value={widgetSubtitle(wc)} onChange={(e) => set({ subtitle: e.target.value })} /></Field>
+    <Drawer title="Réglages du bloc" onClose={() => patchUI({ panel: null, selectedWidget: null })}>
+      {wc.kind === 'headline' && <HeadlineEditor wc={wc} env={env} />}
+      <LabelFields wc={wc} env={env} />
+      {wc.kind !== 'headline' && <Field label="Titre"><input type="text" value={widgetTitle(wc)} onChange={(e) => set({ title: e.target.value })} /></Field>}
+      {wc.kind !== 'headline' && <Field label="Sous-titre"><input type="text" value={widgetSubtitle(wc)} onChange={(e) => set({ subtitle: e.target.value })} /></Field>}
       {wc.kind === 'text' && <Field label="Contenu"><textarea rows={9} value={wc.text ?? ''} onChange={(e) => set({ text: e.target.value })} /></Field>}
       {wc.kind !== 'section' && wc.kind !== 'headline' && <Field label="Note de bas de carte" hint="Annotation ou précision méthodologique affichée sous le widget"><textarea rows={2} value={wc.note ?? ''} onChange={(e) => set({ note: e.target.value || undefined })} /></Field>}
 

@@ -50,7 +50,7 @@ function ChartTypeSelect({ wc, env }: { wc: WidgetConfig; env: Env }) {
 
 function Body({ wc, env }: { wc: WidgetConfig; env: Env }): ReactNode {
   switch (wc.kind) {
-    case 'headline': return <Headline env={env} />
+    case 'headline': return <Headline env={env} wc={wc} />
     case 'kpis': return <KpiStrip env={env} />
     case 'scenarioCards': return <ScenarioCards env={env} />
     case 'actorKpis': return <ActorKpis env={env} />
@@ -86,10 +86,15 @@ function WidgetFrameBase({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const selected = edit && ui.selectedWidget === wc.id
   const bare = BARE.has(wc.kind)
   const style = { background: wc.bg, color: wc.fg } as React.CSSProperties
+  const consultant = ui.mode === 'consultant'
+  /** vue consultant : crayon discret pour modifier les textes du bloc sans passer par la mise en page */
+  const textEdit = consultant && !edit && (
+    <button className="wedit" title="Modifier les textes de ce bloc" aria-label="Modifier les textes de ce bloc" onClick={() => patchUI({ selectedWidget: wc.id, panel: 'widget' })}>✎</button>
+  )
   const tools = edit && (
     <span className="wtools" onMouseDown={(e) => e.stopPropagation()}>
-      <button title="Réglages du widget" onClick={() => patchUI({ selectedWidget: wc.id, panel: 'widget' })}>⚙</button>
-      <button title="Masquer ce widget" onClick={() => updateWidget(wc.id, { visible: false })}>✕</button>
+      <button title="Réglages du bloc" onClick={() => patchUI({ selectedWidget: wc.id, panel: 'widget' })}>⚙</button>
+      <button title="Masquer ce bloc" onClick={() => updateWidget(wc.id, { visible: false })}>✕</button>
     </span>
   )
 
@@ -98,7 +103,7 @@ function WidgetFrameBase({ wc, env }: { wc: WidgetConfig; env: Env }) {
       <div className={'wframe section-frame' + (selected ? ' selected' : '')} data-widget={wc.id} style={style} onMouseDown={() => edit && patchUI({ selectedWidget: wc.id })}>
         {edit && <span className="grip drag-handle" title="Déplacer">⠿</span>}
         <SectionHeader wc={wc} expanded={wc.collapse ? ui.expanded[wc.collapse] : true} />
-        {tools}
+        {tools}{textEdit}
       </div>
     )
   }
@@ -107,7 +112,7 @@ function WidgetFrameBase({ wc, env }: { wc: WidgetConfig; env: Env }) {
       <div className={'wframe bare' + (selected ? ' selected' : '')} data-widget={wc.id} style={style} onMouseDown={() => edit && patchUI({ selectedWidget: wc.id })}>
         {edit && <span className="grip drag-handle" title="Déplacer">⠿</span>}
         <Body wc={wc} env={env} />
-        {tools}
+        {tools}{textEdit}
       </div>
     )
   }
@@ -121,6 +126,7 @@ function WidgetFrameBase({ wc, env }: { wc: WidgetConfig; env: Env }) {
           {sub && <p>{sub}</p>}
         </div>
         <div className="card-tools" onMouseDown={(e) => e.stopPropagation()}>
+          {textEdit}
           {ui.mode === 'consultant' && wc.kind === 'chart' && !edit && <ChartTypeSelect wc={wc} env={env} />}
           {tools}
         </div>

@@ -1,7 +1,25 @@
+import { ACTORS } from '../core/actors'
+import { ACTOR_KPI_DEFS } from '../core/kpis'
+import { LENS_HINT, LENS_LABEL } from '../core/lens'
 import { OUTPUT_GROUPS } from '../core/engine'
 
 /** Libellés personnalisables et leur valeur par défaut. */
 export const LABEL_DEFS: { group: string; key: string; def: string }[] = [
+  { group: 'Navigation et en-têtes', key: 'nav:global', def: 'Globale' },
+  { group: 'Navigation et en-têtes', key: 'nav:scenario', def: 'Scénario' },
+  { group: 'Navigation et en-têtes', key: 'nav:actors', def: 'Acteurs' },
+  { group: 'Navigation et en-têtes', key: 'lens:need', def: LENS_LABEL.need },
+  { group: 'Navigation et en-têtes', key: 'lens:addressable', def: LENS_LABEL.addressable },
+  { group: 'Navigation et en-têtes', key: 'lens:needHint', def: LENS_HINT.need },
+  { group: 'Navigation et en-têtes', key: 'lens:addressableHint', def: LENS_HINT.addressable },
+  { group: 'Navigation et en-têtes', key: 'ctx:global', def: 'Vue d\'ensemble des trois scénarios' },
+  { group: 'Panneau des trois scénarios', key: 'scenpanel:need', def: 'Besoin IT généré à Monaco en 2035' },
+  { group: 'Panneau des trois scénarios', key: 'scenpanel:addr', def: 'Demande adressable à Monaco en 2035' },
+  { group: 'Panneau des trois scénarios', key: 'scenpanel:go', def: 'Détail →' },
+  { group: 'Panneau des trois scénarios', key: 'scenpanel:since', def: 'd\'ici 2035' },
+  ...ACTOR_KPI_DEFS.map((k) => ({ group: 'Indicateurs d\'acteur', key: `actorkpi:${k.id}`, def: k.label })),
+  ...ACTORS.map((a) => ({ group: 'Descriptions des acteurs', key: `actor:desc:${a.id}`, def: a.description })),
+  ...ACTORS.map((a) => ({ group: 'Noms des acteurs', key: `actor:${a.id}`, def: a.label })),
   ...['Bas', 'Central', 'Haut'].map((d, i) => ({ group: 'Scénarios', key: `scenario:${i}`, def: d })),
   ...OUTPUT_GROUPS.map((g) => ({ group: 'Blocs', key: `block:${g.id}`, def: g.label })),
   { group: 'Séries', key: 'series:base', def: 'Besoin 2026' },

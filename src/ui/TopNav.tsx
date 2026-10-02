@@ -81,15 +81,15 @@ export function TopNav({ env }: { env: Env }) {
         <button className={'nav-icon side-toggle' + (ui.sidebar ? ' open' : '')} onClick={toggleSidebar} aria-pressed={ui.sidebar} aria-label="Panneau d'hypothèses" title={ui.sidebar ? 'Masquer les hypothèses' : 'Afficher les hypothèses'}>☰</button>
         <button className="brand" onClick={() => navigate({ kind: 'global' })} title="Retour à la vue globale">{env.config.brand}</button>
         <div className="nav-items">
-          <button className={'nav-item' + (route.kind === 'global' ? ' active' : '')} aria-current={route.kind === 'global' ? 'page' : undefined} onClick={() => navigate({ kind: 'global' })}>Globale</button>
+          <button className={'nav-item' + (route.kind === 'global' ? ' active' : '')} aria-current={route.kind === 'global' ? 'page' : undefined} onClick={() => navigate({ kind: 'global' })}>{env.label('nav:global', 'Globale')}</button>
           <NavDropdown
-            label="Scénario" menuTitle="SCÉNARIO" width={340}
+            label={env.label('nav:scenario', 'Scénario')} menuTitle="SCÉNARIO" width={340}
             active={route.kind === 'scenario'} value={env.scenarioName(snap.scenario)} valueColor={scenColors[snap.scenario]}
             groups={scenarioGroups} selectedId={route.kind === 'scenario' ? String(route.scenario) : undefined}
             onSelect={(id) => navigate({ kind: 'scenario', scenario: Number(id) })}
           />
           <NavDropdown
-            label="Acteurs" menuTitle="ACTEURS" width={380}
+            label={env.label('nav:actors', 'Acteurs')} menuTitle="ACTEURS" width={380}
             active={route.kind === 'actor'} value={route.kind === 'actor' ? env.actorLabel(route.actor, true) : undefined}
             groups={actorGroups} selectedId={route.kind === 'actor' ? route.actor : undefined}
             onSelect={(id) => navigate({ kind: 'actor', actor: id as never })}

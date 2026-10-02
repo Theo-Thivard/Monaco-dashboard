@@ -353,3 +353,13 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 .boot { min-height: 100vh; display: grid; place-items: center; font-family: system-ui, sans-serif; color: #44505f; background: #f3f4f6; padding: 24px; }
 .boot-card { max-width: 720px; background: #fff; border: 1px solid #e1e5ea; border-radius: 8px; padding: 28px 32px; }
 .boot h1 { font-size: 1.15rem; margin: 0 0 10px; color: #0b2545; } .boot li { margin: 6px 0; } .boot code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; }
+
+.token-list { display: grid; gap: 4px; font-size: 0.86rem; }
+.token-row { display: grid; grid-template-columns: 8.5rem 1fr auto; gap: 8px; align-items: baseline; }
+.token-row code { color: var(--c-accent); }
+
+.wedit { position: absolute; top: 6px; right: 6px; z-index: 5; opacity: 0; transition: opacity .15s; border: 1px solid var(--c-border); background: var(--c-surface); color: var(--c-textMuted); border-radius: 4px; width: 26px; height: 26px; font-size: 0.9rem; }
+.card-tools .wedit { position: static; width: auto; opacity: 0; }
+.wframe:hover .wedit, .wedit:focus-visible { opacity: 1; }
+@media (hover: none) { .wedit { opacity: 1; } }
+@media print { .wedit { display: none; } }
