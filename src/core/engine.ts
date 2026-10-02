@@ -1,48 +1,37 @@
-// Réécriture TypeScript du modèle Excel « Monaco_Besoins_IT_v2.xlsx »
-// (onglets 1_Inputs&Hyp -> 2_Calculs -> 3_Output). Les numéros de lignes
-// mentionnés correspondent à l'onglet 1_Inputs&Hyp.
+// Moteur de calcul : lit les résultats du classeur Excel (recalculé avec les hypothèses courantes).
+// Aucune formule n'est écrite ici : tout vient de l'Excel (voir model.ts). Ce fichier met en forme les résultats
+// (blocs, totaux, décomposition des écarts) et fournit le profil annuel interpolé 2026 → 2035.
 
-import { hypValue, type Params } from './hypotheses'
+import type { Params } from './hypotheses'
+import { ENTITIES, getModel, numberAt, overridesFor, zeroed, type Entity, type Model } from './model'
+import type { Run } from './xl/workbook'
 
+export { ENTITIES }
+export type { Entity }
 export const SCENARIOS = ['Bas', 'Central', 'Haut'] as const
 export const HORIZON = 9 // 2026 -> 2035
 
 export type ScenarioIdx = 0 | 1 | 2
 
-// ---------------------------------------------------------------- baseline
-export type Entity = 'DSP' | 'DENJS' | 'APDP' | 'DITN' | 'CHPG' | 'MT' | 'FIN' | 'PRIV'
-export const ENTITIES: Entity[] = ['DSP', 'DENJS', 'APDP', 'DITN', 'CHPG', 'MT', 'FIN', 'PRIV']
 export const ENTITY_LABEL: Record<Entity, string> = {
   DSP: 'DSP', DENJS: 'DENJS', APDP: 'APDP', DITN: 'DITN', CHPG: 'CHPG',
   MT: 'Monaco Telecom', FIN: 'Finance', PRIV: 'Privé hors finance',
 }
 
-// Constantes d'entrée (section A de 1_Inputs&Hyp, non pilotées par curseur)
-const AGENTS_DSP = 628
-const BASE_KW = { DSP: 80, DENJS: 10, APDP: 10, DITN: 80, CHPG: 80, MT: 160 }
-const SALARIES_FIN = 4534
-const SALARIES_PRIV = 55920
-
-const val = hypValue
-
 export interface BlockResult {
   id: Entity
   label: string
-  base: number // kW baseline 2026
-  nonMetier: number
-  metier: number
-  fAct: number
-  fInt: number
-  fMetier: number
-  need: number // besoin hors IA (kW)
-  needAct: number // besoin hors IA sans croissance d'intensité (pour la décomposition)
+  base: number // kW baseline 2026 (Excel)
+  need: number // besoin hors IA 2035 (kW)
   ia: number // besoin IA (kW)
-  total: number // besoin total (kW)
-  adrShare: number
-  adrIaShare: number
-  addressable: number // demande adressable (kW) = addrBase + addrIa
-  addrBase: number // part adressable du besoin hors IA (kW)
-  addrIa: number // part adressable de la surcouche IA (kW)
+  total: number // besoin total 2035 (kW)
+  /** part du besoin total non expliquée par « hors IA + IA » (0 tant que l'Excel additionne simplement les deux) */
+  other: number
+  adrShare: number // part adressable du socle (Excel)
+  adrIaShare: number // part adressable de l'IA (Excel)
+  addressable: number // demande adressable (kW, Excel)
+  addrBase: number // part de la demande adressable hors IA (kW)
+  addrIa: number // part de la demande adressable liée à l'IA (kW)
   dAct: number // effet effectifs / activité / métier sur le besoin (kW)
   dInt: number // effet intensité numérique (kW)
 }
@@ -55,6 +44,7 @@ export interface ScenarioResult {
   need: number
   ia: number
   total: number
+  other: number
   addressable: number
   addrBase: number
   addrIa: number
@@ -64,81 +54,91 @@ export interface ScenarioResult {
   growth: number
 }
 
-export function baseline(p: Params): Record<Entity, { metier: number; nonMetier: number }> {
-  const dspNonMetier = (AGENTS_DSP * val(p, 'wPub', 0)) / 1000
-  return {
-    DSP: { metier: BASE_KW.DSP - dspNonMetier, nonMetier: dspNonMetier },
-    DENJS: { metier: 0, nonMetier: BASE_KW.DENJS },
-    APDP: { metier: 0, nonMetier: BASE_KW.APDP },
-    DITN: { metier: 0, nonMetier: BASE_KW.DITN },
-    CHPG: { metier: BASE_KW.CHPG, nonMetier: 0 },
-    MT: { metier: 0, nonMetier: BASE_KW.MT },
-    FIN: { metier: 0, nonMetier: (SALARIES_FIN * val(p, 'wFin', 0)) / 1000 },
-    PRIV: { metier: 0, nonMetier: (SALARIES_PRIV * val(p, 'wPriv', 0)) / 1000 },
+/** Définit une propriété calculée à la demande (une seule fois). */
+function lazy<T extends object, K extends string>(o: T, key: K, f: () => number) {
+  let cache: number | undefined
+  Object.defineProperty(o, key, { enumerable: true, configurable: true, get: () => (cache ??= f()) })
+}
+
+class ModelRun {
+  readonly main: Run
+  private cfInt?: Run
+  private cfAi?: Run
+  private cache: (ScenarioResult | undefined)[] = [undefined, undefined, undefined]
+  constructor(readonly m: Model, readonly p: Params) {
+    this.main = m.wb.evaluate(overridesFor(m, p))
+  }
+  /** Résultat d'un scénario, calculé à la demande (les évaluations de sensibilité n'ont besoin que d'un scénario). */
+  result(s: number): ScenarioResult { return (this.cache[s] ??= this.read(s)) }
+  private intRun() { return (this.cfInt ??= this.m.wb.evaluate(zeroed(this.m, this.p, 'intensity'))) }
+  private aiRun() { return (this.cfAi ??= this.m.wb.evaluate(zeroed(this.m, this.p, 'ai'))) }
+
+  private read(s: number): ScenarioResult {
+    const { m } = this
+    const map = m.scenarios[s]
+    const n = (g: number, run: Run = this.main) => numberAt(run, g, m)
+    const blocks: BlockResult[] = ENTITIES.map((id) => {
+      const c = map.blocks[id]
+      const need = n(c.need), ia = n(c.ia), total = n(c.total)
+      const b = { id, label: ENTITY_LABEL[id], base: n(c.base), need, ia, total, other: total - need - ia, adrShare: n(c.adrShare), adrIaShare: n(c.adrIaShare), addressable: n(c.addressable) } as BlockResult
+      // décomposition par scénarios contrefactuels : IA = 0 ; intensité numérique = 0
+      lazy(b, 'addrBase', () => n(c.addressable, this.aiRun()))
+      lazy(b, 'addrIa', () => b.addressable - b.addrBase)
+      lazy(b, 'dInt', () => need - n(c.need, this.intRun()))
+      lazy(b, 'dAct', () => need - b.dInt - b.base)
+      return b
+    })
+    const sum = (f: (b: BlockResult) => number) => blocks.reduce((a, b) => a + f(b), 0)
+    const t = map.totals
+    const base = t?.base !== undefined ? n(t.base) : sum((b) => b.base)
+    const need = t?.need !== undefined ? n(t.need) : sum((b) => b.need)
+    const ia = t?.ia !== undefined ? n(t.ia) : sum((b) => b.ia)
+    const total = t?.total !== undefined ? n(t.total) : sum((b) => b.total)
+    const addressable = t?.addressable !== undefined ? n(t.addressable) : sum((b) => b.addressable)
+    const r = { scenario: s, year: 2026 + HORIZON, blocks, base, need, ia, total, other: total - need - ia, addressable, rate: total ? addressable / total : 0, growth: base ? total / base : 0 } as ScenarioResult
+    lazy(r, 'addrBase', () => sum((b) => b.addrBase))
+    lazy(r, 'addrIa', () => sum((b) => b.addrIa))
+    lazy(r, 'dAct', () => sum((b) => b.dAct))
+    lazy(r, 'dInt', () => sum((b) => b.dInt))
+    return r
   }
 }
 
-/**
- * Calcule un scénario. year = 2026 + t, t ∈ [0, 9]. À t = 9 le résultat est
- * strictement celui de l'Excel ; pour t < 9 on interpole (croissances composées,
- * surcouche IA et facteur vidéo/santé montés linéairement) – ajout du dashboard.
- */
-export function computeScenario(p: Params, s: number, t: number = HORIZON): ScenarioResult {
-  const fixChpg = val(p, 'fixChpg', s) === 1
+const runs = new WeakMap<Params, ModelRun>()
+function getRun(p: Params): ModelRun {
+  let r = runs.get(p)
+  if (!r) { r = new ModelRun(getModel(), p); runs.set(p, r) }
+  return r
+}
+
+/** Profil à l'année t (0 = 2026, 9 = 2035) : t = 9 est exactement le résultat de l'Excel ; entre les deux, croissance composée du besoin
+ *  et montée linéaire de la surcouche IA (interpolation ajoutée par le dashboard : l'Excel ne calcule que 2035). */
+function atYear(r: ScenarioResult, t: number): ScenarioResult {
   const k = t / HORIZON
-  const g = (id: string) => Math.pow(1 + val(p, id, s), t)
-  const base = baseline(p)
-  const camFactor = (val(p, 'camBase', s) + HORIZON * val(p, 'camAdd', s)) / val(p, 'camBase', s)
-  const dspVideo = 1 + (camFactor * val(p, 'bitrate', s) - 1) * k
-  const chpgSante = Math.pow(1 + val(p, 'santeChpg', s), t)
-
-  const pub = { eff: g('gEffPub'), int: g('gIntPub'), ia: val(p, 'iaPub', s), adr: val(p, 'adrPub', s), adrIa: val(p, 'adrIaPub', s) }
-  const fin = { eff: g('gEffFin'), int: g('gIntFin'), ia: val(p, 'iaFin', s), adr: val(p, 'adrFin', s), adrIa: val(p, 'adrIaFin', s) }
-  const priv = { eff: g('gEffPriv'), int: g('gIntPriv'), ia: val(p, 'iaPriv', s), adr: val(p, 'adrPriv', s), adrIa: val(p, 'adrIaPriv', s) }
-  // Monaco Telecom : croissance effectifs/intensité/IA « hors finance », adressable socle « public »
-  const mt = { eff: priv.eff, int: priv.int, ia: priv.ia, adr: pub.adr, adrIa: priv.adrIa }
-
-  const param: Record<Entity, typeof pub> = { DSP: pub, DENJS: pub, APDP: pub, DITN: pub, CHPG: pub, MT: mt, FIN: fin, PRIV: { ...priv, adr: priv.adr } }
-  const chpgAct = Math.pow(1 + val(p, 'gChpg', s), t)
-
-  const blocks: BlockResult[] = ENTITIES.map((id) => {
-    const b = base[id]
-    const q = param[id]
-    let fAct = q.eff
-    let fMetier = 1
-    let need: number
-    let needAct: number
-    if (id === 'DSP') {
-      fMetier = dspVideo
-      need = b.nonMetier * q.eff * q.int + b.metier * dspVideo
-      needAct = b.nonMetier * q.eff + b.metier * dspVideo
-    } else if (id === 'CHPG') {
-      fAct = chpgAct
-      fMetier = chpgSante
-      // Excel : H13·H63·G63 + G13·F63·G63 (avec H13 = 0 -> le surcroît santé n'agit pas)
-      const m = fixChpg ? b.metier * chpgSante : b.metier
-      need = b.nonMetier * chpgSante * q.int + m * chpgAct * q.int
-      needAct = b.nonMetier * chpgSante + m * chpgAct
-    } else {
-      need = b.nonMetier * q.eff * q.int
-      needAct = b.nonMetier * q.eff
+  const blocks: BlockResult[] = r.blocks.map((b) => {
+    const need = b.base > 0 && b.need > 0 ? b.base * Math.pow(b.need / b.base, k) : b.base + (b.need - b.base) * k
+    const fNeed = b.need ? need / b.need : 0
+    const ia = b.ia * fNeed * k
+    const addrBase = b.need ? b.addrBase * fNeed : 0
+    const addrIa = b.ia ? b.addrIa * (ia / b.ia) : 0
+    const out = {
+      ...b, need, ia, total: need + ia + b.other * k, other: b.other * k, addrBase, addrIa, addressable: addrBase + addrIa,
+      dInt: b.dInt * k, dAct: need - b.base - b.dInt * k,
     }
-    const ia = need * q.ia * k
-    return {
-      id, label: ENTITY_LABEL[id], base: b.metier + b.nonMetier, nonMetier: b.nonMetier, metier: b.metier,
-      fAct, fInt: q.int, fMetier, need, needAct, ia, total: need + ia,
-      adrShare: q.adr, adrIaShare: q.adrIa, addrBase: need * q.adr, addrIa: ia * q.adrIa, addressable: need * q.adr + ia * q.adrIa,
-      dAct: needAct - (b.metier + b.nonMetier), dInt: need - needAct,
-    }
+    return out
   })
   const sum = (f: (b: BlockResult) => number) => blocks.reduce((a, b) => a + f(b), 0)
-  const total = sum((b) => b.total)
-  const addressable = sum((b) => b.addressable)
-  const baseTot = sum((b) => b.base)
+  const base = sum((b) => b.base), total = sum((b) => b.total), addressable = sum((b) => b.addressable)
   return {
-    scenario: s, year: 2026 + t, blocks, base: baseTot, need: sum((b) => b.need), ia: sum((b) => b.ia),
-    total, addressable, addrBase: sum((b) => b.addrBase), addrIa: sum((b) => b.addrIa), dAct: sum((b) => b.dAct), dInt: sum((b) => b.dInt), rate: total ? addressable / total : 0, growth: baseTot ? total / baseTot : 0,
+    scenario: r.scenario, year: 2026 + t, blocks, base, need: sum((b) => b.need), ia: sum((b) => b.ia), total, other: sum((b) => b.other), addressable,
+    addrBase: sum((b) => b.addrBase), addrIa: sum((b) => b.addrIa), dAct: sum((b) => b.dAct), dInt: sum((b) => b.dInt),
+    rate: total ? addressable / total : 0, growth: base ? total / base : 0,
   }
+}
+
+export function computeScenario(p: Params, s: number, t: number = HORIZON): ScenarioResult {
+  const r = getRun(p).result(s)
+  return t >= HORIZON ? r : atYear(r, t)
 }
 
 export const computeAll = (p: Params, t: number = HORIZON) => [0, 1, 2].map((s) => computeScenario(p, s, t))
@@ -157,7 +157,7 @@ export const OUTPUT_GROUPS: GroupDef[] = [
 export interface GroupResult {
   id: string; label: string; captive: boolean
   base: number; need: number; ia: number; total: number
-  addressable: number; addrBase: number; addrIa: number; dAct: number; dInt: number
+  addressable: number; addrBase: number; addrIa: number; dAct: number; dInt: number; other: number
 }
 
 export function groupBlocks(r: ScenarioResult): GroupResult[] {
@@ -166,7 +166,7 @@ export function groupBlocks(r: ScenarioResult): GroupResult[] {
     const sum = (f: (b: BlockResult) => number) => bs.reduce((a, b) => a + f(b), 0)
     return {
       id: g.id, label: g.label, captive: g.captive,
-      base: sum((b) => b.base), need: sum((b) => b.need), ia: sum((b) => b.ia), total: sum((b) => b.total),
+      base: sum((b) => b.base), need: sum((b) => b.need), ia: sum((b) => b.ia), total: sum((b) => b.total), other: sum((b) => b.other),
       addressable: sum((b) => b.addressable), addrBase: sum((b) => b.addrBase), addrIa: sum((b) => b.addrIa),
       dAct: sum((b) => b.dAct), dInt: sum((b) => b.dInt),
     }

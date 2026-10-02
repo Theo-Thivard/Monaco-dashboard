@@ -16,6 +16,7 @@ export const LABEL_DEFS: { group: string; key: string; def: string }[] = [
   { group: 'Cascade', key: 'bridge:act', def: 'Effectifs & activité' },
   { group: 'Cascade', key: 'bridge:int', def: 'Intensité numérique' },
   { group: 'Cascade', key: 'bridge:ia', def: 'Surcouche IA' },
+  { group: 'Cascade', key: 'bridge:other', def: 'Autres effets (Excel)' },
   { group: 'Cascade', key: 'bridge:total', def: 'Besoin 2035' },
   { group: 'Cascade', key: 'bridge:out', def: 'Hors Monaco' },
   { group: 'Cascade', key: 'bridge:addr', def: 'Adressable 2035' },

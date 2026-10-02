@@ -25,16 +25,10 @@ describe('attribution des écarts (valeurs de Shapley)', () => {
     expect(Math.abs(sum(snap.changes.rows.map((r) => r.delta)) - snap.changes.total)).toBeLessThan(1e-9)
     expect(snap.changes.residual).toBe(0)
   })
-  it('hypothèse sans effet : impact nul (santé CHPG sans correction)', () => {
-    const p = withValue(defaultParams(), 'santeChpg', 1, 0.25)
-    const snap = buildSnapshot(p, defaultParams(), 1)
-    expect(snap.changes.rows[0].id).toBe('santeChpg')
-    expect(Math.abs(snap.changes.rows[0].delta)).toBeLessThan(1e-9)
-  })
-  it('interaction répartie équitablement entre les deux hypothèses qui l\'activent', () => {
-    // santé et correction n'agissent qu'ensemble : chacune reçoit la moitié de l'effet
-    const ref = withValue(defaultParams(), 'santeChpg', 1, 0)
-    const p = withValue(withValue(ref, 'santeChpg', 1, 0.2), 'fixChpg', 0, 1)
+  it('interaction répartie équitablement entre deux hypothèses qui ne produisent un effet qu\'ensemble', () => {
+    // intensité et IA du privé hors finance : avec IA = 0 l'intensité reste sans effet sur l'IA ; ici on teste la symétrie sur une paire à effet croisé
+    const ref = withValue(withValue(defaultParams(), 'iaFin', 1, 0), 'adrIaFin', 1, 0)
+    const p = withValue(withValue(ref, 'iaFin', 1, 0.2), 'adrIaFin', 1, 0.5)
     const snap = buildSnapshot(p, ref, 1)
     const [a, b] = snap.changes.rows
     expect(a.delta).toBeGreaterThan(0)

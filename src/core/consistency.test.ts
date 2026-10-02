@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DATASETS, compatibleCharts, type Dataset } from './datasets'
 import { computeScenario, groupBlocks } from './engine'
 import { defaultFormat, displayedNumber, fmt } from './format'
+import { deadHyps } from './actors'
 import { defaultParams, HYPS, hypValue, withValue, type Params } from './hypotheses'
 import { buildHeadline } from './insights'
 import { KPI_DEFS, kpiDelta, kpiValue } from './kpis'
@@ -38,10 +39,10 @@ describe.each(cases)('cohérence : %s', (_n, params, s) => {
 
   it('modèle : identités comptables', () => {
     for (const r of snap.results) {
-      close(r.total, r.need + r.ia)
+      close(r.total, r.need + r.ia + r.other)
       close(r.addressable, r.addrBase + r.addrIa)
       close(r.addressable, sum(r.blocks.map((b) => b.addressable)))
-      close(r.total, r.base + r.dAct + r.dInt + r.ia)
+      close(r.total, r.base + r.dAct + r.dInt + r.ia + r.other)
       close(r.addressable, sum(groupBlocks(r).map((g) => g.addressable)))
     }
   })
@@ -50,24 +51,26 @@ describe.each(cases)('cohérence : %s', (_n, params, s) => {
     close(k('addressable'), d.addrByBlock.series[0].total!)
     close(k('addressable'), sum(d.addrByBlock.series[0].values))
     close(k('addressable'), d.scenarios.series[2].values[s])
-    close(k('addressable'), d.bridge.series[0].values[6])
+    const tot = (set: Dataset) => set.steps!.map((t, i) => (t === 'total' ? i : -1)).filter((i) => i >= 0) // [base, besoin, adressable]
+    close(k('addressable'), d.bridge.series[0].values[tot(d.bridge)[2]])
     close(k('addressable'), d.trajectory.series[s].values[9])
     close(k('addressable'), sum(d.trajectoryBlocks.series.map((x) => x.values[9])))
     close(k('addressable'), sum(d.addrByBlockScenario.series.map((x) => x.values[s])))
     close(k('addressable'), sum(d.socleAi.series.map((x) => x.values[s])))
     close(k('addressable'), d.detailTable.series[4 + s].total!)
     close(k('addressable'), sum(d.detailTable.series[4 + s].values))
-    close(k('need'), d.bridge.series[0].values[4])
+    close(k('need'), d.bridge.series[0].values[tot(d.bridge)[1]])
     close(k('need'), d.scenarios.series[1].values[s])
     close(k('need'), sum(d.blockOverview.series[1].values))
-    close(k('base'), d.bridge.series[0].values[0])
+    close(k('base'), d.bridge.series[0].values[tot(d.bridge)[0]])
     close(k('rate'), k('addressable') / k('need'))
     close(k('rate'), d.rateByBlock.series[0].total!)
   })
   it('cascade : somme des étapes = totaux', () => {
     const v = d.bridge.series[0].values
-    close(v[0] + v[1] + v[2] + v[3], v[4])
-    close(v[4] + v[5], v[6])
+    const [a, b, c] = d.bridge.steps!.map((t, i) => (t === 'total' ? i : -1)).filter((i) => i >= 0)
+    close(sum(v.slice(a, b)), v[b]) // base + écarts = besoin 2035
+    close(v[b] + sum(v.slice(b + 1, c)), v[c]) // besoin + écarts = adressable
   })
   it('« ce qui a changé » : référence + Σ impacts + effets croisés = actuel', () => {
     const v = d.whatChanged.series[0].values
@@ -117,7 +120,7 @@ describe('référence', () => {
   })
   it('l\'impact du changement d\'une hypothèse n\'est jamais arrondi', () => {
     const base = computeScenario(defaultParams(), 1).addressable
-    const p = withValue(defaultParams(), 'adrFin', 1, 0.35 + 1e-7)
+    const p = withValue(defaultParams(), 'adrFin', 1, defaultParams().adrFin[1] + 1e-7)
     expect(computeScenario(p, 1).addressable).toBeGreaterThan(base)
   })
   it('plusieurs changements : écart exact', () => {
@@ -149,7 +152,7 @@ describe('registre des hypothèses', () => {
       const moved = [0, 1, 2].some((s) => Math.abs(computeScenario(alt, s).addressable - computeScenario(base, s).addressable) > 1e-9)
       if (!moved) silent.push(h.id)
     }
-    // santeChpg n'agit pas dans l'Excel (documenté)
-    expect(silent).toEqual(['santeChpg'])
+    // les hypothèses sans effet (formule modifiée dans l'Excel) sont repérées et signalées, jamais ignorées en silence
+    expect(silent.sort()).toEqual(deadHyps().sort())
   })
 })

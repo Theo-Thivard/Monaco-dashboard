@@ -325,3 +325,22 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 
 .axis-note { position: absolute; right: var(--m-pad); top: 2px; font-size: 0.75rem; color: var(--c-textMuted); font-style: italic; }
 .nav-value .dot { box-shadow: 0 0 0 1.5px var(--c-navActive); }
+
+.dead { color: var(--c-warning); }
+
+.modelinfo { font-size: 0.93rem; display: grid; gap: 10px; }
+.modelinfo h5 { margin: 6px 0 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--c-textMuted); }
+.mi-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
+.mi-facts dt { color: var(--c-textMuted); } .mi-facts dd { margin: 0; }
+.mi-facts a, .mi-diag a { color: var(--c-accent); }
+.mi-ok { color: var(--c-positive); margin: 0; }
+.mi-diag { margin: 0; padding-left: 18px; display: grid; gap: 4px; list-style: none; }
+.mi-diag .warning { color: var(--c-warning); } .mi-diag .error { color: var(--c-negative); } .mi-diag .info { color: var(--c-textMuted); }
+.modelinfo details { border-top: 1px solid var(--c-grid); padding-top: 6px; }
+.formulas { display: grid; gap: 4px; padding: 8px 10px; background: var(--c-surfaceAlt); border-radius: 4px; }
+.formula-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 10px; align-items: baseline; font-size: 0.86rem; }
+.formula-row code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; color: var(--c-heading); }
+.modelbanner { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 8px 14px; margin-bottom: 12px; border: 1px solid var(--c-warning); border-radius: 4px; background: color-mix(in srgb, var(--c-warning) 10%, var(--c-surface)); font-size: 0.9rem; }
+.boot { min-height: 100vh; display: grid; place-items: center; font-family: system-ui, sans-serif; color: #44505f; background: #f3f4f6; padding: 24px; }
+.boot-card { max-width: 720px; background: #fff; border: 1px solid #e1e5ea; border-radius: 8px; padding: 28px 32px; }
+.boot h1 { font-size: 1.15rem; margin: 0 0 10px; color: #0b2545; } .boot li { margin: 6px 0; } .boot code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; }

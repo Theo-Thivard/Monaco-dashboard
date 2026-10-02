@@ -3,6 +3,9 @@
 // (cette liste est vérifiée par un test contre le moteur).
 
 import type { BlockResult, Entity, ScenarioResult } from './engine'
+import { computeAll } from './engine'
+import { defaultParams, HYPS, withValue, type Params } from './hypotheses'
+import { getModel } from './model'
 
 export interface ActorDef {
   id: Entity
@@ -14,10 +17,8 @@ export interface ActorDef {
   short: string
   group: 'public' | 'private'
   description: string
-  /** comment le besoin de cet acteur est calculé */
+  /** résumé de ce qui détermine le besoin (la formule exacte est lue dans l'Excel) */
   method: string
-  /** hypothèses qui influencent cet acteur (vérifié par test) */
-  hyps: string[]
 }
 
 export const ACTOR_GROUPS: { id: 'public' | 'private'; title: string }[] = [
@@ -25,56 +26,46 @@ export const ACTOR_GROUPS: { id: 'public' | 'private'; title: string }[] = [
   { id: 'private', title: 'Secteur privé' },
 ]
 
-const PUB_HYPS = ['gEffPub', 'gIntPub', 'iaPub', 'adrPub', 'adrIaPub']
-
 export const ACTORS: ActorDef[] = [
   {
     id: 'DSP', slug: 'dsp', label: 'DSP', short: 'DSP', group: 'public',
     description: 'Direction de la Sûreté Publique : socle bureautique des agents et applications métier de vidéosurveillance.',
-    method: 'Besoin non-métier (agents) = effectifs × intensité numérique ; besoin métier (vidéo) = parc de caméras × débit par caméra (passage de 2 MP à 8 MP). La surcouche IA s\'applique au besoin hors IA.',
-    hyps: [...PUB_HYPS, 'wPub', 'camBase', 'camAdd', 'bitrate'],
+    method: 'Socle bureautique des agents et applications métier de vidéosurveillance (parc de caméras, débit par caméra), puis surcouche IA.',
   },
   {
     id: 'DENJS', slug: 'denjs', label: 'DENJS', short: 'DENJS', group: 'public',
     description: 'Direction de l\'Éducation Nationale, de la Jeunesse et des Sports.',
-    method: 'Projection générique du secteur public : baseline 2026 × croissance des effectifs × croissance de l\'intensité numérique, puis surcouche IA.',
-    hyps: PUB_HYPS,
+    method: 'Projection générique du secteur public : croissance des effectifs et de l\'intensité numérique, puis surcouche IA.',
   },
   {
     id: 'APDP', slug: 'apdp', label: 'APDP', short: 'APDP', group: 'public',
     description: 'Autorité de Protection des Données Personnelles.',
-    method: 'Projection générique du secteur public : baseline 2026 × croissance des effectifs × croissance de l\'intensité numérique, puis surcouche IA.',
-    hyps: PUB_HYPS,
+    method: 'Projection générique du secteur public : croissance des effectifs et de l\'intensité numérique, puis surcouche IA.',
   },
   {
     id: 'DITN', slug: 'ditn', label: 'DITN', short: 'DITN', group: 'public',
     description: 'Délégation Interministérielle chargée de la Transition Numérique.',
-    method: 'Projection générique du secteur public : baseline 2026 × croissance des effectifs × croissance de l\'intensité numérique, puis surcouche IA.',
-    hyps: PUB_HYPS,
+    method: 'Projection générique du secteur public : croissance des effectifs et de l\'intensité numérique, puis surcouche IA.',
   },
   {
     id: 'CHPG', slug: 'chpg', label: 'CHPG', short: 'CHPG', group: 'public',
     description: 'Centre Hospitalier Princesse Grace : activité hospitalière et digitalisation de la santé.',
-    method: 'Besoin métier × croissance de l\'activité × intensité numérique, puis surcouche IA. Le surcroît « santé » n\'agit que si le traitement du CHPG est corrigé (voir Hypothèses).',
-    hyps: ['gChpg', 'gIntPub', 'iaPub', 'adrPub', 'adrIaPub', 'santeChpg', 'fixChpg'],
+    method: 'Activité hospitalière et digitalisation de la santé, puis surcouche IA.',
   },
   {
     id: 'MT', slug: 'monaco-telecom', label: 'Monaco Telecom – besoins propres', short: 'Monaco Telecom', group: 'public',
     description: 'Besoins propres de l\'opérateur (10 % de la capacité commerciale installée), hors capacité commerciale.',
-    method: 'Baseline × croissance des effectifs et de l\'intensité du privé hors finance, surcouche IA du privé hors finance ; part captable du socle conventionnelle (secteur public).',
-    hyps: ['gEffPriv', 'gIntPriv', 'iaPriv', 'adrPub', 'adrIaPriv'],
+    method: 'Croissance des effectifs et de l\'intensité du privé hors finance, surcouche IA du privé hors finance ; part captable du socle conventionnelle (secteur public).',
   },
   {
     id: 'FIN', slug: 'finance', label: 'Finance', short: 'Finance', group: 'private',
     description: 'Secteur financier monégasque : salariés × puissance IT par salarié, plus data-intensif que le reste du privé.',
-    method: 'Salariés × W IT par salarié (baseline), × croissance des effectifs et de l\'intensité (finance), puis surcouche IA ; part captable spécifique au socle et à l\'IA.',
-    hyps: ['gEffFin', 'gIntFin', 'iaFin', 'adrFin', 'adrIaFin', 'wFin'],
+    method: 'Salariés × puissance IT par salarié (baseline), croissance des effectifs et de l\'intensité (finance), surcouche IA ; part captable propre au socle et à l\'IA.',
   },
   {
     id: 'PRIV', slug: 'prive-hors-finance', label: 'Privé hors finance', short: 'Privé hors finance', group: 'private',
     description: 'Ensemble des salariés du secteur privé hors finance (IMSEE 2024).',
-    method: 'Salariés × W IT par salarié (baseline), × croissance des effectifs et de l\'intensité (hors finance), puis surcouche IA ; part captable spécifique au socle et à l\'IA.',
-    hyps: ['gEffPriv', 'gIntPriv', 'iaPriv', 'adrPriv', 'adrIaPriv', 'wPriv'],
+    method: 'Salariés × puissance IT par salarié (baseline), croissance des effectifs et de l\'intensité (hors finance), surcouche IA ; part captable propre au socle et à l\'IA.',
   },
 ]
 
@@ -82,3 +73,41 @@ export const ACTOR_BY_ID: Record<Entity, ActorDef> = Object.fromEntries(ACTORS.m
 export const ACTOR_BY_SLUG: Record<string, ActorDef> = Object.fromEntries(ACTORS.map((a) => [a.slug, a]))
 
 export const actorBlock = (r: ScenarioResult, id: Entity): BlockResult => r.blocks.find((b) => b.id === id)!
+
+/**
+ * Hypothèses qui font réellement varier un acteur : déterminées en interrogeant l'Excel (on perturbe chaque hypothèse
+ * et on regarde quels acteurs bougent). Elles suivent donc automatiquement les formules de l'Excel.
+ */
+const cache = new WeakMap<object, Record<Entity, string[]>>()
+export function actorHyps(id: Entity): string[] {
+  const m = getModel()
+  let c = cache.get(m)
+  if (!c) {
+    c = Object.fromEntries(ACTORS.map((a) => [a.id, [] as string[]])) as Record<Entity, string[]>
+    const base: Params = defaultParams()
+    const ref = computeAll(base)
+    for (const h of HYPS) {
+      const arr = base[h.id]
+      const step = 0.1 * (h.max - h.min)
+      let q: Params = base
+      arr.forEach((v, i) => { q = withValue(q, h.id, i, v + step <= h.max ? v + step : v - step) })
+      const alt = computeAll(q)
+      for (const a of ACTORS) {
+        const moved = [0, 1, 2].some((s) => {
+          const x = actorBlock(alt[s], a.id), y = actorBlock(ref[s], a.id)
+          return Math.abs(x.addressable - y.addressable) > 1e-9 || Math.abs(x.total - y.total) > 1e-9
+        })
+        if (moved) c[a.id].push(h.id)
+      }
+    }
+    cache.set(m, c)
+  }
+  return c[id]
+}
+
+/** Hypothèses qui ne font bouger aucun acteur dans l'Excel actuel (p. ex. facteur multiplié par 0 après une modification de formule). */
+export function deadHyps(): string[] {
+  const used = new Set(ACTORS.flatMap((a) => actorHyps(a.id)))
+  return HYPS.filter((h) => !used.has(h.id)).map((h) => h.id)
+}
+export const isDeadHyp = (id: string) => deadHyps().includes(id)

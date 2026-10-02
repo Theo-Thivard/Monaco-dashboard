@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
-import { ACTOR_BY_ID, actorBlock } from '../core/actors'
+import { ACTOR_BY_ID, actorBlock, actorHyps } from '../core/actors'
 import { HYP_BY_ID } from '../core/hypotheses'
 import { buildActorHeadline, buildGlobalHeadline, buildHeadline, type Headline as HeadlineData } from '../core/insights'
 import { ACTOR_KPI_DEFS } from '../core/kpis'
+import { getModel } from '../core/model'
 import { navigate } from '../state/store'
 import { KpiCard } from './KpiStrip'
 import type { Env } from './env'
@@ -82,9 +83,26 @@ export function ActorNote({ env }: { env: Env }) {
     <div className="prose">
       <p><strong>{env.actorLabel(a.id)}</strong> — {a.description}</p>
       <p>{a.method}</p>
-      <p className="muted">Hypothèses qui font varier cet acteur : {a.hyps.map((id) => env.hypLabel(id)).join(' · ')}.</p>
+      <ActorFormulas env={env} actor={a.id} />
+      <p className="muted">Hypothèses qui font varier cet acteur : {actorHyps(a.id).map((id) => env.hypLabel(id)).join(' · ')}.</p>
     </div>
   )
 }
 
-export const actorHypIds = (id: string) => ACTOR_BY_ID[id as keyof typeof ACTOR_BY_ID]?.hyps.filter((h) => HYP_BY_ID[h]) ?? []
+export const actorHypIds = (id: string) => (ACTOR_BY_ID[id as keyof typeof ACTOR_BY_ID] ? actorHyps(id as keyof typeof ACTOR_BY_ID).filter((h) => HYP_BY_ID[h]) : [])
+
+/** Formules de l'Excel qui calculent cet acteur (lues dans le classeur : elles suivent toute modification). */
+function ActorFormulas({ env, actor }: { env: Env; actor: import('../core/engine').Entity }) {
+  const m = getModel()
+  const s = env.snap.scenario
+  const rows: [string, 'need' | 'ia' | 'addressable'][] = [['Besoin hors IA 2035', 'need'], ['Besoin IA', 'ia'], ['Demande adressable', 'addressable']]
+  return (
+    <div className="formulas">
+      <div className="muted small">Formules de l'Excel pour cet acteur (scénario {env.scenarioName(s)}) :</div>
+      {rows.map(([label, col]) => {
+        const f = m.formulaFor(s, actor, col)
+        return <div key={col} className="formula-row"><span>{label}</span><code>{f.formula ? `=${f.formula}` : '(valeur saisie)'}</code><span className="muted small">{f.where}</span></div>
+      })}
+    </div>
+  )
+}

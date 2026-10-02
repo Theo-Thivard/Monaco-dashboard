@@ -10,18 +10,16 @@ import type { DashboardConfig, PageConfig, WidgetConfig } from './types'
 /** Six leviers qui pèsent le plus sur la demande adressable (classement par sensibilité, scénarios Bas/Central/Haut). */
 export const DEFAULT_DRIVERS = ['adrPriv', 'adrFin', 'gIntPriv', 'iaPriv', 'adrIaPriv', 'wPriv']
 
-const METHOD_TEXT = `Le modèle projette la puissance IT nécessaire à Monaco en 2035 pour huit blocs d'entités (DSP, DENJS, APDP, DITN, CHPG, Monaco Telecom, finance, privé hors finance).
+const METHOD_TEXT = `Le modèle de calcul est le classeur Excel lui-même : valeurs et formules sont lues à chaque lancement du dashboard, puis recalculées avec les hypothèses que vous modifiez ici. Modifier une valeur ou une formule dans l'Excel est donc repris automatiquement.
 
-Besoin 2035 = baseline 2026 × croissance des effectifs × croissance de l'intensité numérique (hors IA), augmenté d'une surcouche IA.
-
-La demande adressable applique ensuite la part hébergeable à Monaco, séparément pour le socle et pour l'IA.
+Pour chaque acteur (DSP, DENJS, APDP, DITN, CHPG, Monaco Telecom, finance, privé hors finance), l'Excel projette le besoin IT 2035 à partir de la baseline 2026, de la croissance des effectifs et de l'intensité numérique, puis d'une surcouche IA ; la demande adressable applique ensuite la part hébergeable à Monaco, séparément pour le socle et pour l'IA.
 
 Trois scénarios (Bas, Central, Haut) portent chacun leurs hypothèses ; le scénario actif pilote les indicateurs et les graphiques à scénario unique.`
 
-const NOTES_TEXT = `- Le surcroît « santé » du CHPG n'a aucun effet dans l'Excel d'origine ; l'option « Traitement du CHPG » permet de l'appliquer.
-- La baseline 2026 utilise les valeurs « Bas » des puissances IT par utilisateur : elles sont communes aux trois scénarios.
-- La trajectoire annuelle 2026 → 2035 est interpolée ; seul le point 2035 est calculé par l'Excel.
-- Sources : IMSEE 2024 (effectifs), benchmarks Axis (débits vidéo), hypothèses d'entretiens.`
+const NOTES_TEXT = `- Source du modèle : voir « Source du modèle » ci-dessous (fichier Excel, origine, contrôles).
+- Une hypothèse signalée « sans effet » n'intervient plus dans les résultats de l'Excel actuel (formule modifiée).
+- La trajectoire annuelle 2026 → 2035 est interpolée (croissance composée, montée linéaire de l'IA) ; seul 2035 est calculé par l'Excel.
+- Sources des hypothèses : colonne « Source / rationnel » de l'Excel (IMSEE 2024, benchmarks Axis, entretiens).`
 
 const w = (c: WidgetConfig): WidgetConfig => c
 
@@ -94,9 +92,7 @@ function stack(rows: [id: string, x: number, w: number, h: number, dy?: number][
   return out
 }
 
-const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.
-
-Besoin 2035 = baseline 2026 × croissance des effectifs × croissance de l'intensité numérique (hors IA), augmenté d'une surcouche IA. La demande adressable applique ensuite la part hébergeable à Monaco, séparément pour le socle et pour l'IA.`
+const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le dashboard s'adapte automatiquement : aucun calcul n'est écrit dans le dashboard.`
 
 export const globalWidgets = (): WidgetConfig[] => [
   w({ id: 'g-headline', kind: 'headline', tier: 'client', visible: true }),
@@ -114,6 +110,7 @@ export const globalWidgets = (): WidgetConfig[] => [
   w({ id: 'g-sec-method', kind: 'section', tier: 'client', visible: true, collapse: 'method', title: 'Méthodologie', subtitle: 'Comment le modèle relie hypothèses, scénarios et acteurs' }),
   w({ id: 'g-method', kind: 'text', tier: 'method', visible: true, title: 'Principe', text: GLOBAL_METHOD }),
   w({ id: 'g-notes', kind: 'text', tier: 'method', visible: true, title: 'Points d\'attention', text: NOTES_TEXT }),
+  w({ id: 'g-model', kind: 'modelInfo', tier: 'method', visible: true, title: 'Source du modèle', subtitle: 'Fichier Excel lu à chaque lancement' }),
 ]
 export const globalLayout = (): Layout[] => stack([
   [['g-headline', 0, 24, 5]],
@@ -127,6 +124,7 @@ export const globalLayout = (): Layout[] => stack([
   [['g-blocks', 0, 12, 12], ['g-socle', 12, 12, 12]],
   [['g-sec-method', 0, 24, 2]],
   [['g-method', 0, 12, 10], ['g-notes', 12, 12, 10]],
+  [['g-model', 0, 24, 16]],
 ])
 
 export const actorWidgets = (): WidgetConfig[] => [
@@ -163,7 +161,7 @@ export const PAGE_DEFAULTS: Record<'global' | 'scenario' | 'actor', () => PageCo
 export const createDefaultConfig = (): DashboardConfig => ({
   version: 3,
   brand: 'Monaco · Besoins IT 2035',
-  footnote: 'Source : modèle Monaco_Besoins_IT_v2 · IMSEE 2024 · hypothèses de travail. Puissances exprimées en puissance IT. Les totaux peuvent différer légèrement de la somme des éléments affichés (arrondis d\'affichage uniquement ; les calculs sont réalisés en pleine précision).',
+  footnote: 'Sources : IMSEE 2024 · hypothèses de travail. Puissances exprimées en puissance IT. Les totaux peuvent différer légèrement de la somme des éléments affichés (arrondis d\'affichage uniquement ; les calculs sont réalisés en pleine précision).',
   theme: { preset: 'cabinet', tokens: {}, metrics: defaultMetrics() },
   format: defaultFormat(),
   labels: {},

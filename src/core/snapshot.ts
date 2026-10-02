@@ -67,7 +67,7 @@ export function sensitivityFor(p: Params, s: number, metric: (r: ScenarioResult)
  * Jusqu'à SHAPLEY_MAX hypothèses : valeurs de Shapley (répartition équitable des effets croisés,
  * somme exacte). Au-delà : effet isolé de chaque hypothèse + résidu « effets croisés ».
  */
-const SHAPLEY_MAX = 10
+const SHAPLEY_MAX = 8
 
 function changes(p: Params, ref: Params, s: number, cur: number, base: number) {
   const ids = HYPS.filter((h) => hypDiffers(p, ref, h.id, s)).map((h) => h.id)
