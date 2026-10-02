@@ -82,7 +82,7 @@ const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le
 export const globalWidgets = (): WidgetConfig[] => [
   w({ id: 'g-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true, title: 'Évolution du besoin IT 2026 → 2035', subtitle: 'Trois scénarios (profil annuel interpolé entre 2026 et 2035)' }),
   w({ id: 'g-cards', kind: 'scenarioCards', tier: 'client', visible: true }),
-  w({ id: 'g-headline', kind: 'headline', tier: 'client', visible: true }),
+  w({ id: 'g-headline', kind: 'headline', tier: 'client', visible: true, headline: { hideTitle: true } }),
   w({ id: 'g-sec-actors', kind: 'section', tier: 'client', visible: true, title: 'Qui génère le besoin ?', subtitle: 'Contribution de chaque acteur, par scénario' }),
   w({ id: 'g-actors', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorsAddr', chartType: 'hbar', legend: true }),
   w({ id: 'g-spread', kind: 'chart', tier: 'client', visible: true, datasetId: 'spreadByActor', chartType: 'hbar', legend: false }),
@@ -97,9 +97,8 @@ export const globalWidgets = (): WidgetConfig[] => [
   w({ id: 'g-model', kind: 'modelInfo', tier: 'method', visible: true, title: 'Source du modèle', subtitle: 'Fichier Excel lu à chaque lancement' }),
 ]
 export const globalLayout = (): Layout[] => stack([
+  [['g-cards', 0, 15, 8], ['g-headline', 15, 9, 8]],
   [['g-trajectory', 0, 24, 15]],
-  [['g-cards', 0, 24, 7]],
-  [['g-headline', 0, 24, 5]],
   [['g-sec-actors', 0, 24, 2]],
   [['g-actors', 0, 14, 15], ['g-spread', 14, 10, 15]],
   [['g-sec-detail', 0, 24, 2]],

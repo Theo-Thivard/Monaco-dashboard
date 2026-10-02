@@ -30,7 +30,7 @@ export interface WidgetConfig {
   /** section repliable : détail ou méthodologie */
   collapse?: 'detail' | 'method'
   /** message clé : textes personnalisés (jetons {central}, {bas}… ; **gras**) ; vide = texte généré */
-  headline?: { kicker?: string; title?: string; bullets?: string }
+  headline?: { kicker?: string; title?: string; bullets?: string; hideTitle?: boolean; hideBullets?: boolean }
   /** drivers : montrer les trois scénarios */
   showAllScenarios?: boolean
   /** drivers : hypothèses choisies par l'utilisateur (défaut) ou hypothèses de l'acteur affiché */

@@ -33,14 +33,18 @@ export function Headline({ env, wc }: { env: Env; wc?: WidgetConfig }) {
     }
   }, [auto, o, snap, env, route])
   return (
-    <div className="headline">
-      <div className="hl-main">
-        <div className="kicker">{h.kicker}</div>
-        <h2>{h.title.map((p, i) => (p.strong ? <strong key={i}>{p.t}</strong> : <span key={i}>{p.t}</span>))}</h2>
-      </div>
-      <ul className="hl-bullets">
-        {h.bullets.map((b, i) => <li key={i}>{b.map((p, j) => (p.strong ? <strong key={j}>{p.t}</strong> : <span key={j}>{p.t}</span>))}</li>)}
-      </ul>
+    <div className={'headline' + (o?.hideTitle ? ' only-bullets' : '') + (o?.hideBullets ? ' only-title' : '')}>
+      {!o?.hideTitle && (
+        <div className="hl-main">
+          <div className="kicker">{h.kicker}</div>
+          <h2>{h.title.map((p, i) => (p.strong ? <strong key={i}>{p.t}</strong> : <span key={i}>{p.t}</span>))}</h2>
+        </div>
+      )}
+      {!o?.hideBullets && (
+        <ul className="hl-bullets">
+          {h.bullets.map((b, i) => <li key={i}>{b.map((p, j) => (p.strong ? <strong key={j}>{p.t}</strong> : <span key={j}>{p.t}</span>))}</li>)}
+        </ul>
+      )}
     </div>
   )
 }
