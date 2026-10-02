@@ -5,7 +5,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 const [dist, prefix, ...slugs] = process.argv.slice(2)
 const read = (p, d) => { try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return d } }
-const current = read('version.json', { slug: 'v7', label: 'V7' })
+const current = read('version.json', { slug: 'v4', label: 'V4' })
 const archived = read('versions.json', [])
 const variants = read('variants/index.json', [])
 const entries = [

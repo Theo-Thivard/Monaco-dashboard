@@ -177,7 +177,7 @@ const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) ?? sessio
 
 const BASE_LABEL = __REGISTRY__.find((r) => r.slug === __APP_BASE__)?.label.replace(' (actuelle)', '') ?? __APP_BASE__.toUpperCase()
 
-/** Enregistre l'affichage actuel comme nouvelle publication « V6 · nom » (branche + pull request + fusion automatiques). */
+/** Enregistre l'affichage actuel comme nouvelle publication « V4 · nom » (branche + pull request + fusion automatiques). */
 function GithubSave() {
   const [token, setToken] = useState(readToken)
   const [remember, setRemember] = useState(() => { try { return !!localStorage.getItem(TOKEN_KEY) } catch { return false } })

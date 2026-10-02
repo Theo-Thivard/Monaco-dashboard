@@ -13,20 +13,5 @@
     "slug": "v3",
     "ref": "origin/archive/dashboard-v3",
     "label": "V3"
-  },
-  {
-    "slug": "v4",
-    "ref": "origin/archive/dashboard-v4",
-    "label": "V4"
-  },
-  {
-    "slug": "v5",
-    "ref": "origin/archive/dashboard-v5",
-    "label": "V5"
-  },
-  {
-    "slug": "v6",
-    "ref": "origin/archive/dashboard-v6",
-    "label": "V6"
   }
 ]

@@ -1,4 +1,4 @@
-// Enregistrement d'un affichage comme NOUVELLE publication du tableau de bord (« V6 · nom »), sans toucher à l'existante.
+// Enregistrement d'un affichage comme NOUVELLE publication du tableau de bord (« V4 · nom »), sans toucher à l'existante.
 // Appels directs à l'API GitHub depuis le navigateur avec un jeton personnel de l'utilisateur (jamais stocké dans le dépôt) :
 // branche → fichiers `app/variants/` → pull request → fusion. Le déploiement publie ensuite https://…/<slug>/.
 
