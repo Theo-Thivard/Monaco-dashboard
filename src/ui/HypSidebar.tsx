@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import type { WidgetConfig } from '../config/types'
-import { patchUI, toggleSidebar } from '../state/store'
 import { DriversWidget } from './DriversWidget'
 import type { Env } from './env'
 
@@ -13,10 +12,6 @@ export function HypSidebar({ env }: { env: Env }) {
     <aside className="hypside" aria-label="Hypothèses">
       <div className="drawer-head">
         <h3>Hypothèses</h3>
-        <span className="hypside-tools">
-          <button className="link" onClick={() => patchUI({ panel: 'assumptions' })}>Toutes</button>
-          <button onClick={toggleSidebar} aria-label="Masquer le panneau d'hypothèses" title="Masquer">‹</button>
-        </span>
       </div>
       <div className="drawer-body"><DriversWidget key={route.kind} wc={wc} env={env} pinned /></div>
     </aside>

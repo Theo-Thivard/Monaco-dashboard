@@ -54,6 +54,8 @@ function HeadlineEditor({ wc, env }: { wc: WidgetConfig; env: Env }) {
   return (
     <>
       <h4>Message clé</h4>
+      <label className="inline"><input type="checkbox" checked={!h.hideTitle} onChange={(e) => patch({ hideTitle: !e.target.checked })} /> Afficher la partie gauche (surtitre et titre)</label>
+      <label className="inline"><input type="checkbox" checked={!h.hideBullets} onChange={(e) => patch({ hideBullets: !e.target.checked })} /> Afficher la partie droite (commentaires)</label>
       <p className="drawer-help">Laissez un champ vide pour garder le texte généré. Écrivez librement : <code>{'{central}'}</code>, <code>{'{bas}'}</code>… sont remplacés par les chiffres du modèle (ils suivent les hypothèses), <code>**mot**</code> met en gras.</p>
       <Field label="Surtitre"><input type="text" value={h.kicker ?? ''} placeholder="ex. Vue d'ensemble" onChange={(e) => patch({ kicker: e.target.value })} /></Field>
       <Field label="Titre"><textarea rows={4} value={h.title ?? ''} placeholder="ex. Le besoin atteint **{central}** en 2035…" onChange={(e) => patch({ title: e.target.value })} /></Field>
