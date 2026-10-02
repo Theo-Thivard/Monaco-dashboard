@@ -148,3 +148,20 @@ describe('classement décroissant et préférences d\'acteurs', () => {
     expect(manual.categoryIds).toHaveLength(8)
   })
 })
+
+describe('message clé personnalisé', () => {
+  it('jetons remplacés par les valeurs du modèle, gras et jetons inconnus', async () => {
+    const { applyTokens, headlineTokens, toParts } = await import('./headlineText')
+    for (const lens of ['need', 'addressable'] as const) {
+      const snap = buildSnapshot(defaultParams(), 1, lens)
+      const f = defaultFormat()
+      const tk = headlineTokens(snap, f, (i) => ['Bas', 'Central', 'Haut'][i])
+      const v = (i: number) => fmt('power', lens === 'need' ? snap.results[i].total : snap.results[i].addressable, f)
+      expect(applyTokens('De {2026} à {central} ({bas}–{haut}) {inconnu}', tk)).toBe(`De ${fmt('power', snap.results[1].base, f)} à ${v(1)} (${v(0)}–${v(2)}) {inconnu}`)
+      const actor = headlineTokens(snap, f, (i) => String(i), { id: 'CHPG', name: 'CHPG' })
+      expect(actor.find((t) => t.key === 'acteur')!.value).toBe('CHPG')
+      expect(actor.find((t) => t.key === 'central')!.value).toBe(fmt('power', lens === 'need' ? actorBlock(snap.results[1], 'CHPG').total : actorBlock(snap.results[1], 'CHPG').addressable, f))
+    }
+    expect(toParts('a **b** c')).toEqual([{ t: 'a ' }, { t: 'b', strong: true }, { t: ' c' }])
+  })
+})

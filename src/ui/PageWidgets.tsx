@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { ACTOR_BY_ID, actorBlock, actorHyps } from '../core/actors'
 import { HYP_BY_ID } from '../core/hypotheses'
+import { applyTokens, headlineTokens, toParts } from '../core/headlineText'
+import type { WidgetConfig } from '../config/types'
 import { buildActorHeadline, buildGlobalHeadline, buildHeadline, type Headline as HeadlineData } from '../core/insights'
 import { ACTOR_KPI_DEFS } from '../core/kpis'
 import { getModel } from '../core/model'
@@ -12,13 +14,24 @@ const ACTOR_KPIS_NEED = ['base', 'need', 'growth', 'weightNeed']
 const ACTOR_KPIS_ADDR = ['need', 'addressable', 'rate', 'weight']
 
 /** Message clé : dépend de la page (globale / scénario / acteur) ; mêmes valeurs et même formateur que partout. */
-export function Headline({ env }: { env: Env }) {
+export function Headline({ env, wc }: { env: Env; wc?: WidgetConfig }) {
   const { route, snap } = env
-  const h: HeadlineData = useMemo(() => {
+  const auto: HeadlineData = useMemo(() => {
     if (route.kind === 'global') return buildGlobalHeadline(snap, env.f, env.scenarioName, (a) => env.actorLabel(a.id, true))
     if (route.kind === 'actor') return buildActorHeadline(snap, ACTOR_BY_ID[route.actor], env.f, env.scenarioName(snap.scenario), env.actorLabel(route.actor), env.hypLabel)
     return buildHeadline(snap, env.f, env.scenarioName(snap.scenario), env.hypLabel)
   }, [env, route, snap])
+  const o = wc?.headline
+  const h: HeadlineData = useMemo(() => {
+    if (!o?.kicker && !o?.title && !o?.bullets) return auto
+    const tokens = headlineTokens(snap, env.f, env.scenarioName, route.kind === 'actor' ? { id: route.actor, name: env.actorLabel(route.actor) } : undefined)
+    const t = (s: string) => toParts(applyTokens(s, tokens))
+    return {
+      kicker: o.kicker ? applyTokens(o.kicker, tokens) : auto.kicker,
+      title: o.title ? t(o.title) : auto.title,
+      bullets: o.bullets ? o.bullets.split('\n').filter((l) => l.trim()).map(t) : auto.bullets,
+    }
+  }, [auto, o, snap, env, route])
   return (
     <div className="headline">
       <div className="hl-main">
@@ -41,15 +54,15 @@ export function ScenarioCards({ env }: { env: Env }) {
   const max = Math.max(...snap.results.map(value), 1e-9)
   return (
     <div className="scen-panel" role="group" aria-label={need ? 'Besoin IT 2035 par scénario' : 'Demande adressable 2035 par scénario'}>
-      <div className="scen-panel-title">{need ? 'Besoin IT généré à Monaco en 2035' : 'Demande adressable à Monaco en 2035'}</div>
+      <div className="scen-panel-title">{need ? env.label('scenpanel:need', 'Besoin IT généré à Monaco en 2035') : env.label('scenpanel:addr', 'Demande adressable à Monaco en 2035')}</div>
       <div className="scen-cols">
         {snap.results.map((r, i) => (
           <button key={i} className="scen-col" onClick={() => navigate({ kind: 'scenario', scenario: i })} aria-label={`Ouvrir le scénario ${env.scenarioName(i)}`}>
-            <span className="scen-card-head"><i className="dot" style={{ background: colors[i] }} /><span className="scen-name">{env.scenarioName(i)}</span><span className="scen-go">Détail →</span></span>
+            <span className="scen-card-head"><i className="dot" style={{ background: colors[i] }} /><span className="scen-name">{env.scenarioName(i)}</span><span className="scen-go">{env.label('scenpanel:go', 'Détail →')}</span></span>
             <span className="kpi-value">{env.fmt('power', value(r), { unit: false })}<span className="kpi-unit">{env.unit('power')}</span></span>
             <span className="scen-bar"><i style={{ width: `${(100 * value(r)) / max}%`, background: colors[i] }} /></span>
             <span className="scen-meta">
-              {need ? <>2026 : {env.fmt('power', r.base)} · <strong>{env.fmt('pct', r.growth - 1, { sign: true, decimals: 0 })}</strong> d'ici 2035</> : <>Besoin {env.fmt('power', r.total)} · taux {env.fmt('pct', r.rate)}</>}
+              {need ? <>2026 : {env.fmt('power', r.base)} · <strong>{env.fmt('pct', r.growth - 1, { sign: true, decimals: 0 })}</strong> {env.label('scenpanel:since', 'd\'ici 2035')}</> : <>Besoin {env.fmt('power', r.total)} · taux {env.fmt('pct', r.rate)}</>}
             </span>
           </button>
         ))}

@@ -14,10 +14,10 @@ export function ContextBar({ env }: { env: Env }) {
   )
 
   let crumb
-  if (route.kind === 'global') crumb = <><strong>Globale</strong><span className="sep">·</span><span className="muted">Vue d'ensemble des trois scénarios</span></>
-  else if (route.kind === 'scenario') crumb = <><span className="muted">Scénario</span><span className="sep">/</span><strong>{scen}</strong></>
-  else crumb = <><span className="muted">Acteurs</span><span className="sep">/</span><strong>{env.actorLabel(route.actor)}</strong><span className="sep">·</span>{scen}</>
-  const description = route.kind === 'actor' ? ACTOR_BY_ID[route.actor].description : ''
+  if (route.kind === 'global') crumb = <><strong>{env.label('nav:global', 'Globale')}</strong><span className="sep">·</span><span className="muted">{env.label('ctx:global', 'Vue d\'ensemble des trois scénarios')}</span></>
+  else if (route.kind === 'scenario') crumb = <><span className="muted">{env.label('nav:scenario', 'Scénario')}</span><span className="sep">/</span><strong>{scen}</strong></>
+  else crumb = <><span className="muted">{env.label('nav:actors', 'Acteurs')}</span><span className="sep">/</span><strong>{env.actorLabel(route.actor)}</strong><span className="sep">·</span>{scen}</>
+  const description = route.kind === 'actor' ? env.label(`actor:desc:${route.actor}`, ACTOR_BY_ID[route.actor].description) : ''
 
   return (
     <div className="contextbar">
@@ -29,7 +29,7 @@ export function ContextBar({ env }: { env: Env }) {
         <div className="ctx-seg" role="tablist" aria-label="Lecture des résultats">
           <div className="seg lens">
             {LENSES.map((l) => (
-              <button key={l} role="tab" aria-selected={snap.lens === l} className={snap.lens === l ? 'on' : ''} onClick={() => setLens(l)} title={LENS_HINT[l]}>{LENS_LABEL[l]}</button>
+              <button key={l} role="tab" aria-selected={snap.lens === l} className={snap.lens === l ? 'on' : ''} onClick={() => setLens(l)} title={env.label(`lens:${l}Hint`, LENS_HINT[l])}>{env.label(`lens:${l}`, LENS_LABEL[l])}</button>
             ))}
           </div>
         </div>
