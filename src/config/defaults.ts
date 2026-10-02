@@ -39,7 +39,6 @@ export const scenarioWidgets = (): WidgetConfig[] => [
   w({ id: 'headline', kind: 'headline', tier: 'client', visible: true }),
   w({ id: 'kpis', kind: 'kpis', tier: 'client', visible: true }),
 
-  w({ id: 'sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Cascade et trajectoire', subtitle: 'Modifiez les hypothèses dans le panneau de gauche : tout se met à jour en direct' }),
   w({ id: 'ch-bridge', kind: 'chart', tier: 'client', visible: true, datasetId: 'bridge', chartType: 'waterfall', legend: false }),
   w({ id: 'ch-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true }),
 
@@ -63,12 +62,12 @@ export const scenarioWidgets = (): WidgetConfig[] => [
 
 // Grille de 24 colonnes ; positions déjà compactées (le compactage vertical de la grille ne les modifie pas).
 export const scenarioLayout = (): Layout[] => stack([
+  // l'essentiel tient sur un écran : message clé, indicateurs, cascade et trajectoire ; le reste se découvre en faisant défiler
   [['headline', 0, 24, 5]],
   [['kpis', 0, 24, 4]],
-  [['sec-levers', 0, 24, 2]],
-  [['ch-bridge', 0, 12, 14], ['ch-trajectory', 12, 12, 14]],
+  [['ch-bridge', 0, 12, 10], ['ch-trajectory', 12, 12, 10]],
   [['sec-why', 0, 24, 2]],
-  [['ch-addrByBlock', 0, 12, 13], ['ch-scenarios', 12, 12, 13]],
+  [['ch-addrByBlock', 0, 12, 12], ['ch-scenarios', 12, 12, 12]],
   [['sec-detail', 0, 24, 2]],
   [['tb-detail', 0, 24, 12]],
   [['ch-trajectoryBlocks', 0, 12, 12], ['ch-addrByBlockScenario', 12, 12, 12]],
@@ -112,7 +111,6 @@ export const globalLayout = (): Layout[] => stack([
 export const actorWidgets = (): WidgetConfig[] => [
   w({ id: 'a-headline', kind: 'headline', tier: 'client', visible: true }),
   w({ id: 'a-kpis', kind: 'actorKpis', tier: 'client', visible: true }),
-  w({ id: 'a-sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Cascade et trajectoire de l\'acteur', subtitle: 'Le panneau de gauche ne montre que les hypothèses qui font varier cet acteur' }),
   w({ id: 'a-bridge', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorBridge', chartType: 'waterfall', legend: false }),
   w({ id: 'a-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorTrajectory', chartType: 'line', legend: true }),
   w({ id: 'a-sec-scen', kind: 'section', tier: 'client', visible: true, title: 'Selon les scénarios', subtitle: 'La même analyse pour Bas, Central et Haut' }),
@@ -124,10 +122,9 @@ export const actorWidgets = (): WidgetConfig[] => [
 export const actorLayout = (): Layout[] => stack([
   [['a-headline', 0, 24, 5]],
   [['a-kpis', 0, 24, 4]],
-  [['a-sec-levers', 0, 24, 2]],
-  [['a-bridge', 0, 12, 14], ['a-trajectory', 12, 12, 14]],
+  [['a-bridge', 0, 12, 10], ['a-trajectory', 12, 12, 10]],
   [['a-sec-scen', 0, 24, 2]],
-  [['a-scenarios', 0, 24, 12]],
+  [['a-scenarios', 0, 24, 11]],
   [['a-sec-detail', 0, 24, 2]],
   [['a-table', 0, 12, 12], ['a-note', 12, 12, 12]],
 ])

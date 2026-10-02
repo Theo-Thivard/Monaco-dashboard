@@ -1,4 +1,5 @@
 import type { Layout } from 'react-grid-layout'
+import type { Lens } from '../core/lens'
 import type { ChartType } from '../core/datasets'
 import type { FormatSettings } from '../core/format'
 import type { PageKind } from '../state/route'
@@ -8,7 +9,12 @@ export type WidgetKind = 'section' | 'headline' | 'kpis' | 'scenarioCards' | 'ac
 /** client = vue par défaut ; detail / method = repliés derrière leur section */
 export type Tier = 'client' | 'detail' | 'method'
 
+export type HypMode = 'one' | 'together' | 'three'
+
 export interface SeriesStyle { name?: string; color?: string; hidden?: boolean }
+
+/** Réglages de graphique propres à une lecture (Besoins générés / adressables) : échelles, type, légende, séries… */
+export type LensOverride = Partial<Pick<WidgetConfig, 'chartType' | 'legend' | 'decimals' | 'axisMin' | 'axisMax' | 'series' | 'seriesOrder'>>
 
 export interface WidgetConfig {
   id: string
@@ -26,6 +32,8 @@ export interface WidgetConfig {
   /** bornes de l'axe des valeurs (unité affichée) ; vide = automatique */
   axisMin?: number
   axisMax?: number
+  /** réglages propres à chaque lecture : ils l'emportent sur les réglages ci-dessus */
+  lensOverrides?: Partial<Record<Lens, LensOverride>>
   series?: Record<string, SeriesStyle>
   seriesOrder?: string[]
   bg?: string
@@ -36,6 +44,8 @@ export interface WidgetConfig {
   headline?: { kicker?: string; title?: string; bullets?: string; hideTitle?: boolean; hideBullets?: boolean }
   /** drivers : montrer les trois scénarios */
   showAllScenarios?: boolean
+  /** drivers : un scénario (affiché), les trois ensemble (même variation en %) ou trois curseurs séparés */
+  hypMode?: HypMode
   /** drivers : hypothèses choisies par l'utilisateur (défaut) ou hypothèses de l'acteur affiché */
   hypSource?: 'visible' | 'actor'
 }

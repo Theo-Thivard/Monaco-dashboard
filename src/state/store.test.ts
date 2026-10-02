@@ -57,3 +57,38 @@ describe('performance', () => {
     expect(computeScenario(p, 1).addressable).toBeGreaterThan(0)
   })
 })
+
+describe('modifier les trois scénarios ensemble', () => {
+  it('même variation en % pour les trois scénarios, bornes respectées, valeur unique inchangée', async () => {
+    const { getState, setParamTogether, resetAssumptions } = await import('./store')
+    const { HYP_BY_ID } = await import('../core/hypotheses')
+    resetAssumptions()
+    const id = 'adrFin'
+    const h = HYP_BY_ID[id]
+    const before = [...getState().params[id]]
+    const target = Math.min(h.max, before[1] * 1.2)
+    setParamTogether(id, target, 1)
+    const after = getState().params[id]
+    expect(after[1]).toBeCloseTo(target, 12)
+    before.forEach((b, k) => expect(after[k]).toBeCloseTo(Math.min(h.max, b * (target / before[1])), 10))
+    expect(after[0]).not.toBe(before[0]) // pas seulement le scénario central
+    expect(after[2]).not.toBe(before[2])
+    resetAssumptions()
+  })
+})
+
+describe('réglages de graphique par lecture', () => {
+  it('une lecture ne modifie pas l\'autre ; vider un réglage le retire', async () => {
+    const { resolveWidget } = await import('../config/resolve')
+    const { updateWidgetLens, getState } = await import('./store')
+    updateWidgetLens('ch-trajectory', 'need', { axisMin: 2, axisMax: 7 })
+    updateWidgetLens('ch-trajectory', 'addressable', { axisMin: 0, axisMax: 4 })
+    const w = getState().config.pages.scenario.widgets.find((x) => x.id === 'ch-trajectory')!
+    expect(resolveWidget(w, 'need')).toMatchObject({ axisMin: 2, axisMax: 7 })
+    expect(resolveWidget(w, 'addressable')).toMatchObject({ axisMin: 0, axisMax: 4 })
+    updateWidgetLens('ch-trajectory', 'need', { axisMin: undefined, axisMax: undefined })
+    const w2 = getState().config.pages.scenario.widgets.find((x) => x.id === 'ch-trajectory')!
+    expect(w2.lensOverrides?.need).toBeUndefined()
+    expect(resolveWidget(w2, 'addressable').axisMax).toBe(4)
+  })
+})

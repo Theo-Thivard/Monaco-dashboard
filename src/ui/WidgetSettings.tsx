@@ -1,25 +1,29 @@
 import { CHART_LABELS, compatibleCharts, DATASET_BY_ID, type ChartType } from '../core/datasets'
-import type { SeriesStyle, WidgetConfig } from '../config/types'
+import type { HypMode, LensOverride, SeriesStyle, WidgetConfig } from '../config/types'
 import { headlineTokens } from '../core/headlineText'
 import { KPI_BY_ID } from '../core/kpis'
 import { LABEL_DEFS } from './labels'
-import { patchUI, removeWidget, setLabel, updateLayoutItem, updateWidget } from '../state/store'
+import { resolveWidget } from '../config/resolve'
+import { LENS_LABEL } from '../core/lens'
+import { patchUI, removeWidget, updateWidgetLens, setLabel, updateLayoutItem, updateWidget } from '../state/store'
 import { useDataset, type Env } from './env'
 import { ColorField, Drawer, Field, NumberInput } from './fields'
 import { prepareDataset } from './prepare'
 import { widgetSubtitle, widgetTitle } from './WidgetFrame'
 
 function SeriesList({ wc, env }: { wc: WidgetConfig; env: Env }) {
+  const eff = resolveWidget(wc, env.snap.lens)
+  const setL = (p: LensOverride) => updateWidgetLens(wc.id, env.snap.lens, p)
   const ds = useDataset(wc.datasetId, env)
   if (!ds || ds.series.length < 2 || ds.kind === 'bridge' || ds.kind === 'sensitivity') return null
   const colors = prepareDataset(ds, {}, env.tokens).colors
-  const order = (wc.seriesOrder?.length ? [...wc.seriesOrder, ...ds.series.map((s) => s.id).filter((id) => !wc.seriesOrder!.includes(id))] : ds.series.map((s) => s.id))
-  const patch = (id: string, p: Partial<SeriesStyle>) => updateWidget(wc.id, { series: { ...wc.series, [id]: { ...wc.series?.[id], ...p } } })
+  const order = (eff.seriesOrder?.length ? [...eff.seriesOrder, ...ds.series.map((s) => s.id).filter((id) => !eff.seriesOrder!.includes(id))] : ds.series.map((s) => s.id))
+  const patch = (id: string, p: Partial<SeriesStyle>) => setL({ series: { ...eff.series, [id]: { ...eff.series?.[id], ...p } } })
   const move = (id: string, d: -1 | 1) => {
     const o = [...order]; const i = o.indexOf(id); const j = i + d
     if (j < 0 || j >= o.length) return
     ;[o[i], o[j]] = [o[j], o[i]]
-    updateWidget(wc.id, { seriesOrder: o })
+    setL({ seriesOrder: o })
   }
   return (
     <div className="series-list">
@@ -27,7 +31,7 @@ function SeriesList({ wc, env }: { wc: WidgetConfig; env: Env }) {
       {order.map((id) => {
         const s = ds.series.find((x) => x.id === id)
         if (!s) return null
-        const st = wc.series?.[id]
+        const st = eff.series?.[id]
         return (
           <div key={id} className="series-row">
             <input type="checkbox" checked={!st?.hidden} onChange={(e) => patch(id, { hidden: !e.target.checked })} aria-label={`Afficher ${s.name}`} />
@@ -94,8 +98,10 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
   const li = env.config.pages[env.route.kind].layout.find((l) => l.i === wc.id)
   const set = (p: Partial<WidgetConfig>) => updateWidget(wc.id, p)
+  const eff = resolveWidget(wc, env.snap.lens)
+  const setL = (p: LensOverride) => updateWidgetLens(wc.id, env.snap.lens, p)
   const ok = ds ? compatibleCharts(ds) : []
-  const curType = wc.chartType && ok.includes(wc.chartType) ? wc.chartType : def?.defaultChart
+  const curType = eff.chartType && ok.includes(eff.chartType) ? eff.chartType : def?.defaultChart
   const num = (k: 'x' | 'y' | 'w' | 'h', label: string, min: number, max: number) => (
     <Field label={label}><NumberInput value={li?.[k]} min={min} max={max} onChange={(v) => v !== undefined && updateLayoutItem(wc.id, { [k]: Math.round(v) })} /></Field>
   )
@@ -111,18 +117,19 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
       {wc.kind === 'chart' && ds && (
         <>
           <h4>Graphique</h4>
+          <p className="drawer-help">Ces réglages (type, légende, décimales, axes, séries) sont propres à la lecture <b>{env.label(`lens:${env.snap.lens}`, LENS_LABEL[env.snap.lens])}</b> : l'autre lecture garde les siens.</p>
           <Field label="Type de visualisation" hint="Seuls les types compatibles avec ces données sont proposés">
-            <select value={curType} onChange={(e) => set({ chartType: e.target.value as ChartType })}>
+            <select value={curType} onChange={(e) => setL({ chartType: e.target.value as ChartType })}>
               {ok.map((t) => <option key={t} value={t}>{CHART_LABELS[t]}</option>)}
             </select>
           </Field>
-          {curType !== 'table' && <label className="inline"><input type="checkbox" checked={wc.legend ?? true} onChange={(e) => set({ legend: e.target.checked })} /> Afficher la légende</label>}
-          <Field label="Décimales (vide = automatique)"><NumberInput value={wc.decimals} min={0} max={4} onChange={(v) => set({ decimals: v })} /></Field>
+          {curType !== 'table' && <label className="inline"><input type="checkbox" checked={eff.legend ?? true} onChange={(e) => setL({ legend: e.target.checked })} /> Afficher la légende</label>}
+          <Field label="Décimales (vide = automatique)"><NumberInput value={eff.decimals} min={0} max={4} onChange={(v) => setL({ decimals: v })} /></Field>
           {curType !== 'table' && curType !== 'donut' && curType !== 'pie' && (
             <>
               <div className="grid2">
-                <Field label="Axe : minimum"><NumberInput value={wc.axisMin} step={0.5} placeholder="auto" onChange={(v) => set({ axisMin: v })} /></Field>
-                <Field label="Axe : maximum"><NumberInput value={wc.axisMax} step={0.5} placeholder="auto" onChange={(v) => set({ axisMax: v })} /></Field>
+                <Field label="Axe : minimum"><NumberInput value={eff.axisMin} step={0.5} placeholder="auto" onChange={(v) => setL({ axisMin: v })} /></Field>
+                <Field label="Axe : maximum"><NumberInput value={eff.axisMax} step={0.5} placeholder="auto" onChange={(v) => setL({ axisMax: v })} /></Field>
               </div>
               <p className="drawer-help">Dans l'unité affichée ({env.unit(ds?.format ?? 'power')}). Vide = automatique.</p>
             </>
@@ -134,7 +141,11 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
       {wc.kind === 'drivers' && (
         <>
           <h4>Hypothèses</h4>
-          <label className="inline"><input type="checkbox" checked={!!wc.showAllScenarios} onChange={(e) => set({ showAllScenarios: e.target.checked })} /> Afficher les trois scénarios</label>
+          <Field label="Scénarios modifiés par les curseurs">
+            <select value={wc.hypMode ?? (wc.showAllScenarios ? 'three' : 'one')} onChange={(e) => set({ hypMode: e.target.value as HypMode, showAllScenarios: undefined })}>
+              <option value="one">Le scénario affiché</option><option value="together">Les trois ensemble (même %)</option><option value="three">Trois curseurs séparés</option>
+            </select>
+          </Field>
           {env.route.kind === 'actor' && (
             <label className="inline"><input type="checkbox" checked={wc.hypSource === 'actor'} onChange={(e) => set({ hypSource: e.target.checked ? 'actor' : 'visible' })} /> Seulement les hypothèses de l'acteur</label>
           )}

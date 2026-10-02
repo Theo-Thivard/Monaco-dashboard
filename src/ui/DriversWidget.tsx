@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DEFAULT_DRIVERS } from '../config/defaults'
 import { CATEGORIES, defaultParams, HYPS } from '../core/hypotheses'
 import { sensitivityFor } from '../core/snapshot'
-import type { WidgetConfig } from '../config/types'
+import type { HypMode, WidgetConfig } from '../config/types'
 import { patchUI, updateWidget, useUI } from '../state/store'
 import { actorHypIds } from './PageWidgets'
 import { HypControl } from './Controls'
@@ -22,8 +22,9 @@ function needDrivers(): string[] {
 }
 
 export function DriversWidget({ wc, env, pinned }: { wc: WidgetConfig; env: Env; pinned?: boolean }) {
-  const [allLocal, setAllLocal] = useState(env.route.kind === 'global')
-  const allScenarios = pinned ? allLocal : !!wc.showAllScenarios
+  const [localMode, setLocalMode] = useState<HypMode>(env.route.kind === 'global' ? 'three' : 'one')
+  const mode: HypMode = pinned ? localMode : wc.hypMode ?? (wc.showAllScenarios ? 'three' : 'one')
+  const setMode = (m: HypMode) => (pinned ? setLocalMode(m) : updateWidget(wc.id, { hypMode: m, showAllScenarios: undefined }))
   const ui = useUI()
   const consultant = ui.mode === 'consultant'
   // liste par défaut (non personnalisée) : adaptée à la lentille ; sinon choix de l'utilisateur
@@ -51,7 +52,12 @@ export function DriversWidget({ wc, env, pinned }: { wc: WidgetConfig; env: Env;
           )}
         </Popover> : <span className="muted small">{ids.length} hypothèse{ids.length > 1 ? 's' : ''}</span>}
         {(consultant || pinned) && (
-          <label className="chk"><input type="checkbox" checked={allScenarios} onChange={(e) => (pinned ? setAllLocal(e.target.checked) : updateWidget(wc.id, { showAllScenarios: e.target.checked }))} /> 3 scénarios</label>
+          <div className="seg small mode-seg" role="radiogroup" aria-label="Scénarios modifiés">
+            {([['one', env.scenarioName(env.snap.scenario)], ['together', 'Les 3 ensemble'], ['three', '3 curseurs']] as [HypMode, string][]).map(([m, label]) => (
+              <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}
+                title={m === 'one' ? 'Modifier uniquement le scénario affiché' : m === 'together' ? 'Un seul curseur : les trois scénarios varient du même pourcentage' : 'Un curseur par scénario'}>{label}</button>
+            ))}
+          </div>
         )}
       </div>
       {!ids.length && <p className="empty small">Aucune hypothèse affichée. Utilisez « Afficher / masquer ».</p>}
@@ -59,10 +65,10 @@ export function DriversWidget({ wc, env, pinned }: { wc: WidgetConfig; env: Env;
         ? cats.map(({ c, ids: g }) => (
           <section key={c.id}>
             <h4 className="cat">{c.title}</h4>
-            {g.map((id) => <HypControl key={id} id={id} env={env} allScenarios={allScenarios} consultant={consultant} />)}
+            {g.map((id) => <HypControl key={id} id={id} env={env} mode={mode} consultant={consultant} />)}
           </section>
         ))
-        : ids.map((id) => <HypControl key={id} id={id} env={env} allScenarios={allScenarios} consultant={consultant} />)}
+        : ids.map((id) => <HypControl key={id} id={id} env={env} mode={mode} consultant={consultant} />)}
     </div>
   )
 }

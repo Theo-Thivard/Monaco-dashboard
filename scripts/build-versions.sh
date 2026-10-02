@@ -13,10 +13,27 @@ trap 'cd "$ROOT"; git worktree prune; rm -rf "$WORK"' EXIT
 
 export REGISTRY_ROOT="$ROOT" SITE_ROOT="$PREFIX/"
 
+# Cache des constructions d'archives (dossier BUILD_CACHE, conservé d'une publication à l'autre par le workflow)
+CACHE="${BUILD_CACHE:-}"
+restore_cache() { # <clé> <destination>
+  [ -n "$CACHE" ] && [ -d "$CACHE/$1" ] || return 1
+  rm -rf "$2"; cp -r "$CACHE/$1" "$2"
+}
+save_cache() { # <clé> <source> <préfixe>
+  [ -n "$CACHE" ] || return 0
+  mkdir -p "$CACHE"
+  # une seule entrée par version : on supprime les anciennes clés du même préfixe
+  for old in "$CACHE/$3"*; do [ -e "$old" ] && [ "$old" != "$CACHE/$1" ] && rm -rf "$old"; done
+  rm -rf "$CACHE/$1"; cp -r "$2" "$CACHE/$1"
+}
+
 jq -c '.[]' "$ROOT/versions.json" | while read -r v; do
   slug="$(jq -r .slug <<<"$v")"
   ref="$(jq -r .ref <<<"$v")"
   echo "::group::Version $slug ($ref)"
+  # une archive est figée : si son code n'a pas changé depuis la dernière publication, on réutilise sa construction
+  key="$slug-$(git -C "$ROOT" rev-parse "$ref")"
+  if restore_cache "$key" "$DIST/$slug"; then echo "(inchangée : réutilisée)"; echo "::endgroup::"; continue; fi
   git -C "$ROOT" worktree add --detach "$WORK/$slug" "$ref" >/dev/null
   (
     cd "$WORK/$slug"
@@ -25,6 +42,7 @@ jq -c '.[]' "$ROOT/versions.json" | while read -r v; do
     [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs
     MODEL_LIVE_URL="http://archive.invalid/model.xlsx" npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
   )
+  save_cache "$key" "$DIST/$slug" "$slug-"
   echo "::endgroup::"
 done
 
@@ -34,6 +52,10 @@ CURRENT="$(jq -r .slug "$ROOT/version.json")"
   slug="$(jq -r .slug <<<"$v")"
   base="$(jq -r .base <<<"$v")"
   echo "::group::Affichage $slug (base $base)"
+  if [ "$base" != "$CURRENT" ]; then
+    vkey="aff-$slug-$(git -C "$ROOT" rev-parse "$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$ROOT/versions.json")")-$(sha1sum "$ROOT/variants/$slug.json" | cut -c1-12)"
+    if restore_cache "$vkey" "$DIST/$slug"; then echo "(inchangé : réutilisé)"; echo "::endgroup::"; continue; fi
+  fi
   if [ "$base" = "$CURRENT" ]; then
     src="$ROOT"
   else
@@ -52,5 +74,12 @@ CURRENT="$(jq -r .slug "$ROOT/version.json")"
     VARIANT_CONFIG="$ROOT/variants/$slug.json" APP_SLUG="$slug" \
       npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
   )
+  [ "$base" = "$CURRENT" ] || save_cache "$vkey" "$DIST/$slug" "aff-$slug-"
   echo "::endgroup::"
 done
+
+# Bandeau « Autres versions » sur les versions figées (versions archivées et affichages de versions archivées)
+ARCHIVED_SLUGS="$(jq -r '.[].slug' "$ROOT/versions.json" | tr '\n' ' ')"
+OLD_VARIANTS=""
+[ -f "$ROOT/variants/index.json" ] && OLD_VARIANTS="$(jq -r --arg c "$CURRENT" '.[] | select(.base != $c) | .slug' "$ROOT/variants/index.json" | tr '\n' ' ')"
+(cd "$ROOT" && node scripts/inject-banner.mjs "$DIST" "$PREFIX" $ARCHIVED_SLUGS $OLD_VARIANTS)
