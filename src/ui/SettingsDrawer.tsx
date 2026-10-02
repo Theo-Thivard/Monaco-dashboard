@@ -9,7 +9,7 @@ import { addWidget, diffFromDefault, getState, moveActor, moveKpi, patchUI, setA
 import { KPI_BY_ID } from '../core/kpis'
 import { download, buildCSV, printPage } from '../state/exporters'
 import { exportJSON, shareURL } from '../state/store'
-import { saveConfigToBranch, TOKEN_HELP_URL, type SaveResult } from '../state/github'
+import { saveVariant, TOKEN_HELP_URL, type SaveResult } from '../state/github'
 import type { Env } from './env'
 import { ColorField, Drawer, Field, NumberInput } from './fields'
 import { LABEL_DEFS } from './labels'
@@ -175,11 +175,13 @@ function FormatTab({ env }: { env: Env }) {
 const TOKEN_KEY = 'monaco-dashboard-gh-token'
 const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY) ?? '' } catch { return '' } }
 
-/** Enregistre l'affichage actuel dans une nouvelle branche GitHub (à fusionner pour en faire le défaut du site). */
+const BASE_LABEL = __REGISTRY__.find((r) => r.slug === __APP_BASE__)?.label.replace(' (actuelle)', '') ?? __APP_BASE__.toUpperCase()
+
+/** Enregistre l'affichage actuel comme nouvelle publication « V6 · nom » (branche + pull request + fusion automatiques). */
 function GithubSave() {
   const [token, setToken] = useState(readToken)
   const [remember, setRemember] = useState(() => { try { return !!localStorage.getItem(TOKEN_KEY) } catch { return false } })
-  const [label, setLabel] = useState('')
+  const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState<SaveResult | null>(null)
@@ -187,26 +189,32 @@ function GithubSave() {
     setBusy(true); setError(''); setDone(null)
     try {
       try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY); (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token.trim()) } catch { /* stockage indisponible */ }
-      setDone(await saveConfigToBranch({ token: token.trim(), label, message: `Affichage du tableau de bord : ${label || 'préférences'}`, config: getState().config }))
+      setDone(await saveVariant({ token: token.trim(), name, base: { slug: __APP_BASE__, label: BASE_LABEL }, config: getState().config }))
     } catch (e) { setError(e instanceof Error ? e.message : 'Échec de l\'enregistrement.') }
     setBusy(false)
   }
   return (
     <>
-      <h4>Enregistrer sur GitHub</h4>
-      <p className="drawer-help">Enregistre la mise en page, les couleurs, les libellés et la visibilité actuels dans une <b>nouvelle branche</b> du dépôt. En la fusionnant dans <code>main</code>, cet affichage devient celui que voient tous les visiteurs. Les hypothèses (curseurs) ne sont pas enregistrées.</p>
-      <Field label="Nom de cette version (donne le nom de la branche)"><input type="text" value={label} placeholder="ex. version client mars" onChange={(e) => setLabel(e.target.value)} /></Field>
-      <Field label="Jeton GitHub" hint="Jeton personnel limité à ce dépôt, permission « Contents : Read and write ». Il reste dans votre navigateur.">
+      <h4>Enregistrer cet affichage</h4>
+      <p className="drawer-help">Crée une <b>copie</b> du tableau de bord avec l'affichage actuel (mise en page, couleurs, libellés, textes, visibilité) sous le nom « {BASE_LABEL} · votre nom ». La version actuelle et les précédentes restent inchangées et accessibles ; la nouvelle apparaît dans le menu ⚙ › Versions et affichages. Les hypothèses (curseurs) ne sont pas enregistrées.</p>
+      <Field label="Nom de l'affichage"><input type="text" value={name} placeholder="ex. vue client mars" onChange={(e) => setName(e.target.value)} /></Field>
+      <Field label="Jeton GitHub" hint="Jeton personnel limité à ce dépôt : « Contents » et « Pull requests » en Read and write. Il reste dans votre navigateur.">
         <input type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="github_pat_…" />
       </Field>
       <label className="chk"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Mémoriser le jeton sur cet appareil</label>
-      <p className="drawer-help"><a href={TOKEN_HELP_URL} target="_blank" rel="noreferrer">Créer un jeton</a> (Repository access : seulement ce dépôt · Contents : Read and write).</p>
-      <button className="tool on" disabled={busy || !token.trim()} onClick={submit}>{busy ? 'Enregistrement…' : 'Enregistrer dans une nouvelle branche'}</button>
+      <p className="drawer-help"><a href={TOKEN_HELP_URL} target="_blank" rel="noreferrer">Créer un jeton</a> (Repository access : seulement ce dépôt · Contents et Pull requests : Read and write).</p>
+      <button className="tool on" disabled={busy || !token.trim() || !name.trim()} onClick={submit}>{busy ? 'Enregistrement…' : 'Enregistrer comme nouvelle version'}</button>
       {error && <p className="warn" role="alert">{error}</p>}
       {done && (
         <div className="diff same" role="status">
-          <p>✓ Enregistré dans la branche <code>{done.branch}</code>.</p>
-          <p><a href={done.compareUrl} target="_blank" rel="noreferrer">Créer la pull request</a> puis la fusionner pour en faire l'affichage par défaut · <a href={done.branchUrl} target="_blank" rel="noreferrer">Voir la branche</a></p>
+          {done.merged ? (
+            <>
+              <p>✓ « {done.label} » est enregistré. Il sera en ligne dans 2 à 4 minutes (coche verte dans l'onglet Actions du dépôt), puis rechargez avec Ctrl+Maj+R.</p>
+              <p><a href={done.url} target="_blank" rel="noreferrer">{done.url}</a></p>
+            </>
+          ) : (
+            <p>La copie est prête mais la fusion automatique a échoué ({done.mergeError}). <a href={done.prUrl} target="_blank" rel="noreferrer">Ouvrez la pull request</a> et cliquez sur « Merge » : « {done.label} » sera alors en ligne.</p>
+          )}
         </div>
       )}
     </>

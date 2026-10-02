@@ -8,6 +8,7 @@ import { ACTOR_KPI_DEFS } from '../core/kpis'
 import { getModel } from '../core/model'
 import { navigate } from '../state/store'
 import { KpiCard } from './KpiStrip'
+import { SCENPANEL_SUB_ADDR, SCENPANEL_SUB_NEED } from './labels'
 import type { Env } from './env'
 
 const ACTOR_KPIS_NEED = ['base', 'need', 'growth', 'weightNeed']
@@ -56,6 +57,17 @@ export function ScenarioCards({ env }: { env: Env }) {
   const need = snap.lens === 'need'
   const value = (r: (typeof snap.results)[number]) => (need ? r.total : r.addressable)
   const max = Math.max(...snap.results.map(value), 1e-9)
+  /** texte sous la valeur : modèle personnalisable avec chiffres vivants */
+  const sub = (r: (typeof snap.results)[number], i: number) => {
+    const tokens = [
+      { key: '2026', label: '', value: env.fmt('power', r.base) },
+      { key: 'hausse', label: '', value: env.fmt('pct', r.base ? r.total / r.base - 1 : 0, { sign: true, decimals: 0 }) },
+      { key: 'besoin', label: '', value: env.fmt('power', r.total) },
+      { key: 'taux', label: '', value: env.fmt('pct', r.rate) },
+      { key: 'valeur', label: '', value: env.fmt('power', value(r)) },
+    ]
+    return toParts(applyTokens(need ? env.label(`scenpanel:sub:${i}`, SCENPANEL_SUB_NEED) : env.label(`scenpanel:subAddr:${i}`, SCENPANEL_SUB_ADDR), tokens))
+  }
   return (
     <div className="scen-panel" role="group" aria-label={need ? 'Besoin IT 2035 par scénario' : 'Demande adressable 2035 par scénario'}>
       <div className="scen-panel-title">{need ? env.label('scenpanel:need', 'Besoin IT généré à Monaco en 2035') : env.label('scenpanel:addr', 'Demande adressable à Monaco en 2035')}</div>
@@ -65,9 +77,7 @@ export function ScenarioCards({ env }: { env: Env }) {
             <span className="scen-card-head"><i className="dot" style={{ background: colors[i] }} /><span className="scen-name">{env.scenarioName(i)}</span><span className="scen-go">{env.label('scenpanel:go', 'Détail →')}</span></span>
             <span className="kpi-value">{env.fmt('power', value(r), { unit: false })}<span className="kpi-unit">{env.unit('power')}</span></span>
             <span className="scen-bar"><i style={{ width: `${(100 * value(r)) / max}%`, background: colors[i] }} /></span>
-            <span className="scen-meta">
-              {need ? <>2026 : {env.fmt('power', r.base)} · <strong>{env.fmt('pct', r.growth - 1, { sign: true, decimals: 0 })}</strong> {env.label('scenpanel:since', 'd\'ici 2035')}</> : <>Besoin {env.fmt('power', r.total)} · taux {env.fmt('pct', r.rate)}</>}
-            </span>
+            <span className="scen-meta">{sub(r, i).map((p, k) => (p.strong ? <strong key={k}>{p.t}</strong> : <span key={k}>{p.t}</span>))}</span>
           </button>
         ))}
       </div>

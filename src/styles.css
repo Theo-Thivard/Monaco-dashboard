@@ -365,3 +365,7 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 .wframe:hover .wedit, .wedit:focus-visible { opacity: 1; }
 @media (hover: none) { .wedit { opacity: 1; } }
 @media print { .wedit { display: none; } }
+
+.menu-link { display: block; padding: 6px 12px; color: var(--c-text); text-decoration: none; font-size: 0.93rem; border-radius: 4px; }
+.menu-link:hover { background: var(--c-surfaceAlt); }
+.menu-link.current { font-weight: 600; color: var(--c-primary); }

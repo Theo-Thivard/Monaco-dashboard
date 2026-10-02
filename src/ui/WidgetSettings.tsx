@@ -72,7 +72,10 @@ function HeadlineEditor({ wc, env }: { wc: WidgetConfig; env: Env }) {
 /** Textes (libellés) propres à certains blocs : panneau des scénarios, indicateurs. */
 function LabelFields({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const rows: { key: string; def: string; title: string }[] =
-    wc.kind === 'scenarioCards' ? LABEL_DEFS.filter((l) => l.group === 'Panneau des trois scénarios').map((l) => ({ ...l, title: l.def }))
+    wc.kind === 'scenarioCards' ? LABEL_DEFS.filter((l) => l.group === 'Panneau des trois scénarios').map((l) => {
+      const m = /^scenpanel:(sub|subAddr):(\d)$/.exec(l.key)
+      return { ...l, title: m ? `Sous la valeur · ${env.scenarioName(Number(m[2]))} (${m[1] === 'sub' ? 'besoins générés' : 'besoins adressables'})` : l.def }
+    })
     : wc.kind === 'actorKpis' ? LABEL_DEFS.filter((l) => l.group === 'Indicateurs d\'acteur').map((l) => ({ ...l, title: l.def }))
     : wc.kind === 'kpis' ? env.config.kpis.order.filter((id) => KPI_BY_ID[id]?.lenses.includes(env.snap.lens)).map((id) => ({ key: `kpi:${id}`, def: KPI_BY_ID[id].label, title: KPI_BY_ID[id].label }))
     : []
@@ -80,6 +83,7 @@ function LabelFields({ wc, env }: { wc: WidgetConfig; env: Env }) {
   return (
     <>
       <h4>Textes du bloc</h4>
+      {wc.kind === 'scenarioCards' && <p className="drawer-help">Textes sous chaque valeur : jetons <code>{'{2026}'}</code> <code>{'{hausse}'}</code> <code>{'{besoin}'}</code> <code>{'{taux}'}</code> <code>{'{valeur}'}</code> (chiffres du modèle) ; <code>**mot**</code> met en gras. Les six lignes « sous la valeur » correspondent à la lecture Besoins générés puis Besoins adressables.</p>}
       {rows.map((l) => <Field key={l.key} label={l.title}><input type="text" value={env.label(l.key, l.def)} onChange={(e) => setLabel(l.key, e.target.value, l.def)} /></Field>)}
     </>
   )
@@ -114,6 +118,15 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
           </Field>
           {curType !== 'table' && <label className="inline"><input type="checkbox" checked={wc.legend ?? true} onChange={(e) => set({ legend: e.target.checked })} /> Afficher la légende</label>}
           <Field label="Décimales (vide = automatique)"><NumberInput value={wc.decimals} min={0} max={4} onChange={(v) => set({ decimals: v })} /></Field>
+          {curType !== 'table' && curType !== 'donut' && curType !== 'pie' && (
+            <>
+              <div className="grid2">
+                <Field label="Axe : minimum"><NumberInput value={wc.axisMin} step={0.5} placeholder="auto" onChange={(v) => set({ axisMin: v })} /></Field>
+                <Field label="Axe : maximum"><NumberInput value={wc.axisMax} step={0.5} placeholder="auto" onChange={(v) => set({ axisMax: v })} /></Field>
+              </div>
+              <p className="drawer-help">Dans l'unité affichée ({env.unit(ds?.format ?? 'power')}). Vide = automatique.</p>
+            </>
+          )}
           <SeriesList wc={wc} env={env} />
         </>
       )}

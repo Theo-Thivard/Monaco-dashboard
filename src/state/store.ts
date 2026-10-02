@@ -4,7 +4,6 @@
 import { useSyncExternalStore } from 'react'
 import type { Layout } from 'react-grid-layout'
 import { createDefaultConfig, PAGE_DEFAULTS } from '../config/defaults'
-import saved from '../config/saved.json'
 import type { DashboardConfig, PageConfig, WidgetConfig } from '../config/types'
 import { defaultParams, HYP_BY_ID, HYPS, hypValue, type Params } from '../core/hypotheses'
 import type { Lens } from '../core/lens'
@@ -40,10 +39,11 @@ export interface AppState {
 
 // On ne stocke que les hypothèses que l'utilisateur a MODIFIÉES par rapport à l'Excel (les autres suivent l'Excel).
 // v6 : repart à zéro (les anciennes configurations ne sont pas reprises) ; une configuration jamais modifiée n'est plus stockée, elle suit le défaut du site.
-const KEY = 'monaco-dashboard-v6'
+// une clé par publication (version ou affichage enregistré) : elles partagent la même origine sans se mélanger
+const KEY = `monaco-dashboard-${__APP_SLUG__}`
 const HISTORY_MAX = 60
 
-const SIDEBAR_KEY = 'monaco-dashboard-sidebar'
+const SIDEBAR_KEY = `monaco-dashboard-sidebar-${__APP_SLUG__}`
 /** Ouvert par défaut sur grand écran ; le choix de l'utilisateur est mémorisé. */
 function readSidebar(): boolean {
   try {
@@ -63,10 +63,9 @@ const freshUI = (): UIState => ({
   panel: null, settingsTab: 'content', selectedWidget: null, sidebar: readSidebar(), toast: null,
 })
 
-/** Affichage par défaut du site : configuration enregistrée dans le dépôt (src/config/saved.json) si elle existe, sinon l'affichage d'origine. */
+/** Affichage par défaut de cette publication : affichage enregistré (variante) ou affichage d'origine. */
 export function userDefaultConfig(): DashboardConfig {
-  const c = (saved as { config?: unknown }).config
-  return c ? sanitizeConfig(c) : createDefaultConfig()
+  return __VARIANT_CONFIG__ ? sanitizeConfig(__VARIANT_CONFIG__) : createDefaultConfig()
 }
 
 // ------------------------------------------------------------------ init
@@ -329,9 +328,27 @@ export function setLayout(visible: Layout[]) {
       if (n.x !== l.x || n.y !== l.y || n.w !== l.w || n.h !== l.h) changed = true
       return n
     })
-    return changed ? { ...s, config: { ...s.config, pages: { ...s.config.pages, [kind]: { ...page, layout } } } } : s
+    if (!changed) return s
+    // un bloc déplacé dans une autre partie en prend le comportement (visible / replié) : il y reste après la mise en page
+    const widgets = page.widgets.map((w) => {
+      if (w.kind === 'section' || !upd.has(w.id)) return w
+      const tier = tierFromPosition(page.widgets, layout, w.id)
+      return tier === w.tier ? w : { ...w, tier }
+    })
+    return { ...s, config: { ...s.config, pages: { ...s.config.pages, [kind]: { widgets, layout } } } }
   })
 }
+/** Zone d'un bloc selon sa position : sous une section repliable « détail » ou « méthodologie » il en fait partie. */
+export function tierFromPosition(widgets: WidgetConfig[], layout: Layout[], id: string): WidgetConfig['tier'] {
+  const y = layout.find((l) => l.i === id)?.y
+  if (y === undefined) return 'client'
+  const above = widgets.filter((w) => w.kind === 'section' && w.id !== id)
+    .map((w) => ({ w, y: layout.find((l) => l.i === w.id)?.y ?? Infinity }))
+    .filter((s) => s.y <= y)
+    .sort((a, b) => b.y - a.y)[0]
+  return above?.w.collapse ?? 'client'
+}
+
 export const updateLayoutItem = (id: string, patch: Partial<Pick<Layout, 'x' | 'y' | 'w' | 'h'>>) =>
   updateOwnPage(id, (p) => ({ ...p, layout: p.layout.map((l) => (l.i === id ? { ...l, ...patch } : l)) }))
 

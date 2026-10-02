@@ -18,6 +18,8 @@ Dashboard interactif construit à partir du classeur Excel [`Monaco_Besoins_IT_v
 - **Toutes les versions à partir de la V3** lisent l'Excel (valeurs et formules) à chaque ouverture : modifier le classeur dans GitHub met le dashboard à jour, sans rien d'autre à faire. Les V1 et V2, figées, ont le modèle de l'ancien Excel v2 en dur et **ne reflètent pas** la formule CHPG modifiée depuis.
 - Toutes les versions restent en ligne à leur propre adresse ; un nouveau dashboard n'efface jamais les précédents.
 
+**Mes affichages enregistrés** (copies d'une version avec une mise en page personnalisée, nommées « V6 · nom ») : ils sont listés dans le menu ⚙ › *Versions et affichages* du tableau de bord, avec toutes les versions ci-dessus.
+
 ## Mettre à jour le modèle
 Remplacez le fichier dans le dépôt (*Add file › Upload files*, **même nom** `Monaco_Besoins_IT_v3.xlsx` ; si vous créez `…_v4.xlsx`, le plus élevé est utilisé). Le dashboard reprend valeurs et formules au lancement suivant. Détails et limites : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
