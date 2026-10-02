@@ -6,6 +6,7 @@ import { addWidget, diffFromDefault, getState, moveKpi, patchUI, resetAll, reset
 import { KPI_BY_ID } from '../core/kpis'
 import { download, buildCSV, printPage } from '../state/exporters'
 import { exportJSON, shareURL } from '../state/store'
+import { saveConfigToBranch, TOKEN_HELP_URL, type SaveResult } from '../state/github'
 import type { Env } from './env'
 import { ColorField, Drawer, Field, NumberInput } from './fields'
 import { LABEL_DEFS } from './labels'
@@ -138,6 +139,47 @@ function FormatTab({ env }: { env: Env }) {
   )
 }
 
+const TOKEN_KEY = 'monaco-dashboard-gh-token'
+const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY) ?? '' } catch { return '' } }
+
+/** Enregistre l'affichage actuel dans une nouvelle branche GitHub (à fusionner pour en faire le défaut du site). */
+function GithubSave() {
+  const [token, setToken] = useState(readToken)
+  const [remember, setRemember] = useState(() => { try { return !!localStorage.getItem(TOKEN_KEY) } catch { return false } })
+  const [label, setLabel] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState<SaveResult | null>(null)
+  const submit = async () => {
+    setBusy(true); setError(''); setDone(null)
+    try {
+      try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY); (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token.trim()) } catch { /* stockage indisponible */ }
+      setDone(await saveConfigToBranch({ token: token.trim(), label, message: `Affichage du dashboard : ${label || 'préférences'}`, config: getState().config }))
+    } catch (e) { setError(e instanceof Error ? e.message : 'Échec de l\'enregistrement.') }
+    setBusy(false)
+  }
+  return (
+    <>
+      <h4>Enregistrer sur GitHub</h4>
+      <p className="drawer-help">Enregistre la mise en page, les couleurs, les libellés et la visibilité actuels dans une <b>nouvelle branche</b> du dépôt. En la fusionnant dans <code>main</code>, cet affichage devient celui que voient tous les visiteurs. Les hypothèses (curseurs) ne sont pas enregistrées.</p>
+      <Field label="Nom de cette version (donne le nom de la branche)"><input type="text" value={label} placeholder="ex. version client mars" onChange={(e) => setLabel(e.target.value)} /></Field>
+      <Field label="Jeton GitHub" hint="Jeton personnel limité à ce dépôt, permission « Contents : Read and write ». Il reste dans votre navigateur.">
+        <input type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="github_pat_…" />
+      </Field>
+      <label className="chk"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Mémoriser le jeton sur cet appareil</label>
+      <p className="drawer-help"><a href={TOKEN_HELP_URL} target="_blank" rel="noreferrer">Créer un jeton</a> (Repository access : seulement ce dépôt · Contents : Read and write).</p>
+      <button className="tool on" disabled={busy || !token.trim()} onClick={submit}>{busy ? 'Enregistrement…' : 'Enregistrer dans une nouvelle branche'}</button>
+      {error && <p className="warn" role="alert">{error}</p>}
+      {done && (
+        <div className="diff same" role="status">
+          <p>✓ Enregistré dans la branche <code>{done.branch}</code>.</p>
+          <p><a href={done.compareUrl} target="_blank" rel="noreferrer">Créer la pull request</a> puis la fusionner pour en faire l'affichage par défaut · <a href={done.branchUrl} target="_blank" rel="noreferrer">Voir la branche</a></p>
+        </div>
+      )}
+    </>
+  )
+}
+
 function SaveTab({ env }: { env: Env }) {
   const s = useAppState((x) => x)
   const d = diffFromDefault(s)
@@ -159,10 +201,12 @@ function SaveTab({ env }: { env: Env }) {
         )}
       </div>
 
+      <GithubSave />
+
       <h4>Réinitialiser</h4>
       <div className="reset-list">
         <div><ConfirmButton label="Reset assumptions" onConfirm={resetAssumptions} /><p>Hypothèses aux valeurs d'origine (annulable).</p></div>
-        <div><ConfirmButton label="Reset dashboard" onConfirm={resetDashboard} /><p>Mise en page, couleurs, graphiques, libellés et visibilité par défaut. Les hypothèses sont conservées.</p></div>
+        <div><ConfirmButton label="Reset dashboard" onConfirm={resetDashboard} /><p>Mise en page, couleurs, graphiques, libellés et visibilité par défaut (affichage enregistré dans le dépôt, sinon d'origine). Les hypothèses sont conservées.</p></div>
         <div><ConfirmButton className="danger" label="Reset all" onConfirm={resetAll} /><p>Tout remettre à l'état initial.</p></div>
       </div>
 

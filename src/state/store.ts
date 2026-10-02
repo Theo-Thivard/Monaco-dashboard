@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Layout } from 'react-grid-layout'
 import { createDefaultConfig, PAGE_DEFAULTS } from '../config/defaults'
+import saved from '../config/saved.json'
 import type { DashboardConfig, PageConfig, WidgetConfig } from '../config/types'
 import { defaultParams, HYP_BY_ID, HYPS, hypValue, type Params } from '../core/hypotheses'
 import type { Lens } from '../core/lens'
@@ -44,6 +45,12 @@ const freshUI = (): UIState => ({
   mode: 'client', editLayout: false, expanded: { detail: false, method: false },
   panel: null, settingsTab: 'content', selectedWidget: null, toast: null,
 })
+
+/** Affichage par défaut du site : configuration enregistrée dans le dépôt (src/config/saved.json) si elle existe, sinon l'affichage d'origine. */
+export function userDefaultConfig(): DashboardConfig {
+  const c = (saved as { config?: unknown }).config
+  return c ? sanitizeConfig(c) : createDefaultConfig()
+}
 
 // ------------------------------------------------------------------ init
 /** Écarts par rapport aux valeurs de l'Excel : null = « suit l'Excel ». */
@@ -127,7 +134,7 @@ const readRoute = (): Route => { try { return parseRoute(location.hash) } catch 
 function load(): AppState {
   const base: AppState = {
     params: defaultParams(), scenario: 1, lens: 'need', route: readRoute(), past: [], future: [],
-    config: createDefaultConfig(), ui: freshUI(),
+    config: userDefaultConfig(), ui: freshUI(),
   }
   try {
     const raw = localStorage.getItem(KEY)
@@ -337,11 +344,11 @@ export function moveKpi(id: string, dir: -1 | 1) {
 // ------------------------------------------------------------------ resets
 /** Remet layout, couleurs, formats, libellés, visibilité et types de graphiques par défaut (hypothèses conservées). */
 export function resetDashboard() {
-  setState((s) => ({ ...s, config: createDefaultConfig(), ui: { ...s.ui, selectedWidget: null, expanded: { detail: false, method: false } } }))
+  setState((s) => ({ ...s, config: userDefaultConfig(), ui: { ...s.ui, selectedWidget: null, expanded: { detail: false, method: false } } }))
   toast('Dashboard remis dans sa configuration par défaut')
 }
 export function resetAll() {
-  setState((s) => ({ ...s, params: defaultParams(), lens: 'need', past: [], future: [], config: createDefaultConfig(), scenario: s.route.kind === 'scenario' ? s.route.scenario : 1, ui: { ...freshUI(), mode: s.ui.mode } }))
+  setState((s) => ({ ...s, params: defaultParams(), lens: 'need', past: [], future: [], config: userDefaultConfig(), scenario: s.route.kind === 'scenario' ? s.route.scenario : 1, ui: { ...freshUI(), mode: s.ui.mode } }))
   toast('Tout a été remis à l\'état initial')
 }
 
@@ -381,7 +388,7 @@ export interface DiffSummary {
   format: number
 }
 export function diffFromDefault(s: AppState): DiffSummary {
-  const d = createDefaultConfig()
+  const d = userDefaultConfig()
   const def = defaultParams()
   const assumptions: DiffSummary['assumptions'] = []
   for (const h of HYPS) {
