@@ -92,6 +92,10 @@ function ContentTab({ env }: { env: Env }) {
         }}>＋ Graphique</button>
       </div>
       <button className="wide" onClick={() => {
+        addWidget({ id: `hy-${Date.now().toString(36)}`, kind: 'drivers', tier: 'client', visible: true, title: 'Hypothèses', showAllScenarios: getState().route.kind === 'global' }, { w: 9, h: 22 })
+        toast('Bloc d\'hypothèses ajouté en bas de la page')
+      }}>＋ Bloc d'hypothèses (curseurs)</button>
+      <button className="wide" onClick={() => {
         addWidget({ id: `tx-${Date.now().toString(36)}`, kind: 'text', tier: 'client', visible: true, title: 'Note', text: 'Saisissez votre commentaire…' }, { w: 8, h: 8 })
         toast('Note ajoutée en bas du tableau de bord')
       }}>＋ Note / annotation</button>
