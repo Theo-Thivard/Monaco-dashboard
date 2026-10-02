@@ -49,3 +49,34 @@ describe('un bloc déplacé change de partie', () => {
     expect(tierFromPosition(page.widgets, page.layout.map((l) => (l.i === 'g-detail' ? { ...l, y: meth.y + 2 } : l)), 'g-detail')).toBe('method')
   })
 })
+
+describe('textes propres à un scénario / un acteur', () => {
+  it('chaque page garde son texte ; la Globale garde les textes communs', async () => {
+    const { entityKey, resolveEntityText } = await import('../config/resolve')
+    const { updateWidgetEntity, updateWidget, getState } = await import('../state/store')
+    updateWidget('headline', { headline: { title: 'commun' } })
+    updateWidgetEntity('headline', 'scenario:0', { headline: { title: 'Bas **{actif}**' } })
+    updateWidgetEntity('headline', 'scenario:2', { title: 'Haut' })
+    const w = getState().config.pages.scenario.widgets.find((x) => x.id === 'headline')!
+    expect(resolveEntityText(w, 'scenario:0').headline?.title).toBe('Bas **{actif}**')
+    expect(resolveEntityText(w, 'scenario:1').headline?.title).toBe('commun') // Central : pas de texte propre
+    expect(resolveEntityText(w, 'scenario:2').title).toBe('Haut')
+    expect(resolveEntityText(w, null).headline?.title).toBe('commun')
+    expect(entityKey({ kind: 'actor', actor: 'MT' })).toBe('actor:MT')
+    expect(entityKey({ kind: 'global' })).toBeNull()
+  })
+  it('jetons du message clé par acteur et par scénario', async () => {
+    const { headlineTokens, applyTokens } = await import('../core/headlineText')
+    const { buildSnapshot } = await import('../core/snapshot')
+    const { defaultParams } = await import('../core/hypotheses')
+    const { actorBlock } = await import('../core/actors')
+    for (const s of [0, 1, 2]) {
+      const snap = buildSnapshot(defaultParams(), s, 'need')
+      const tk = headlineTokens(snap, f, (i) => String(i), { id: 'MT', name: 'Monaco Telecom' })
+      const b = actorBlock(snap.active, 'MT')
+      expect(applyTokens('{acteur} {actif} {poids}', tk)).toBe(`Monaco Telecom ${fmt('power', b.total, f)} ${fmt('pct', b.total / snap.active.total, f)}`)
+      const sc = headlineTokens(snap, f, (i) => String(i))
+      expect(applyTokens('{hausse}', sc)).toBe(fmt('pct', snap.active.total / snap.active.base - 1, f, { decimals: 0 }))
+    }
+  })
+})

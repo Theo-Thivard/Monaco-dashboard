@@ -175,7 +175,7 @@ function FormatTab({ env }: { env: Env }) {
 const TOKEN_KEY = 'monaco-dashboard-gh-token'
 const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY) ?? '' } catch { return '' } }
 
-const BASE_LABEL = __REGISTRY__.find((r) => r.slug === __APP_BASE__)?.label.replace(' (actuelle)', '') ?? __APP_BASE__.toUpperCase()
+const BASE_LABEL = __REGISTRY__.find((r) => r.slug === __APP_BASE__)?.label ?? __APP_BASE__.toUpperCase()
 
 /** Enregistre l'affichage actuel comme nouvelle publication « V4 · nom » (branche + pull request + fusion automatiques). */
 function GithubSave() {

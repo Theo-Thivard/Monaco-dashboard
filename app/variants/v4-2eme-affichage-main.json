@@ -325,7 +325,7 @@
             "tier": "client",
             "visible": true,
             "headline": {
-              "title": "Le besoin IT à Monaco atteint **3,45 MW IT** en 2035, soit **40%** de plusqu'en 2026 (2,46 MW IT).",
+              "title": "Le besoin IT à Monaco atteint **{actif}** en 2035, soit **{hausse}** de plus qu'en 2026 ({2026}).",
               "hideBullets": true
             }
           },
@@ -633,7 +633,7 @@
             "visible": true,
             "headline": {
               "hideBullets": true,
-              "title": "**Monaco Telecom – besoins propres** génère **0,27 MW IT** de besoin en 2035, soit 5,9 % du total.\n"
+              "title": "**{acteur}** génère **{actif}** de besoin en 2035, soit {poids} du total."
             }
           },
           {

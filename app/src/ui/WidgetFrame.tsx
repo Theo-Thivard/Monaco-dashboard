@@ -1,7 +1,7 @@
 import { memo, useDeferredValue, type ReactNode } from 'react'
 import { DATASET_BY_ID, CHART_LABELS, compatibleCharts, type ChartType } from '../core/datasets'
 import type { WidgetConfig } from '../config/types'
-import { resolveWidget } from '../config/resolve'
+import { entityKey, resolveEntityText, resolveWidget } from '../config/resolve'
 import { patchUI, toggleExpanded, updateWidget, updateWidgetLens, useUI } from '../state/store'
 import { AssumptionsTable } from './AssumptionsTable'
 import { ChartView } from './ChartView'
@@ -83,7 +83,9 @@ function SectionHeader({ wc, expanded }: { wc: WidgetConfig; expanded: boolean }
   )
 }
 
-function WidgetFrameBase({ wc, env }: { wc: WidgetConfig; env: Env }) {
+function WidgetFrameBase({ wc: wcRaw, env }: { wc: WidgetConfig; env: Env }) {
+  // textes propres au scénario / à l'acteur affiché (sinon textes communs de la page)
+  const wc = resolveEntityText(wcRaw, entityKey(env.route))
   const ui = useUI()
   const edit = ui.editLayout
   const selected = edit && ui.selectedWidget === wc.id
