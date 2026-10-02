@@ -4,7 +4,7 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write # mise à jour automatique de la liste des affichages dans le README
   pages: write
   id-token: write
 concurrency:
@@ -17,6 +17,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # branches d'archive des anciennes versions
+      # Liste des affichages enregistrés dans le README (liens directs) : mise à jour automatique, sans relancer le déploiement
+      - name: README — liste des affichages
+        run: |
+          node app/scripts/update-readme.mjs
+          if ! git diff --quiet README.md; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            git commit -m "README : liste des affichages enregistrés [skip ci]"
+            git pull --rebase origin main && git push origin HEAD:main || echo "(mise à jour du README reportée)"
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 20
