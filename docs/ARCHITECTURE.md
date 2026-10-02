@@ -79,3 +79,6 @@ GitHub Pages via `.github/workflows/deploy.yml`, à chaque push sur `main`.
 - La cascade « effectifs / intensité / IA » est obtenue en recalculant l'Excel avec l'intensité numérique puis l'IA neutralisées : elle suit les formules, quelles qu'elles soient.
 - Le classeur doit idéalement être enregistré par Excel (valeurs calculées incluses) ; sinon le dashboard recalcule tout lui-même, ce qui reste exact.
 - Dépendance de lecture des fichiers : `xlsx` (SheetJS 0.18.5, dernière version publiée sur npm). Les avis de sécurité connus visent des fichiers non fiables ; ici le fichier est celui de votre dépôt.
+
+## Enregistrer l'affichage sur GitHub
+Vue consultant › ⚙ › « Enregistrer l'affichage sur GitHub… » : le navigateur appelle l'API GitHub avec un jeton personnel (limité à ce dépôt, *Contents : Read and write*), crée une branche `affichage/<nom>-<date>` depuis `main` et y écrit la configuration dans `src/config/saved.json`. Fusionner la branche dans `main` fait de cet affichage le défaut du site (lu au build ; « Reset dashboard » y revient). Les hypothèses ne sont pas enregistrées. Code : `src/state/github.ts`.

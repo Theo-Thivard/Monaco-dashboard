@@ -29,6 +29,7 @@ function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
           <button onClick={() => { setMode(consultant ? 'client' : 'consultant'); close() }}>{consultant ? 'Passer en vue client' : 'Passer en vue consultant'}</button>
           <button onClick={() => { patchUI({ panel: 'assumptions' }); close() }}>Toutes les hypothèses{modified ? ` (${modified} modifiée${modified > 1 ? 's' : ''})` : ''}</button>
           {consultant && <button onClick={() => { patchUI({ panel: 'settings' }); close() }}>Personnaliser le dashboard</button>}
+          {consultant && <button onClick={() => { patchUI({ panel: 'settings', settingsTab: 'save' }); close() }}>Enregistrer l'affichage sur GitHub…</button>}
           {consultant && <button onClick={() => { patchUI({ editLayout: !s.ui.editLayout, selectedWidget: null, panel: null }); close() }}>{s.ui.editLayout ? 'Terminer la mise en page' : 'Modifier la mise en page'}</button>}
           <div className="pop-sep" />
           <div className="pop-title">Partager et exporter</div>
