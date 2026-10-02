@@ -23,6 +23,9 @@ export interface WidgetConfig {
   chartType?: ChartType
   legend?: boolean
   decimals?: number
+  /** bornes de l'axe des valeurs (unité affichée) ; vide = automatique */
+  axisMin?: number
+  axisMax?: number
   series?: Record<string, SeriesStyle>
   seriesOrder?: string[]
   bg?: string

@@ -1,32 +1,44 @@
-// Enregistrement de l'affichage (configuration du dashboard) dans une NOUVELLE branche du dépôt GitHub.
-// Appel direct à l'API GitHub depuis le navigateur avec un jeton personnel de l'utilisateur
-// (jamais stocké dans le dépôt). La fusion de la branche dans `main` fait de cet affichage le défaut du site.
+// Enregistrement d'un affichage comme NOUVELLE publication du tableau de bord (« V6 · nom »), sans toucher à l'existante.
+// Appels directs à l'API GitHub depuis le navigateur avec un jeton personnel de l'utilisateur (jamais stocké dans le dépôt) :
+// branche → fichiers `variants/` → pull request → fusion. Le déploiement publie ensuite https://…/<slug>/.
 
 import type { DashboardConfig } from '../config/types'
 
 export const REPO = 'Theo-Thivard/Monaco-dashboard'
 export const BASE_BRANCH = 'main'
-/** Fichier lu au build : s'il contient une configuration, elle devient l'affichage par défaut. */
-export const SAVED_PATH = 'src/config/saved.json'
+export const PAGES_URL = 'https://theo-thivard.github.io/Monaco-dashboard/'
 export const TOKEN_HELP_URL = 'https://github.com/settings/personal-access-tokens/new'
 
-export interface SaveResult { branch: string; branchUrl: string; compareUrl: string }
+export interface VariantEntry { slug: string; label: string; base: string; created: string }
+export interface SaveResult {
+  slug: string
+  label: string
+  /** adresse de la nouvelle publication (disponible après le déploiement) */
+  url: string
+  prUrl: string
+  /** la pull request a-t-elle été fusionnée automatiquement ? */
+  merged: boolean
+  mergeError?: string
+}
 
 const api = (path: string) => `https://api.github.com/repos/${REPO}${path}`
 
-/** Nom de branche sûr : « affichage/<mots-séparés-par-des-tirets> ». */
-export function branchName(label: string, now = new Date()): string {
-  const slug = label.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`
-  return `affichage/${slug || 'preferences'}-${stamp}`
+/** « v6 » + « Vue client — Mars » → « v6-vue-client-mars » (unique parmi `taken`). */
+export function variantSlug(base: string, name: string, taken: string[] = []): string {
+  const clean = name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'affichage'
+  let slug = `${base}-${clean}`
+  for (let i = 2; taken.includes(slug); i++) slug = `${base}-${clean}-${i}`
+  return slug
 }
 
-export function savedFileContent(config: DashboardConfig): string {
+export function variantFileContent(config: DashboardConfig): string {
   return JSON.stringify({ app: 'monaco-dashboard', config }, null, 2) + '\n'
 }
 
 const b64 = (s: string) => btoa(unescape(encodeURIComponent(s)))
+const unb64 = (s: string) => decodeURIComponent(escape(atob(s.replace(/\s/g, ''))))
+
+class GhError extends Error { constructor(msg: string, readonly status: number) { super(msg) } }
 
 async function call<T>(token: string, path: string, init?: RequestInit): Promise<T> {
   let res: Response
@@ -36,32 +48,46 @@ async function call<T>(token: string, path: string, init?: RequestInit): Promise
       headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
     })
   } catch {
-    throw new Error('GitHub est injoignable (connexion ou pare-feu).')
+    throw new GhError('GitHub est injoignable (connexion ou pare-feu).', 0)
   }
   if (!res.ok) {
-    if (res.status === 401) throw new Error('Jeton refusé : vérifiez-le ou recréez-en un.')
-    if (res.status === 403 || res.status === 404) throw new Error('Accès refusé au dépôt : le jeton doit avoir la permission « Contents : Read and write » sur ce dépôt.')
-    if (res.status === 422) throw new Error('Cette branche existe déjà : choisissez un autre nom.')
-    throw new Error(`GitHub a répondu ${res.status}.`)
+    if (res.status === 401) throw new GhError('Jeton refusé : vérifiez-le ou recréez-en un.', 401)
+    if (res.status === 403 || res.status === 404) throw new GhError('Accès refusé : le jeton doit avoir « Contents » et « Pull requests » en Read and write sur ce dépôt.', res.status)
+    if (res.status === 422) throw new GhError('Cette publication existe déjà : choisissez un autre nom.', 422)
+    throw new GhError(`GitHub a répondu ${res.status}.`, res.status)
   }
   return (await res.json()) as T
 }
 
-/** Crée la branche à partir de `main`, y enregistre la configuration, renvoie les liens utiles. */
-export async function saveConfigToBranch(opts: { token: string; label: string; message: string; config: DashboardConfig; now?: Date }): Promise<SaveResult> {
-  const { token, config } = opts
-  const branch = branchName(opts.label, opts.now)
-  const base = await call<{ object: { sha: string } }>(token, `/git/ref/heads/${BASE_BRANCH}`)
-  await call(token, '/git/refs', { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: base.object.sha }) })
-  const existing = await call<{ sha: string }>(token, `/contents/${SAVED_PATH}?ref=${encodeURIComponent(branch)}`).catch(() => null)
-  await call(token, `/contents/${SAVED_PATH}`, {
-    method: 'PUT',
-    body: JSON.stringify({ message: opts.message || 'Enregistrer l\'affichage du dashboard', content: b64(savedFileContent(config)), branch, ...(existing ? { sha: existing.sha } : {}) }),
+/** Crée « <version>.<nom> » : branche, fichiers, pull request, fusion automatique si possible. */
+export async function saveVariant(opts: { token: string; name: string; base: { slug: string; label: string }; config: DashboardConfig; now?: Date }): Promise<SaveResult> {
+  const { token, config, base } = opts
+  const name = opts.name.trim() || 'Affichage'
+  const now = opts.now ?? new Date()
+
+  const ref = await call<{ object: { sha: string } }>(token, `/git/ref/heads/${BASE_BRANCH}`)
+  const idx = await call<{ sha: string; content: string }>(token, `/contents/variants/index.json?ref=${BASE_BRANCH}`).catch(() => null)
+  const entries: VariantEntry[] = idx ? (JSON.parse(unb64(idx.content)) as VariantEntry[]) : []
+  const slug = variantSlug(base.slug, name, entries.map((e) => e.slug))
+  const label = `${base.label} · ${name}`
+  const entry: VariantEntry = { slug, label, base: base.slug, created: now.toISOString().slice(0, 10) }
+
+  const branch = `affichage/${slug}`
+  await call(token, '/git/refs', { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: ref.object.sha }) })
+  const put = (path: string, content: string, message: string, sha?: string) =>
+    call(token, `/contents/${path}`, { method: 'PUT', body: JSON.stringify({ message, content: b64(content), branch, ...(sha ? { sha } : {}) }) })
+  await put(`variants/${slug}.json`, variantFileContent(config), `Affichage « ${label} »`)
+  await put('variants/index.json', JSON.stringify([...entries, entry], null, 2) + '\n', `Ajouter « ${label} » à la liste des affichages`, idx?.sha)
+
+  const pr = await call<{ number: number; html_url: string }>(token, '/pulls', {
+    method: 'POST',
+    body: JSON.stringify({ title: `Affichage « ${label} »`, head: branch, base: BASE_BRANCH, body: `Nouvelle publication du tableau de bord : **${label}**, accessible en \`/${slug}/\` après déploiement. La version d'origine reste inchangée.` }),
   })
-  const enc = branch.split('/').map(encodeURIComponent).join('/')
-  return {
-    branch,
-    branchUrl: `https://github.com/${REPO}/tree/${enc}`,
-    compareUrl: `https://github.com/${REPO}/compare/${BASE_BRANCH}...${enc}?expand=1`,
-  }
+  let merged = false
+  let mergeError: string | undefined
+  try {
+    await call(token, `/pulls/${pr.number}/merge`, { method: 'PUT', body: JSON.stringify({ merge_method: 'merge' }) })
+    merged = true
+  } catch (e) { mergeError = e instanceof Error ? e.message : 'Fusion impossible.' }
+  return { slug, label, url: `${PAGES_URL}${slug}/`, prUrl: pr.html_url, merged, mergeError }
 }

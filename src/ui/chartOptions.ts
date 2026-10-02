@@ -21,6 +21,27 @@ export interface ChartEnv {
   decimals?: number
   /** largeur du conteneur en px (adaptation des libellés) */
   width: number
+  /** bornes de l'axe des valeurs, dans l'unité affichée (MW, %…) ; vide = automatique */
+  axisMin?: number
+  axisMax?: number
+  /** noms de séries de la légende (pour réserver assez de place si elle passe sur plusieurs lignes) */
+  legendNames?: string[]
+}
+
+/** Nombre de lignes occupées par la légende (estimation d'après la largeur du graphique). */
+function legendRows(env: ChartEnv): number {
+  if (!env.legend || !env.legendNames?.length) return 1
+  const itemW = env.legendNames.reduce((a, n) => a + 10 + 6 + n.length * 6.6 + 16, 0)
+  return Math.max(1, Math.ceil(itemW / Math.max(80, env.width - 24)))
+}
+/** Marge haute de la grille : la légende (sur une ou plusieurs lignes) ne recouvre jamais le graphique. */
+const gridTop = (env: ChartEnv, noLegend = 14) => (env.legend ? 14 + legendRows(env) * 20 : noLegend)
+
+/** Valeur affichée (MW, %…) → valeur brute du jeu de données (kW, fraction…). */
+function fromDisplay(kind: FormatKind, v: number, powerUnit: 'MW' | 'kW'): number {
+  if (kind === 'power') return powerUnit === 'MW' ? v * 1000 : v
+  if (kind === 'pct' || kind === 'pts') return v / 100
+  return v
 }
 
 const FONT = 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif'
@@ -36,9 +57,9 @@ function frame(env: ChartEnv, extra: P = {}): P {
     animationDurationUpdate: 250,
     animationEasing: 'cubicOut',
     textStyle: { fontFamily: FONT, color: t.textMuted, fontSize: 12 },
-    grid: { left: 8, right: 18, top: env.legend ? 34 : 14, bottom: 4, containLabel: true },
+    grid: { left: 10, right: 18, top: gridTop(env), bottom: 4, containLabel: true },
     legend: env.legend
-      ? { top: 0, left: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, itemGap: 16, textStyle: { color: t.textMuted, fontSize: 12, fontFamily: FONT } }
+      ? { top: 0, left: 0, width: Math.max(80, env.width - 24), type: 'plain', icon: 'roundRect', itemWidth: 10, itemHeight: 10, itemGap: 16, textStyle: { color: t.textMuted, fontSize: 12, fontFamily: FONT } }
       : { show: false },
     tooltip: {
       confine: true, backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, padding: [8, 10],
@@ -61,6 +82,8 @@ function valueAxis(ds: Dataset, env: ChartEnv, horizontal = false, extra: P = {}
     splitLine: { lineStyle: { color: t.grid } },
     axisLine: { show: false }, axisTick: { show: false },
     ...(horizontal ? {} : {}), ...extra,
+    ...(env.axisMin !== undefined ? { min: fromDisplay(ds.format, env.axisMin, env.powerUnit) } : {}),
+    ...(env.axisMax !== undefined ? { max: fromDisplay(ds.format, env.axisMax, env.powerUnit) } : {}),
   }
 }
 
@@ -100,12 +123,12 @@ function bars(p: PreparedDataset, type: 'bar' | 'hbar' | 'stackedBar', env: Char
   const stacked = type === 'stackedBar'
   const manyLabels = !stacked && ds.categories.length * ds.series.length <= 12
   const single = ds.series.length === 1
+  env = { ...env, legend: env.legend && ds.series.length > 1 }
   return {
     ...frame(env),
-    legend: { ...(frame(env).legend as P), show: env.legend && ds.series.length > 1 },
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: env.tokens.surfaceAlt, opacity: 0.6 } }, formatter: axisTooltip(p, env, stacked) },
     xAxis: horizontal ? valueAxis(ds, env, true) : catAxis(ds.categories, env),
-    yAxis: horizontal ? catAxis(ds.categories, env, { inverse: true, axisLabel: { color: env.tokens.text, fontSize: 12, width: 150, overflow: 'break' } }) : valueAxis(ds, env),
+    yAxis: horizontal ? catAxis(ds.categories, env, { inverse: true, axisLabel: { color: env.tokens.text, fontSize: 12, width: Math.round(Math.min(150, Math.max(70, env.width * 0.32))), overflow: 'break' } }) : valueAxis(ds, env),
     series: ds.series.map((s) => ({
       id: s.id, name: s.name, type: 'bar', stack: stacked ? 'total' : undefined,
       barMaxWidth: single ? 26 : 34, barGap: '12%',
@@ -126,7 +149,7 @@ function lines(p: PreparedDataset, type: 'line' | 'area' | 'stackedArea' | 'bar'
   const stacked = type === 'stackedArea'
   const last = ds.categories.length - 1
   return {
-    ...frame(env, { grid: { left: 4, right: type === 'line' ? 64 : 18, top: env.legend ? 34 : 14, bottom: 4, containLabel: true } }),
+    ...frame(env, { grid: { left: 4, right: type === 'bar' ? 18 : 64, top: gridTop(env), bottom: 4, containLabel: true } }),
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: env.tokens.axis, type: 'dashed' } }, formatter: axisTooltip(p, env, stacked) },
     xAxis: catAxis(ds.categories, env, { boundaryGap: type === 'bar', axisLabel: { color: env.tokens.textMuted, fontSize: 11, interval: 'auto' } }),
     yAxis: valueAxis(ds, env),
@@ -137,7 +160,7 @@ function lines(p: PreparedDataset, type: 'line' | 'area' | 'stackedArea' | 'bar'
       itemStyle: { color: p.colors[s.id] },
       areaStyle: type === 'area' ? { opacity: 0.1, color: p.colors[s.id] } : stacked ? { opacity: 0.88, color: p.colors[s.id] } : undefined,
       emphasis: { focus: 'series' },
-      endLabel: type === 'line' ? { show: true, color: p.colors[s.id], fontWeight: 600, fontSize: 11.5, formatter: () => env.fmt(s.format ?? ds.format, s.values[last], { unit: false, decimals: env.decimals }) } : undefined,
+      endLabel: type !== 'bar' ? { show: true, color: p.colors[s.id], fontWeight: 600, fontSize: 11.5, formatter: () => env.fmt(s.format ?? ds.format, s.values[last], { unit: false, decimals: env.decimals }) } : undefined,
       data: s.values,
     })),
   } as EChartsCoreOption
@@ -226,7 +249,7 @@ function tornado(p: PreparedDataset, env: ChartEnv): EChartsCoreOption {
     ...frame(env),
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: t.surfaceAlt, opacity: 0.6 } }, formatter: axisTooltip(p, env, false) },
     legend: { ...(frame(env).legend as P), show: env.legend },
-    grid: { left: labelW + 14, right: 24, top: env.legend ? 34 : 10, bottom: 4, containLabel: false },
+    grid: { left: labelW + 14, right: 24, top: gridTop(env, 10), bottom: 4, containLabel: false },
     xAxis: valueAxis(ds, env, true, { axisLabel: { color: t.axis, fontSize: 11, formatter: (v: number) => env.fmt(ds.format, v, { unit: false, sign: true, decimals: env.powerUnit === 'MW' ? 1 : 0 }) } }),
     yAxis: catAxis(ds.categories, env, { inverse: true, axisLabel: { color: t.text, fontSize: 11, width: labelW, overflow: 'truncate', ellipsis: '…', margin: 10 }, axisLine: { lineStyle: { color: t.axis } } }),
     series: ds.series.map((s) => ({

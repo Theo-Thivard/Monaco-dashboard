@@ -55,9 +55,9 @@ export function ChartView({ wc, ds, type, env }: Props) {
   const [width, setWidth] = useState(600)
   const option = useMemo(
     () => (type === 'table' || ds.empty ? {} : buildOption(prepared, type, {
-      tokens: env.tokens, fmt: env.fmt, unit: env.unit, powerUnit: env.f.powerUnit, legend: wc.legend ?? true, decimals: wc.decimals, width,
+      tokens: env.tokens, fmt: env.fmt, unit: env.unit, powerUnit: env.f.powerUnit, legend: wc.legend ?? true, decimals: wc.decimals, width, axisMin: wc.axisMin, axisMax: wc.axisMax, legendNames: prepared.ds.series.map((s) => s.name),
     })),
-    [prepared, type, env, wc.legend, wc.decimals, width],
+    [prepared, type, env, wc.legend, wc.decimals, wc.axisMin, wc.axisMax, width],
   )
   if (ds.empty) return <div className="empty">{ds.empty}</div>
   if (type === 'table') return <DataTable prepared={prepared} env={env} decimals={wc.decimals} />

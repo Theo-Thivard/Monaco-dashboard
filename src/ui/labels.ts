@@ -3,6 +3,10 @@ import { ACTOR_KPI_DEFS } from '../core/kpis'
 import { LENS_HINT, LENS_LABEL } from '../core/lens'
 import { OUTPUT_GROUPS } from '../core/engine'
 
+/** Texte sous chaque valeur du panneau des scénarios (jetons : {2026} {hausse} {besoin} {taux} {valeur} ; **gras**). */
+export const SCENPANEL_SUB_NEED = '2026 : {2026} · **{hausse}** d\'ici 2035'
+export const SCENPANEL_SUB_ADDR = 'Besoin {besoin} · taux {taux}'
+
 /** Libellés personnalisables et leur valeur par défaut. */
 export const LABEL_DEFS: { group: string; key: string; def: string }[] = [
   { group: 'Navigation et en-têtes', key: 'nav:global', def: 'Globale' },
@@ -16,7 +20,8 @@ export const LABEL_DEFS: { group: string; key: string; def: string }[] = [
   { group: 'Panneau des trois scénarios', key: 'scenpanel:need', def: 'Besoin IT généré à Monaco en 2035' },
   { group: 'Panneau des trois scénarios', key: 'scenpanel:addr', def: 'Demande adressable à Monaco en 2035' },
   { group: 'Panneau des trois scénarios', key: 'scenpanel:go', def: 'Détail →' },
-  { group: 'Panneau des trois scénarios', key: 'scenpanel:since', def: 'd\'ici 2035' },
+  ...[0, 1, 2].map((i) => ({ group: 'Panneau des trois scénarios', key: `scenpanel:sub:${i}`, def: SCENPANEL_SUB_NEED })),
+  ...[0, 1, 2].map((i) => ({ group: 'Panneau des trois scénarios', key: `scenpanel:subAddr:${i}`, def: SCENPANEL_SUB_ADDR })),
   ...ACTOR_KPI_DEFS.map((k) => ({ group: 'Indicateurs d\'acteur', key: `actorkpi:${k.id}`, def: k.label })),
   ...ACTORS.map((a) => ({ group: 'Descriptions des acteurs', key: `actor:desc:${a.id}`, def: a.description })),
   ...ACTORS.map((a) => ({ group: 'Noms des acteurs', key: `actor:${a.id}`, def: a.label })),

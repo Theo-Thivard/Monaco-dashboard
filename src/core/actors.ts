@@ -29,7 +29,7 @@ export const ACTOR_GROUPS: { id: 'public' | 'private'; title: string }[] = [
 export const ACTORS: ActorDef[] = [
   {
     id: 'DSP', slug: 'dsp', label: 'DSP', short: 'DSP', group: 'public',
-    description: 'Direction de la Sûreté Publique : socle bureautique des agents et applications métier de vidéosurveillance.',
+    description: 'Direction de la Sûreté Publique',
     method: 'Socle bureautique des agents et applications métier de vidéosurveillance (parc de caméras, débit par caméra), puis surcouche IA.',
   },
   {
@@ -49,22 +49,22 @@ export const ACTORS: ActorDef[] = [
   },
   {
     id: 'CHPG', slug: 'chpg', label: 'CHPG', short: 'CHPG', group: 'public',
-    description: 'Centre Hospitalier Princesse Grace : activité hospitalière et digitalisation de la santé.',
+    description: 'Centre Hospitalier Princesse Grace',
     method: 'Activité hospitalière et digitalisation de la santé, puis surcouche IA.',
   },
   {
     id: 'MT', slug: 'monaco-telecom', label: 'Monaco Telecom – besoins propres', short: 'Monaco Telecom', group: 'public',
-    description: 'Besoins propres de l\'opérateur (10 % de la capacité commerciale installée), hors capacité commerciale.',
+    description: 'Besoins propres de Monaco Telecom',
     method: 'Croissance des effectifs et de l\'intensité du privé hors finance, surcouche IA du privé hors finance ; part captable du socle conventionnelle (secteur public).',
   },
   {
     id: 'FIN', slug: 'finance', label: 'Finance', short: 'Finance', group: 'private',
-    description: 'Secteur financier monégasque : salariés × puissance IT par salarié, plus data-intensif que le reste du privé.',
+    description: 'Secteur financier monégasque',
     method: 'Salariés × puissance IT par salarié (baseline), croissance des effectifs et de l\'intensité (finance), surcouche IA ; part captable propre au socle et à l\'IA.',
   },
   {
     id: 'PRIV', slug: 'prive-hors-finance', label: 'Privé hors finance', short: 'Privé hors finance', group: 'private',
-    description: 'Ensemble des salariés du secteur privé hors finance (IMSEE 2024).',
+    description: 'Secteur privé hors finance',
     method: 'Salariés × puissance IT par salarié (baseline), croissance des effectifs et de l\'intensité (hors finance), surcouche IA ; part captable propre au socle et à l\'IA.',
   },
 ]
