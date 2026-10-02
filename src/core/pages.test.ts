@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ACTORS, actorBlock } from './actors'
+import { ACTORS, actorBlock, actorHyps } from './actors'
 import { DATASETS, compatibleCharts, type Dataset } from './datasets'
 import { computeScenario } from './engine'
 import { defaultFormat, fmt } from './format'
@@ -59,7 +59,7 @@ describe.each([['défaut', defaultParams()], ['modifié', modified]])('pages Glo
       it(`sensibilité de l'acteur : uniquement ses hypothèses (scénario ${s})`, () => {
         const sen = ds(snap, 'actorSensitivity', actor.id)
         expect(sen.categories.length).toBeLessThanOrEqual(8)
-        const ids = new Set(actor.hyps)
+        const ids = new Set(actorHyps(actor.id))
         const rows = (snap.sensitivity.length, sen.categories)
         for (const c of rows) expect(ids.has(c)).toBe(true) // hypLabel du test = identifiant
       })

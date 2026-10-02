@@ -1,3 +1,4 @@
+import { isDeadHyp } from '../core/actors'
 import { CATEGORIES, HYPS } from '../core/hypotheses'
 import type { Env } from './env'
 
@@ -18,7 +19,7 @@ export function AssumptionsTable({ env }: { env: Env }) {
                 const cells = h.single ? [cur[0]] : cur
                 return (
                   <tr key={h.id}>
-                    <th scope="row">{env.hypLabel(h.id)}{h.note && <span className="tag" title={h.note}> ⓘ</span>}</th>
+                    <th scope="row">{env.hypLabel(h.id)}{h.note && <span className="tag" title={h.note}> ⓘ</span>}{isDeadHyp(h.id) && <span className="tag" title="Sans effet dans l'Excel actuel"> ⚠ sans effet</span>}</th>
                     {h.single
                       ? <td colSpan={3} className="center">{cell(env, h.id, cells[0], h.def[0])}</td>
                       : cells.map((v, i) => <td key={i}>{cell(env, h.id, v, h.def[i])}</td>)}

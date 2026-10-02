@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fmtHyp } from '../core/format'
+import { isDeadHyp } from '../core/actors'
 import { HYP_BY_ID, hypValue, type HypDef } from '../core/hypotheses'
 import { resetParam, setLabel, setParam, updateConfig, useAppState } from '../state/store'
 import { useEnv, type Env } from './env'
@@ -87,7 +88,7 @@ export function HypControl({ id, env, allScenarios, consultant }: Props) {
     <div className={'hyp' + (changed ? ' changed' : '')}>
       <div className="hyp-head">
         <button className="hyp-name" onClick={() => setOpen(!open)} aria-expanded={open} title="Afficher la source et le contexte">
-          {env.hypLabel(id)}<span className="chev">{open ? '▴' : '▾'}</span>
+          {env.hypLabel(id)}{isDeadHyp(id) && <span className="dead" title="Sans effet dans l'Excel actuel"> ⚠</span>}<span className="chev">{open ? '▴' : '▾'}</span>
         </button>
         {changed && <button className="reset" onClick={() => (h.single || !allScenarios ? resetParam(id) : [0, 1, 2].forEach((k) => resetParam(id, k)))} title="Revenir à la référence">↺</button>}
       </div>
@@ -124,6 +125,7 @@ export function HypControl({ id, env, allScenarios, consultant }: Props) {
             <dt>Source</dt><dd>{h.source}{h.excelRow !== '—' ? ` (ligne ${h.excelRow})` : ''}</dd>
           </dl>
           {h.note && <p className="warn">{h.note}</p>}
+          {isDeadHyp(id) && <p className="warn">Sans effet dans l'Excel actuel : cette hypothèse n'intervient plus dans les résultats (formule modifiée).</p>}
           {consultant ? (
             <textarea className="note-edit" placeholder="Note du consultant sur cette hypothèse…" value={note ?? ''} rows={2}
               onChange={(e) => updateConfig((c) => ({ ...c, hyps: { ...c.hyps, notes: { ...c.hyps.notes, [id]: e.target.value } } }))} />

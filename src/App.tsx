@@ -1,4 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { getModel } from './core/model'
+import { SOURCE_LABEL } from './ui/ModelInfo'
 import { applyTheme } from './config/theme'
 import { AssumptionsDrawer } from './ui/AssumptionsDrawer'
 import { ContextBar } from './ui/ContextBar'
@@ -9,6 +11,19 @@ import { TopNav } from './ui/TopNav'
 import { WidgetSettings } from './ui/WidgetSettings'
 import { useEnv } from './ui/env'
 import { redo, undo, useUI } from './state/store'
+
+/** Avertissement visible si le modèle Excel présente un écart (copie de repli utilisée, total incohérent…). */
+function ModelBanner() {
+  const [hidden, setHidden] = useState(false)
+  const issues = getModel().diagnostics.filter((d) => d.level !== 'info')
+  if (!issues.length || hidden) return null
+  return (
+    <div className="modelbanner" role="status">
+      <span>⚠ {issues[0].message}{issues.length > 1 ? ` (+ ${issues.length - 1} autre${issues.length > 2 ? 's' : ''}, détail dans Globale › Méthodologie › Source du modèle)` : ''}</span>
+      <button className="link" onClick={() => setHidden(true)}>Masquer</button>
+    </div>
+  )
+}
 
 export default function App() {
   const env = useEnv()
@@ -42,9 +57,13 @@ export default function App() {
     <div className={'app' + (ui.mode === 'consultant' ? ' consultant' : '') + (withLeft ? ' pad-left' : '') + (withRight ? ' pad-right' : '')}>
       <TopNav env={env} />
       <main className="page">
+        <ModelBanner />
         <ContextBar env={env} />
         <Dashboard key={route.kind} env={env} />
-        {config.footnote && <footer className="footnote">{config.footnote}</footer>}
+        <footer className="footnote">
+          <div>Modèle Excel : <strong>{getModel().meta.fileName}</strong> — {SOURCE_LABEL[getModel().meta.source]}.</div>
+          {config.footnote && <div>{config.footnote}</div>}
+        </footer>
       </main>
       {ui.panel === 'assumptions' && <AssumptionsDrawer env={env} />}
       {ui.panel === 'settings' && <SettingsDrawer env={env} />}

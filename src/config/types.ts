@@ -4,7 +4,7 @@ import type { FormatSettings } from '../core/format'
 import type { PageKind } from '../state/route'
 import type { Metrics, PresetId, Tokens } from './theme'
 
-export type WidgetKind = 'section' | 'headline' | 'kpis' | 'scenarioCards' | 'actorKpis' | 'drivers' | 'chart' | 'assumptionsTable' | 'text' | 'actorNote'
+export type WidgetKind = 'section' | 'headline' | 'kpis' | 'scenarioCards' | 'actorKpis' | 'drivers' | 'chart' | 'assumptionsTable' | 'text' | 'actorNote' | 'modelInfo'
 /** client = vue par défaut ; detail / method = repliés derrière leur section */
 export type Tier = 'client' | 'detail' | 'method'
 

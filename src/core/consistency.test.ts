@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DATASETS, compatibleCharts, type Dataset } from './datasets'
 import { computeScenario, groupBlocks } from './engine'
 import { defaultFormat, displayedNumber, fmt } from './format'
+import { deadHyps } from './actors'
 import { defaultParams, HYPS, hypValue, withValue, type Params } from './hypotheses'
 import { buildHeadline } from './insights'
 import { KPI_DEFS, kpiDelta, kpiValue } from './kpis'
@@ -149,7 +150,7 @@ describe('registre des hypothèses', () => {
       const moved = [0, 1, 2].some((s) => Math.abs(computeScenario(alt, s).addressable - computeScenario(base, s).addressable) > 1e-9)
       if (!moved) silent.push(h.id)
     }
-    // santeChpg n'agit pas dans l'Excel (documenté)
-    expect(silent).toEqual(['santeChpg'])
+    // les hypothèses sans effet (formule modifiée dans l'Excel) sont repérées et signalées, jamais ignorées en silence
+    expect(silent.sort()).toEqual(deadHyps().sort())
   })
 })

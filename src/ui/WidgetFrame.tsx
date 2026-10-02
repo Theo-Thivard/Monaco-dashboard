@@ -7,6 +7,7 @@ import { ChartView } from './ChartView'
 import { DriversWidget } from './DriversWidget'
 import { ActorKpis, ActorNote, Headline, ScenarioCards } from './PageWidgets'
 import { KpiStrip } from './KpiStrip'
+import { ModelInfo } from './ModelInfo'
 import { TextWidget } from './TextWidget'
 import { useDataset, type Env } from './env'
 
@@ -54,6 +55,7 @@ function Body({ wc, env }: { wc: WidgetConfig; env: Env }): ReactNode {
     case 'scenarioCards': return <ScenarioCards env={env} />
     case 'actorKpis': return <ActorKpis env={env} />
     case 'actorNote': return <ActorNote env={env} />
+    case 'modelInfo': return <ModelInfo env={env} />
     case 'drivers': return <DriversWidget wc={wc} env={env} />
     case 'assumptionsTable': return <AssumptionsTable env={env} />
     case 'text': return <TextWidget text={wc.text ?? ''} />

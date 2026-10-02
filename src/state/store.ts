@@ -33,9 +33,10 @@ export interface AppState {
   ui: UIState
 }
 
-const KEY = 'monaco-dashboard-v3'
+// v4 : on ne stocke que les hypothèses que l'utilisateur a MODIFIÉES par rapport à l'Excel (les autres suivent l'Excel).
+const KEY = 'monaco-dashboard-v4'
+const KEY_V3 = 'monaco-dashboard-v3' // v3/v2 : configuration seulement (leurs hypothèses mémorisées pouvaient être périmées)
 const KEY_V2 = 'monaco-dashboard-v2'
-const OLD_KEY = 'monaco-dashboard-v1'
 const HISTORY_MAX = 60
 
 const freshUI = (): UIState => ({
@@ -44,6 +45,28 @@ const freshUI = (): UIState => ({
 })
 
 // ------------------------------------------------------------------ init
+/** Écarts par rapport aux valeurs de l'Excel : null = « suit l'Excel ». */
+export type Overrides = Record<string, (number | null)[]>
+export function toOverrides(p: Params): Overrides {
+  const def = defaultParams()
+  const o: Overrides = {}
+  for (const id of Object.keys(p)) {
+    const arr = p[id].map((v, i) => (v !== def[id]?.[i] ? v : null))
+    if (arr.some((v) => v !== null)) o[id] = arr
+  }
+  return o
+}
+export function applyOverrides(base: Params, o: unknown): Params {
+  const out = { ...base }
+  if (o && typeof o === 'object') {
+    for (const id of Object.keys(out)) {
+      const v = (o as Overrides)[id]
+      if (Array.isArray(v) && v.length === out[id].length) out[id] = out[id].map((d, i) => (typeof v[i] === 'number' && Number.isFinite(v[i] as number) ? (v[i] as number) : d))
+    }
+  }
+  return out
+}
+
 function mergeParams(base: Params, x: unknown): Params {
   const out = { ...base }
   if (x && typeof x === 'object') {
@@ -78,7 +101,7 @@ export function sanitizeConfig(x: unknown): DashboardConfig {
     ...d,
     version: 3,
     brand: typeof c.brand === 'string' && c.brand ? c.brand : d.brand,
-    footnote: typeof c.footnote === 'string' ? c.footnote : d.footnote,
+    footnote: typeof c.footnote === 'string' && !c.footnote.startsWith('Source : modèle Monaco_Besoins_IT_v') ? c.footnote : d.footnote,
     theme: { ...d.theme, ...(c.theme ?? {}), metrics: { ...d.theme.metrics, ...(c.theme?.metrics ?? {}) }, tokens: { ...(c.theme?.tokens ?? {}) } },
     format: { ...d.format, ...(c.format ?? {}) },
     labels: { ...(c.labels ?? {}) },
@@ -106,21 +129,20 @@ function load(): AppState {
     config: createDefaultConfig(), ui: freshUI(),
   }
   try {
-    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(KEY_V2)
+    const raw = localStorage.getItem(KEY)
     if (raw) {
       const o = JSON.parse(raw)
-      base.params = mergeParams(base.params, o.params)
-      base.reference = mergeParams(base.reference, o.reference)
+      base.params = applyOverrides(base.params, o.overrides)
+      base.reference = applyOverrides(base.reference, o.referenceOverrides)
       base.scenario = [0, 1, 2].includes(o.scenario) ? o.scenario : 1
       base.config = sanitizeConfig(o.config)
     } else {
-      // migration depuis la première version du dashboard : on ne garde que les hypothèses
-      const old = localStorage.getItem(OLD_KEY)
+      // anciennes versions : on reprend la configuration (mise en page, couleurs…) mais PAS les hypothèses, qui suivent désormais l'Excel
+      const old = localStorage.getItem(KEY_V3) ?? localStorage.getItem(KEY_V2)
       if (old) {
         const o = JSON.parse(old)
-        base.params = mergeParams(base.params, o.params)
-        if (o.options?.fixChpg) base.params = { ...base.params, fixChpg: [1] }
-        if ([0, 1, 2].includes(o.activeScenario)) base.scenario = o.activeScenario
+        base.config = sanitizeConfig(o.config)
+        if ([0, 1, 2].includes(o.scenario)) base.scenario = o.scenario
       }
     }
   } catch { /* stockage indisponible ou corrompu : on repart du défaut */ }
@@ -145,7 +167,7 @@ function persist() {
   clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ params: state.params, reference: state.reference, scenario: state.scenario, config: state.config }))
+      localStorage.setItem(KEY, JSON.stringify({ overrides: toOverrides(state.params), referenceOverrides: toOverrides(state.reference), scenario: state.scenario, config: state.config }))
     } catch { /* noop */ }
   }, 250)
 }
@@ -331,13 +353,16 @@ export function resetAll() {
 }
 
 // ------------------------------------------------------------------ export / import / partage
-export const exportJSON = () => JSON.stringify({ app: 'monaco-dashboard', version: 3, params: state.params, reference: state.reference, scenario: state.scenario, config: state.config }, null, 2)
+export const exportJSON = () => JSON.stringify({ app: 'monaco-dashboard', version: 4, overrides: toOverrides(state.params), referenceOverrides: toOverrides(state.reference), scenario: state.scenario, config: state.config }, null, 2)
 
 export function importJSON(text: string) {
   const o = JSON.parse(text)
   if (o?.app !== 'monaco-dashboard') throw new Error('Fichier inconnu')
+  // formats anciens (hypothèses absolues) : seules les valeurs différentes de l'Excel actuel sont reprises
+  const ov = o.overrides ?? toOverrides(mergeParams(defaultParams(), o.params))
+  const rov = o.referenceOverrides ?? toOverrides(mergeParams(defaultParams(), o.reference))
   setState((s) => ({
-    ...s, params: mergeParams(defaultParams(), o.params), reference: mergeParams(defaultParams(), o.reference),
+    ...s, params: applyOverrides(defaultParams(), ov), reference: applyOverrides(defaultParams(), rov),
     scenario: s.route.kind === 'scenario' ? s.route.scenario : [0, 1, 2].includes(o.scenario) ? o.scenario : 1,
     config: sanitizeConfig(o.config), past: [], future: [],
   }))
