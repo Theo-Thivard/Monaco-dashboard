@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computeAll, computeScenario, groupBlocks } from './engine'
 import { defaultParams } from './hypotheses'
 import { getModel } from './model'
+import { withModel } from '../test/withModel'
 
 // Valeurs de référence : onglet « 3_Output » du fichier Excel (valeurs enregistrées par Excel lui-même), lues à la volée.
 function excelOutput() {
@@ -13,9 +14,12 @@ function excelOutput() {
   return { need: get(rNeed), adr: get(rAdr), base: get(rBase) }
 }
 
-describe('modèle = Excel (valeurs enregistrées dans le fichier)', () => {
+// Si le fichier a été enregistré sans valeurs calculées (outil qui ne recalcule pas), cette comparaison est sans objet.
+const x = excelOutput()
+const hasCache = [...x.need, ...x.adr, ...x.base].every((v) => typeof v === 'number')
+
+describe.skipIf(!hasCache)('modèle = Excel (valeurs enregistrées dans le fichier)', () => {
   const r = computeAll(defaultParams())
-  const x = excelOutput()
   it('besoin total 2035 (MW)', () => r.forEach((s, i) => expect(s.total / 1000).toBeCloseTo(x.need[i], 9)))
   it('demande adressable 2035 (MW)', () => r.forEach((s, i) => expect(s.addressable / 1000).toBeCloseTo(x.adr[i], 9)))
   it('baseline 2026 (MW)', () => r.forEach((s, i) => expect(s.base / 1000).toBeCloseTo(x.base[i], 9)))
@@ -28,9 +32,22 @@ describe('modèle = Excel (valeurs enregistrées dans le fichier)', () => {
       expect(computeScenario(defaultParams(), s, 9).total).toBe(r[s].total)
     }
   })
-  it('les valeurs par défaut viennent bien de l\'Excel (pas du code)', () => {
+  it('les valeurs par défaut sont exactement celles des cellules de l\'Excel (pas du code)', () => {
+    const m = getModel()
+    const run = m.wb.evaluate()
     const p = defaultParams()
-    expect(p.adrFin).toEqual([0.2, 0.35, 0.5])
-    expect(p.camBase).toEqual([1300])
+    for (const [id, cells] of Object.entries(m.hypCells)) expect(p[id]).toEqual(cells.map((g) => run.get(g)))
+  })
+})
+
+describe('valeurs de référence figées (copie du classeur v3 du 02/10/2026)', () => {
+  it('résultats 2035 et hypothèses lues', () => {
+    withModel('reference-v3.xlsx', () => {
+      const r = computeAll(defaultParams())
+      expect(r.map((s) => s.addressable / 1000)).toEqual([1.1034263428502877, 1.8788011382060033, 3.8477394932990325].map((x) => expect.closeTo(x, 9)))
+      expect(r.map((s) => s.total / 1000)).toEqual([3.4476758957289526, 4.676217072617512, 6.716770109820354].map((x) => expect.closeTo(x, 9)))
+      expect(defaultParams().adrFin).toEqual([0.2, 0.35, 0.5])
+      expect(defaultParams().camBase).toEqual([1300])
+    })
   })
 })

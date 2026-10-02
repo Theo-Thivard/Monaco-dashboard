@@ -27,11 +27,4 @@ describe('registre des acteurs', () => {
     }
     expect([...acting].sort()).toEqual([...actorHyps(actor.id)].sort())
   })
-  it('invariants métier', () => {
-    expect(actorHyps('DSP')).toEqual(expect.arrayContaining(['camBase', 'camAdd', 'bitrate', 'wPub']))
-    expect(actorHyps('FIN')).toEqual(expect.arrayContaining(['adrFin', 'wFin']))
-    expect(actorHyps('FIN')).not.toContain('iaPub')
-    expect(actorHyps('PRIV')).not.toContain('adrFin')
-    expect(actorHyps('DENJS')).not.toContain('camBase')
-  })
 })

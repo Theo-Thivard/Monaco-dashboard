@@ -1,11 +1,11 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseFormula } from './parser'
 import { Workbook } from './workbook'
 import { XlError } from './functions'
 
-const WB_PATH = new URL('../../../Monaco_Besoins_IT_v3.xlsx', import.meta.url)
-const buf = readFileSync(WB_PATH)
+import { fixture } from '../../test/withModel'
+// Copie FIGÉE du classeur v3 : ces tests ne changent pas quand le classeur du dépôt est modifié.
+const buf = fixture('reference-v3.xlsx')
 
 describe('formules Excel : analyse', () => {
   it('précédences d\'Excel', () => {
@@ -41,7 +41,7 @@ function mini(formula: string): Uint8Array {
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as Uint8Array
 }
 
-describe('classeur v3 : évaluateur contre les valeurs enregistrées par Excel', () => {
+describe('classeur v3 (copie figée) : évaluateur contre les valeurs enregistrées par Excel', () => {
   const wb = Workbook.fromBuffer(buf)
   const cached = XLSX.read(buf, { type: 'buffer', cellFormula: true })
 

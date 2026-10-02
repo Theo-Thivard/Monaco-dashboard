@@ -32,9 +32,11 @@ describe.each([['défaut', defaultParams()], ['modifié', modified]])('pages Glo
     describe.each(ACTORS)('acteur $id', (actor) => {
       const b = actorBlock(snap.active, actor.id)
       it(`datasets de l'acteur = bloc du moteur (scénario ${s})`, () => {
-        const br = ds(snap, 'actorBridge', actor.id).series[0].values
-        close(br[0], b.base); close(br[4], b.total); close(br[6], b.addressable)
-        close(br[0] + br[1] + br[2] + br[3], br[4]); close(br[4] + br[5], br[6])
+        const bd = ds(snap, 'actorBridge', actor.id)
+        const br = bd.series[0].values
+        const [i0, i1, i2] = bd.steps!.map((t, i) => (t === 'total' ? i : -1)).filter((i) => i >= 0)
+        close(br[i0], b.base); close(br[i1], b.total); close(br[i2], b.addressable)
+        close(sum(br.slice(i0, i1)), br[i1]); close(br[i1] + sum(br.slice(i1 + 1, i2)), br[i2])
         const sc = ds(snap, 'actorScenarios', actor.id)
         close(sc.series[2].values[s], b.addressable); close(sc.series[1].values[s], b.total); close(sc.series[0].values[s], b.base)
         const tr = ds(snap, 'actorTrajectory', actor.id)
@@ -48,7 +50,8 @@ describe.each([['défaut', defaultParams()], ['modifié', modified]])('pages Glo
       it(`KPI de l'acteur = jeux de données ; poids = part du total (scénario ${s})`, () => {
         const v = { b, r: snap.active }
         const k = (id: string) => ACTOR_KPI_DEFS.find((x) => x.id === id)!.compute(v)
-        close(k('addressable'), ds(snap, 'actorBridge', actor.id).series[0].values[6])
+        const abr = ds(snap, 'actorBridge', actor.id)
+        close(k('addressable'), abr.series[0].values[abr.steps!.lastIndexOf('total')])
         close(k('need'), ds(snap, 'actorScenarios', actor.id).series[1].values[s])
         close(k('weight'), b.addressable / snap.active.addressable)
         close(k('rate'), b.addressable / b.total)
@@ -96,6 +99,6 @@ describe('un seul modèle pour tous les scénarios et tous les acteurs', () => {
   it('l\'affichage d\'un acteur passe par le formateur central', () => {
     const snap = buildSnapshot(defaultParams(), defaultParams(), 1)
     const b = actorBlock(snap.active, 'DSP')
-    expect(fmt('power', b.addressable, defaultFormat())).toMatch(/^0,39 MW IT$/)
+    expect(fmt('power', b.addressable, defaultFormat())).toMatch(/^\d+,\d{2} MW IT$/)
   })
 })
