@@ -176,7 +176,7 @@ button.wide { width: 100%; margin-top: 10px; padding: 8px; background: var(--c-s
 .kpis-wrap .kpi-custom .tool { padding: 3px 10px; font-size: 0.86rem; }
 
 /* ---------------------------------------------------------------- drivers / hypothèses */
-.drivers-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.drivers-tools { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 10px; margin-bottom: 4px; }
 .drivers-tools .tool { padding: 4px 10px; font-size: 0.86rem; }
 .chk { font-size: 0.86rem; color: var(--c-textMuted); display: flex; gap: 6px; align-items: center; }
 h4.cat { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--c-textMuted); margin: 14px 0 0; font-weight: 600; }
@@ -369,3 +369,6 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 .menu-link { display: block; padding: 6px 12px; color: var(--c-text); text-decoration: none; font-size: 0.93rem; border-radius: 4px; }
 .menu-link:hover { background: var(--c-surfaceAlt); }
 .menu-link.current { font-weight: 600; color: var(--c-primary); }
+
+.mode-seg { margin-left: auto; flex-wrap: wrap; }
+.hyp-together { font-size: 0.8rem; color: var(--c-accent); margin-top: 2px; }

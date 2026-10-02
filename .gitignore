@@ -2,3 +2,4 @@ node_modules
 dist
 *.local
 public/model.xlsx
+.build-cache

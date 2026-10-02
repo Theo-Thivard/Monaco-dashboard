@@ -31,13 +31,13 @@ function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
           {consultant && <button onClick={() => { patchUI({ panel: 'settings', settingsTab: 'save' }); close() }}>Enregistrer l'affichage sur GitHub…</button>}
           {consultant && <button onClick={() => { patchUI({ editLayout: !s.ui.editLayout, selectedWidget: null, panel: null }); close() }}>{s.ui.editLayout ? 'Terminer la mise en page' : 'Modifier la mise en page'}</button>}
           <div className="pop-sep" />
-          <div className="pop-title">Versions et affichages</div>
-          {__REGISTRY__.map((r) => (
+          {consultant && <div className="pop-title">Versions et affichages</div>}
+          {consultant && __REGISTRY__.map((r) => (
             <a key={r.slug} className={'menu-link' + (r.slug === __APP_SLUG__ ? ' current' : '')} href={`${__SITE_ROOT__}${r.path}`} aria-current={r.slug === __APP_SLUG__ ? 'true' : undefined}>
               {r.label}{r.slug === __APP_SLUG__ ? ' · affichée' : ''}
             </a>
           ))}
-          <div className="pop-sep" />
+          {consultant && <div className="pop-sep" />}
           <div className="pop-title">Partager et exporter</div>
           <button onClick={() => { void copyLink(); close() }}>Copier un lien vers cette page</button>
           <button onClick={() => { printPage(); close() }}>Imprimer / PDF</button>

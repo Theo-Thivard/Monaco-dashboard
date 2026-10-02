@@ -1,7 +1,8 @@
 import { memo, useDeferredValue, type ReactNode } from 'react'
 import { DATASET_BY_ID, CHART_LABELS, compatibleCharts, type ChartType } from '../core/datasets'
 import type { WidgetConfig } from '../config/types'
-import { patchUI, toggleExpanded, updateWidget, useUI } from '../state/store'
+import { resolveWidget } from '../config/resolve'
+import { patchUI, toggleExpanded, updateWidget, updateWidgetLens, useUI } from '../state/store'
 import { AssumptionsTable } from './AssumptionsTable'
 import { ChartView } from './ChartView'
 import { DriversWidget } from './DriversWidget'
@@ -31,8 +32,9 @@ function ChartWidget({ wc, env: liveEnv }: { wc: WidgetConfig; env: Env }) {
   const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
   if (!ds || !def) return <p className="empty small">Jeu de données inconnu.</p>
   const ok = compatibleCharts(ds)
-  const type = wc.chartType && ok.includes(wc.chartType) ? wc.chartType : def.defaultChart
-  return <ChartView wc={wc} ds={ds} type={type} env={env} />
+  const eff = resolveWidget(wc, env.snap.lens)
+  const type = eff.chartType && ok.includes(eff.chartType) ? eff.chartType : def.defaultChart
+  return <ChartView wc={eff} ds={ds} type={type} env={env} />
 }
 
 function ChartTypeSelect({ wc, env }: { wc: WidgetConfig; env: Env }) {
@@ -40,9 +42,10 @@ function ChartTypeSelect({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
   if (!ds || !def) return null
   const ok = compatibleCharts(ds)
-  const cur = wc.chartType && ok.includes(wc.chartType) ? wc.chartType : def.defaultChart
+  const cur = resolveWidget(wc, env.snap.lens).chartType
+  const shown = cur && ok.includes(cur) ? cur : def.defaultChart
   return (
-    <select className="type-select" value={cur} aria-label="Type de graphique" onChange={(e) => updateWidget(wc.id, { chartType: e.target.value as ChartType })}>
+    <select className="type-select" value={shown} aria-label="Type de graphique" onChange={(e) => updateWidgetLens(wc.id, env.snap.lens, { chartType: e.target.value as ChartType })}>
       {ok.map((t) => <option key={t} value={t}>{CHART_LABELS[t]}</option>)}
     </select>
   )

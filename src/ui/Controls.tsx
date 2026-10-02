@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { fmtHyp } from '../core/format'
 import { isDeadHyp } from '../core/actors'
 import { defaultParams, HYP_BY_ID, hypValue, type HypDef } from '../core/hypotheses'
-import { resetParam, setLabel, setParam, updateConfig, useAppState } from '../state/store'
+import type { HypMode } from '../config/types'
+import { resetParam, setLabel, setParam, setParamTogether, updateConfig, useAppState } from '../state/store'
 import { useEnv, type Env } from './env'
 
 /** Valeur affichée dans le champ : pourcentages en points de %, le reste tel quel. */
@@ -35,7 +36,8 @@ function NumField({ h, value, onCommit }: { h: HypDef; value: number; onCommit: 
   )
 }
 
-export function SliderRow({ h, idx, color, name }: { h: HypDef; idx: number; color?: string; name?: string }) {
+export function SliderRow({ h, idx, color, name, together }: { h: HypDef; idx: number; color?: string; name?: string; together?: boolean }) {
+  const apply = (x: number) => (together ? setParamTogether(h.id, x, idx) : setParam(h.id, x, idx))
   const params = useAppState((s) => s.params)
   const i = h.single ? 0 : idx
   const v = params[h.id][i]
@@ -45,10 +47,10 @@ export function SliderRow({ h, idx, color, name }: { h: HypDef; idx: number; col
     <div className="slider-row">
       {name && <span className="scen-dot" style={{ background: color }} title={name}>{name}</span>}
       <div className="range" style={{ ['--pct' as string]: at(v) }}>
-        <input type="range" min={h.min} max={h.max} step={h.step} value={v} aria-label={h.label} onChange={(e) => setParam(h.id, parseFloat(e.target.value), idx)} />
+        <input type="range" min={h.min} max={h.max} step={h.step} value={v} aria-label={h.label} onChange={(e) => apply(parseFloat(e.target.value))} />
         <span className="ref-tick" style={{ left: at(ref) }} title="Valeur de l'Excel" />
       </div>
-      <NumField h={h} value={v} onCommit={(x) => setParam(h.id, x, idx)} />
+      <NumField h={h} value={v} onCommit={apply} />
     </div>
   )
 }
@@ -67,10 +69,12 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
   return <button role="switch" aria-checked={value} aria-label={label} className={'switch' + (value ? ' on' : '')} onClick={() => onChange(!value)}><span /></button>
 }
 
-interface Props { id: string; env: Env; allScenarios?: boolean; consultant?: boolean }
+interface Props { id: string; env: Env; mode?: HypMode; consultant?: boolean }
 
 /** Contrôle d'une hypothèse : valeur, bornes, référence, impact sur le résultat, source. */
-export function HypControl({ id, env, allScenarios, consultant }: Props) {
+export function HypControl({ id, env, mode = 'one', consultant }: Props) {
+  const allScenarios = mode === 'three'
+  const together = mode === 'together'
   const h = HYP_BY_ID[id]
   const { snap, f, tokens } = env
   const s = snap.scenario
@@ -90,7 +94,7 @@ export function HypControl({ id, env, allScenarios, consultant }: Props) {
         <button className="hyp-name" onClick={() => setOpen(!open)} aria-expanded={open} title="Afficher la source et le contexte">
           {env.hypLabel(id)}{isDeadHyp(id) && <span className="dead" title="Sans effet dans l'Excel actuel"> ⚠</span>}<span className="chev">{open ? '▴' : '▾'}</span>
         </button>
-        {changed && <button className="reset" onClick={() => (h.single || !allScenarios ? resetParam(id) : [0, 1, 2].forEach((k) => resetParam(id, k)))} title="Revenir à la valeur de l'Excel">↺</button>}
+        {changed && <button className="reset" onClick={() => (h.single || mode === 'one' ? resetParam(id) : [0, 1, 2].forEach((k) => resetParam(id, k)))} title="Revenir à la valeur de l'Excel">↺</button>}
       </div>
 
       {h.control === 'radio' ? (
@@ -100,8 +104,9 @@ export function HypControl({ id, env, allScenarios, consultant }: Props) {
       ) : allScenarios && !h.single ? (
         [0, 1, 2].map((k) => <SliderRow key={k} h={h} idx={k} color={scenColors[k]} name={env.scenarioName(k)} />)
       ) : (
-        <SliderRow h={h} idx={s} />
+        <SliderRow h={h} idx={s} together={together && !h.single} />
       )}
+      {together && !h.single && h.control === 'slider' && <div className="hyp-together">Les 3 scénarios varient du même pourcentage</div>}
 
       {h.control === 'slider' && (
         <div className="hyp-meta">

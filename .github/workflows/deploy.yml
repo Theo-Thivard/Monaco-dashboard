@@ -28,7 +28,13 @@ jobs:
       - run: npm test
       - run: npm run build
       # Anciennes versions (versions.json) : publiées sous /v1/, /v2/… sans jamais être supprimées
-      - run: scripts/build-versions.sh dist /Monaco-dashboard
+      # Les archives sont figées : leur construction est conservée d'une publication à l'autre (seules les versions modifiées sont reconstruites)
+      - uses: actions/cache@v4
+        with:
+          path: .build-cache
+          key: archives-${{ github.sha }}
+          restore-keys: archives-
+      - run: BUILD_CACHE="$PWD/.build-cache" scripts/build-versions.sh dist /Monaco-dashboard
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

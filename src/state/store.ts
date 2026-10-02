@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Layout } from 'react-grid-layout'
 import { createDefaultConfig, PAGE_DEFAULTS } from '../config/defaults'
-import type { DashboardConfig, PageConfig, WidgetConfig } from '../config/types'
+import type { DashboardConfig, LensOverride, PageConfig, WidgetConfig } from '../config/types'
 import { defaultParams, HYP_BY_ID, HYPS, hypValue, type Params } from '../core/hypotheses'
 import type { Lens } from '../core/lens'
 import { getSnapshot, type Snapshot } from '../core/snapshot'
@@ -243,6 +243,28 @@ export function setParam(id: string, value: number, idx?: number) {
   })
 }
 
+/**
+ * Modifie une hypothèse pour LES TROIS scénarios à la fois : chacun évolue du même pourcentage que le scénario `idx`
+ * (valeur × nouvelle/ancienne ; si l'ancienne vaut 0, même écart absolu), dans les bornes de l'hypothèse.
+ */
+export function setParamTogether(id: string, value: number, idx: number) {
+  const h = HYP_BY_ID[id]
+  if (!h) return
+  if (h.single) return setParam(id, value)
+  setState((s) => {
+    const old = s.params[id]
+    const base = old[idx]
+    if (base === value) return s
+    const clamp = (x: number) => Math.min(h.max, Math.max(h.min, x))
+    const next = old.map((v, k) => (k === idx ? clamp(value) : clamp(base !== 0 ? v * (value / base) : v + (value - base))))
+    const now = Date.now()
+    const key = `${id}:all`
+    const coalesce = lastEdit.id === key && now - lastEdit.t < 800
+    lastEdit = { id: key, t: now }
+    return { ...s, params: { ...s.params, [id]: next }, past: coalesce ? s.past : [...s.past.slice(-HISTORY_MAX + 1), s.params], future: [] }
+  })
+}
+
 /** Remet une hypothèse à sa valeur de l'Excel (scénario actif, ou valeur unique). */
 export function resetParam(id: string, idx?: number) {
   const h = HYP_BY_ID[id]
@@ -306,6 +328,19 @@ const updateOwnPage = (id: string, fn: (p: PageConfig) => PageConfig) =>
   })
 export const updateWidget = (id: string, patch: Partial<WidgetConfig>) =>
   updateOwnPage(id, (p) => ({ ...p, widgets: p.widgets.map((w) => (w.id === id ? { ...w, ...patch } : w)) }))
+/** Modifie les réglages d'un graphique pour UNE lecture seulement (undefined = retirer le réglage propre à cette lecture). */
+export const updateWidgetLens = (id: string, lens: Lens, patch: LensOverride) =>
+  updateOwnPage(id, (p) => ({
+    ...p,
+    widgets: p.widgets.map((w) => {
+      if (w.id !== id) return w
+      const cur = { ...w.lensOverrides?.[lens], ...patch }
+      for (const k of Object.keys(cur) as (keyof LensOverride)[]) if (cur[k] === undefined) delete cur[k]
+      const all = { ...w.lensOverrides, [lens]: cur }
+      if (!Object.keys(cur).length) delete all[lens]
+      return { ...w, lensOverrides: Object.keys(all).length ? all : undefined }
+    }),
+  }))
 export const setLabel = (key: string, value: string, def: string) =>
   updateConfig((c) => {
     const labels = { ...c.labels }
@@ -460,7 +495,7 @@ export function diffFromDefault(s: AppState): DiffSummary {
     layout += cp.layout.filter((l) => { const o = dp.layout.find((x) => x.i === l.i); return !o || o.x !== l.x || o.y !== l.y || o.w !== l.w || o.h !== l.h }).length
     vis += cp.widgets.filter((w) => w.visible !== (dp.widgets.find((x) => x.id === w.id)?.visible ?? true)).length
       + dp.widgets.filter((w) => !cp.widgets.some((x) => x.id === w.id)).length
-    charts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.chartType !== w.chartType || JSON.stringify(o.series ?? null) !== JSON.stringify(w.series ?? null) || o.legend !== w.legend) }).length
+    charts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.chartType !== w.chartType || JSON.stringify(o.series ?? null) !== JSON.stringify(w.series ?? null) || o.legend !== w.legend || JSON.stringify(o.lensOverrides ?? null) !== JSON.stringify(w.lensOverrides ?? null)) }).length
     bg += cp.widgets.filter((w) => w.bg || w.fg).length
     texts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.title !== w.title || o.subtitle !== w.subtitle || o.note !== w.note || o.text !== w.text) }).length
   }
