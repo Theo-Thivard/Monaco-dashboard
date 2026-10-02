@@ -49,7 +49,7 @@ export function ScenarioCards({ env }: { env: Env }) {
             <span className="kpi-value">{env.fmt('power', value(r), { unit: false })}<span className="kpi-unit">{env.unit('power')}</span></span>
             <span className="scen-bar"><i style={{ width: `${(100 * value(r)) / max}%`, background: colors[i] }} /></span>
             <span className="scen-meta">
-              {need ? <>2026 : {env.fmt('power', r.base)} · ×{env.fmt('ratio', r.growth, { unit: false })}</> : <>Besoin {env.fmt('power', r.total)} · taux {env.fmt('pct', r.rate)}</>}
+              {need ? <>2026 : {env.fmt('power', r.base)} · <strong>{env.fmt('pct', r.growth - 1, { sign: true, decimals: 0 })}</strong> d'ici 2035</> : <>Besoin {env.fmt('power', r.total)} · taux {env.fmt('pct', r.rate)}</>}
             </span>
           </button>
         ))}

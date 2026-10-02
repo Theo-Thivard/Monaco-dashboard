@@ -35,6 +35,8 @@ export interface WidgetConfig {
   hypSource?: 'visible' | 'actor'
 }
 
+export interface ActorPrefsConfig { order: string[] | null; hidden: string[] }
+
 export interface PageConfig { widgets: WidgetConfig[]; layout: Layout[] }
 
 export interface DashboardConfig {
@@ -47,6 +49,8 @@ export interface DashboardConfig {
   /** libellés personnalisés : kpi:<id>, hyp:<id>, block:<id>, scenario:<i>, series:<id>, bridge:<id>… */
   labels: Record<string, string>
   kpis: { order: string[]; visible: string[] }
+  /** ordre et visibilité des acteurs (graphiques et menu) */
+  actors: ActorPrefsConfig
   hyps: { visible: string[]; notes: Record<string, string> }
   /** une configuration par type de page : Globale, Scénario (Bas/Central/Haut), Acteur (les 8 acteurs) */
   pages: Record<PageKind, PageConfig>

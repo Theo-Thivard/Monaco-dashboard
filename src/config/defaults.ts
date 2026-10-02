@@ -11,7 +11,7 @@ import type { DashboardConfig, PageConfig, WidgetConfig } from './types'
 /** Six leviers qui pèsent le plus sur la demande adressable (classement par sensibilité, scénarios Bas/Central/Haut). */
 export const DEFAULT_DRIVERS = ['adrPriv', 'adrFin', 'gIntPriv', 'iaPriv', 'adrIaPriv', 'wPriv']
 
-const METHOD_TEXT = `Le modèle de calcul est le classeur Excel lui-même : valeurs et formules sont lues à chaque lancement du dashboard, puis recalculées avec les hypothèses que vous modifiez ici. Modifier une valeur ou une formule dans l'Excel est donc repris automatiquement.
+const METHOD_TEXT = `Le modèle de calcul est le classeur Excel lui-même : valeurs et formules sont lues à chaque lancement du tableau de bord, puis recalculées avec les hypothèses que vous modifiez ici. Modifier une valeur ou une formule dans l'Excel est donc repris automatiquement.
 
 Pour chaque acteur (DSP, DENJS, APDP, DITN, CHPG, Monaco Telecom, finance, privé hors finance), l'Excel projette le besoin IT 2035 à partir de la baseline 2026, de la croissance des effectifs et de l'intensité numérique, puis d'une surcouche IA ; la demande adressable applique ensuite la part hébergeable à Monaco, séparément pour le socle et pour l'IA.
 
@@ -78,7 +78,7 @@ export const scenarioLayout = (): Layout[] => stack([
   [['tx-method', 0, 9, 12], ['tb-assumptions', 9, 15, 22], ['tx-notes', 0, 9, 10, 12]],
 ])
 
-const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le dashboard s'adapte automatiquement : aucun calcul n'est écrit dans le dashboard.`
+const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le tableau de bord s'adapte automatiquement : aucun calcul n'est écrit dans le tableau de bord.`
 
 export const globalWidgets = (): WidgetConfig[] => [
   w({ id: 'g-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true, title: 'Évolution du besoin IT 2026 → 2035', subtitle: 'Trois scénarios (profil annuel interpolé entre 2026 et 2035)' }),
@@ -150,6 +150,7 @@ export const createDefaultConfig = (): DashboardConfig => ({
   format: defaultFormat(),
   labels: {},
   kpis: { order: defaultKpiOrder(), visible: defaultKpiVisible() },
+  actors: { order: null, hidden: [] },
   hyps: { visible: [...DEFAULT_DRIVERS], notes: {} },
   pages: { global: PAGE_DEFAULTS.global(), scenario: PAGE_DEFAULTS.scenario(), actor: PAGE_DEFAULTS.actor() },
 })

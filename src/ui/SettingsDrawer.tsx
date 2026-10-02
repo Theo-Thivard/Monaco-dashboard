@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { PRESETS, TOKEN_GROUPS, defaultMetrics, type PresetId, type Tokens } from '../config/theme'
 import { createDefaultConfig } from '../config/defaults'
+import { actorBlock, arrangeActors } from '../core/actors'
 import { DATASETS } from '../core/datasets'
-import { addWidget, diffFromDefault, getState, moveKpi, patchUI, resetAll, resetAssumptions, resetDashboard, setLabel, toast, toggleKpi, updateConfig, updateWidget, useAppState } from '../state/store'
+import type { Entity } from '../core/engine'
+import { lensValue } from '../core/lens'
+import { addWidget, diffFromDefault, getState, moveActor, moveKpi, patchUI, setActorsAuto, setActorsManual, toggleActorHidden, resetAll, resetAssumptions, resetDashboard, setLabel, toast, toggleKpi, updateConfig, updateWidget, useAppState } from '../state/store'
 import { KPI_BY_ID } from '../core/kpis'
 import { download, buildCSV, printPage } from '../state/exporters'
 import { exportJSON, shareURL } from '../state/store'
@@ -12,6 +15,30 @@ import { ColorField, Drawer, Field, NumberInput } from './fields'
 import { LABEL_DEFS } from './labels'
 import { ConfirmButton } from './Popover'
 import { widgetTitle } from './WidgetFrame'
+
+/** Ordre et visibilité des acteurs (graphiques et menu « Acteurs »). */
+function ActorsSection({ env }: { env: Env }) {
+  const prefs = env.config.actors
+  const value = (id: Entity) => lensValue(actorBlock(env.snap.results[1], id), env.snap.lens)
+  const all = arrangeActors({ order: prefs.order, hidden: [] }, value)
+  return (
+    <>
+      <h4>Acteurs</h4>
+      <div className="seg small" role="radiogroup" aria-label="Classement des acteurs">
+        <button role="radio" aria-checked={!prefs.order} className={!prefs.order ? 'on' : ''} onClick={setActorsAuto}>Automatique (décroissant)</button>
+        <button role="radio" aria-checked={!!prefs.order} className={prefs.order ? 'on' : ''} onClick={() => setActorsManual(all)}>Ordre manuel</button>
+      </div>
+      <p className="drawer-help">Décochez un acteur pour le retirer des graphiques et du menu ; les totaux restent ceux du modèle complet. En ordre manuel, utilisez ↑ ↓.</p>
+      {all.map((id) => (
+        <div key={id} className="series-row kpi-rows">
+          <input type="checkbox" checked={!prefs.hidden.includes(id)} onChange={() => toggleActorHidden(id)} aria-label={`Afficher ${env.actorLabel(id)}`} />
+          <span>{env.actorLabel(id)}</span>
+          <span className="order"><button onClick={() => moveActor(id, -1, all)} aria-label="Monter">↑</button><button onClick={() => moveActor(id, 1, all)} aria-label="Descendre">↓</button></span>
+        </div>
+      ))}
+    </>
+  )
+}
 
 const TABS = [['content', 'Contenu'], ['look', 'Apparence'], ['format', 'Formats'], ['save', 'Sauvegarde']] as const
 
@@ -27,7 +54,9 @@ function ContentTab({ env }: { env: Env }) {
       <Field label="Nom affiché dans la barre"><input type="text" value={config.brand} onChange={(e) => updateConfig((c) => ({ ...c, brand: e.target.value }))} /></Field>
       <Field label="Pied de page (sources)"><textarea rows={2} value={config.footnote} onChange={(e) => updateConfig((c) => ({ ...c, footnote: e.target.value }))} /></Field>
 
-      <h4>Indicateurs (KPI)</h4>
+      <ActorsSection env={env} />
+
+      <h4>Indicateurs</h4>
       {config.kpis.order.map((id) => KPI_BY_ID[id]).filter(Boolean).map((k) => (
         <div key={k.id} className="series-row kpi-rows">
           <input type="checkbox" checked={config.kpis.visible.includes(k.id)} onChange={() => toggleKpi(k.id)} aria-label={`Afficher ${k.label}`} />
@@ -59,12 +88,12 @@ function ContentTab({ env }: { env: Env }) {
           const d = DATASETS.find((x) => x.id === ds)!
           const id = `ch-${ds}-${Date.now().toString(36)}`
           addWidget({ id, kind: 'chart', tier: 'client', visible: true, datasetId: ds, chartType: d.defaultChart, legend: true }, { w: 12, h: 12 })
-          toast('Graphique ajouté en bas du dashboard')
+          toast('Graphique ajouté en bas du tableau de bord')
         }}>＋ Graphique</button>
       </div>
       <button className="wide" onClick={() => {
         addWidget({ id: `tx-${Date.now().toString(36)}`, kind: 'text', tier: 'client', visible: true, title: 'Note', text: 'Saisissez votre commentaire…' }, { w: 8, h: 8 })
-        toast('Note ajoutée en bas du dashboard')
+        toast('Note ajoutée en bas du tableau de bord')
       }}>＋ Note / annotation</button>
     </>
   )
@@ -99,7 +128,7 @@ function LookTab({ env }: { env: Env }) {
         </div>
       ))}
       <h4>Espacements & dimensions</h4>
-      {metric('gap', 'Espacement entre widgets (px)', 4, 40)}
+      {metric('gap', 'Espacement entre blocs (px)', 4, 40)}
       {metric('pad', 'Marge intérieure des cartes (px)', 8, 40)}
       {metric('radius', 'Arrondi des angles (px)', 0, 20)}
       {metric('rowHeight', 'Hauteur d\'une ligne de grille (px)', 16, 40)}
@@ -154,7 +183,7 @@ function GithubSave() {
     setBusy(true); setError(''); setDone(null)
     try {
       try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY); (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token.trim()) } catch { /* stockage indisponible */ }
-      setDone(await saveConfigToBranch({ token: token.trim(), label, message: `Affichage du dashboard : ${label || 'préférences'}`, config: getState().config }))
+      setDone(await saveConfigToBranch({ token: token.trim(), label, message: `Affichage du tableau de bord : ${label || 'préférences'}`, config: getState().config }))
     } catch (e) { setError(e instanceof Error ? e.message : 'Échec de l\'enregistrement.') }
     setBusy(false)
   }
@@ -205,9 +234,9 @@ function SaveTab({ env }: { env: Env }) {
 
       <h4>Réinitialiser</h4>
       <div className="reset-list">
-        <div><ConfirmButton label="Reset assumptions" onConfirm={resetAssumptions} /><p>Hypothèses aux valeurs d'origine (annulable).</p></div>
-        <div><ConfirmButton label="Reset dashboard" onConfirm={resetDashboard} /><p>Mise en page, couleurs, graphiques, libellés et visibilité par défaut (affichage enregistré dans le dépôt, sinon d'origine). Les hypothèses sont conservées.</p></div>
-        <div><ConfirmButton className="danger" label="Reset all" onConfirm={resetAll} /><p>Tout remettre à l'état initial.</p></div>
+        <div><ConfirmButton label="Réinitialiser les hypothèses" onConfirm={resetAssumptions} /><p>Hypothèses aux valeurs d'origine (annulable).</p></div>
+        <div><ConfirmButton label="Réinitialiser l'affichage" onConfirm={resetDashboard} /><p>Mise en page, couleurs, graphiques, libellés et visibilité par défaut (affichage enregistré dans le dépôt, sinon d'origine). Les hypothèses sont conservées.</p></div>
+        <div><ConfirmButton className="danger" label="Tout réinitialiser" onConfirm={resetAll} /><p>Tout remettre à l'état initial.</p></div>
       </div>
 
       <h4>Exporter</h4>

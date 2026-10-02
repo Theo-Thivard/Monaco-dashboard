@@ -58,7 +58,7 @@ export function useDataset(id: string | undefined, env: Env): Dataset | null {
   return useMemo(() => {
     const def = id ? DATASET_BY_ID[id] : undefined
     if (!def) return null
-    const ctx: DatasetCtx = { snap: env.snap, label: env.label, hypLabel: env.hypLabel, fmtHypValue: env.fmtHypValue, actor: env.route.kind === 'actor' ? env.route.actor : undefined }
+    const ctx: DatasetCtx = { snap: env.snap, label: env.label, hypLabel: env.hypLabel, fmtHypValue: env.fmtHypValue, actors: env.config.actors, actor: env.route.kind === 'actor' ? env.route.actor : undefined }
     return def.build(ctx)
   }, [id, env])
 }

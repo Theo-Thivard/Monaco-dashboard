@@ -76,7 +76,7 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
         {num('x', 'Colonne', 0, 23)}
         {num('y', 'Ligne', 0, 500)}
       </div>
-      <p className="drawer-help">Vous pouvez aussi tirer les bords et les coins du widget à la souris.</p>
+      <p className="drawer-help">Vous pouvez aussi tirer les bords et les coins du bloc à la souris.</p>
 
       <h4>Couleurs de la carte</h4>
       <ColorField label="Fond" value={wc.bg} fallback={env.tokens.surface} onChange={(v) => set({ bg: v })} />

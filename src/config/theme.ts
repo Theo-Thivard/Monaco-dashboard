@@ -27,7 +27,7 @@ export type PresetId = 'cabinet' | 'minimal' | 'executive' | 'financial' | 'mode
 
 export const PRESETS: Record<PresetId, { label: string; tokens: Tokens }> = {
   cabinet: {
-    label: 'Navy Consulting',
+    label: 'Marine conseil',
     tokens: {
       bg: '#F3F4F6', surface: '#FFFFFF', surfaceAlt: '#F7F8FA',
       text: '#1E2733', textMuted: '#6B7685', heading: '#0B2545',
@@ -40,7 +40,7 @@ export const PRESETS: Record<PresetId, { label: string; tokens: Tokens }> = {
     },
   },
   minimal: {
-    label: 'Minimal',
+    label: 'Épuré',
     tokens: {
       bg: '#FAFAFA', surface: '#FFFFFF', surfaceAlt: '#F5F5F5',
       text: '#222222', textMuted: '#767676', heading: '#111111',
@@ -53,7 +53,7 @@ export const PRESETS: Record<PresetId, { label: string; tokens: Tokens }> = {
     },
   },
   executive: {
-    label: 'Executive',
+    label: 'Direction',
     tokens: {
       bg: '#F2F1EE', surface: '#FFFFFF', surfaceAlt: '#F8F7F4',
       text: '#25272B', textMuted: '#6E7075', heading: '#16181C',
@@ -66,7 +66,7 @@ export const PRESETS: Record<PresetId, { label: string; tokens: Tokens }> = {
     },
   },
   financial: {
-    label: 'Financial',
+    label: 'Finance',
     tokens: {
       bg: '#F4F6F5', surface: '#FFFFFF', surfaceAlt: '#F7F9F8',
       text: '#1D2B26', textMuted: '#62736C', heading: '#0F3D2E',
@@ -79,7 +79,7 @@ export const PRESETS: Record<PresetId, { label: string; tokens: Tokens }> = {
     },
   },
   modern: {
-    label: 'Modern',
+    label: 'Moderne',
     tokens: {
       bg: '#F5F6FA', surface: '#FFFFFF', surfaceAlt: '#F8F9FC',
       text: '#1F2433', textMuted: '#6A7186', heading: '#1B1F3B',
@@ -92,7 +92,7 @@ export const PRESETS: Record<PresetId, { label: string; tokens: Tokens }> = {
     },
   },
   warm: {
-    label: 'Warm',
+    label: 'Chaleureux',
     tokens: {
       bg: '#F7F3EE', surface: '#FFFDFA', surfaceAlt: '#FBF7F2',
       text: '#2E2823', textMuted: '#7B7066', heading: '#4A2C20',
