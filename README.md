@@ -19,13 +19,6 @@ Dashboard interactif construit à partir du classeur Excel [`Monaco_Besoins_IT_v
 ## Mes affichages enregistrés
 Copies d'une version avec une mise en page personnalisée (« V4 · nom »). Cliquez sur un nom pour l'ouvrir directement. Cette liste se met à jour **toute seule** quelques minutes après chaque enregistrement ; ils sont aussi dans le menu ⚙ › *Versions et affichages* du tableau de bord (vue consultant).
 
-<!--AFFICHAGES:DEBUT-->
-| Affichage enregistré (cliquez pour ouvrir) | Version de base | Créé le |
-|---|---|---|
-| [V4 · plein ecran](https://theo-thivard.github.io/Monaco-dashboard/v4-plein-ecran/) | V4 | 2026-10-02 |
-| [V4 · 2eme affichage main](https://theo-thivard.github.io/Monaco-dashboard/v4-2eme-affichage-main/) | V4 | 2026-10-02 |
-<!--AFFICHAGES:FIN-->
-
 ## Mettre à jour le modèle
 Remplacez le fichier dans le dépôt (*Add file › Upload files*, **même nom** `Monaco_Besoins_IT_v3.xlsx` ; si vous créez `…_v4.xlsx`, le plus élevé est utilisé). Le dashboard reprend valeurs et formules au lancement suivant. Détails et limites : [app/docs/ARCHITECTURE.md](app/docs/ARCHITECTURE.md).
 
