@@ -1,9 +1,8 @@
 import { useRef } from 'react'
 import { ACTORS, ACTOR_GROUPS, actorBlock } from '../core/actors'
-import { defaultParams } from '../core/hypotheses'
 import { buildCSV, download, printPage } from '../state/exporters'
 import { navigate } from '../state/store'
-import { diffFromDefault, exportJSON, importJSON, patchUI, redo, resetAll, resetAssumptions, resetDashboard, resetReference, setMode, setReferenceToCurrent, shareURL, toast, undo, useAppState } from '../state/store'
+import { diffFromDefault, exportJSON, importJSON, patchUI, redo, resetAll, resetAssumptions, resetDashboard, setMode, shareURL, toast, undo, useAppState } from '../state/store'
 import type { Env } from './env'
 import { NavDropdown } from './NavDropdown'
 import { ConfirmButton, Popover } from './Popover'
@@ -13,7 +12,6 @@ const SCENARIO_HINTS = ['Hypothèses prudentes', 'Hypothèses centrales', 'Hypot
 function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
   const s = useAppState((x) => x)
   const consultant = s.ui.mode === 'consultant'
-  const refIsDefault = JSON.stringify(s.reference) === JSON.stringify(defaultParams())
   const modified = diffFromDefault(s).assumptions.length
   const copyLink = async () => {
     const url = shareURL()
@@ -32,11 +30,6 @@ function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
           <button onClick={() => { patchUI({ panel: 'assumptions' }); close() }}>Toutes les hypothèses{modified ? ` (${modified} modifiée${modified > 1 ? 's' : ''})` : ''}</button>
           {consultant && <button onClick={() => { patchUI({ panel: 'settings' }); close() }}>Personnaliser le dashboard</button>}
           {consultant && <button onClick={() => { patchUI({ editLayout: !s.ui.editLayout, selectedWidget: null, panel: null }); close() }}>{s.ui.editLayout ? 'Terminer la mise en page' : 'Modifier la mise en page'}</button>}
-          <div className="pop-sep" />
-          <div className="pop-title">Scénario de référence</div>
-          <p className="pop-help">{refIsDefault ? 'La référence est le jeu d\'hypothèses d\'origine du modèle.' : 'Vos hypothèses diffèrent de la référence : les écarts sont affichés.'}</p>
-          <button onClick={() => { setReferenceToCurrent(); close() }}>Définir l'état actuel comme référence</button>
-          <button onClick={() => { resetReference(); close() }}>Revenir à la référence d'origine</button>
           <div className="pop-sep" />
           <div className="pop-title">Partager et exporter</div>
           <button onClick={() => { void copyLink(); close() }}>Copier un lien vers cette page</button>

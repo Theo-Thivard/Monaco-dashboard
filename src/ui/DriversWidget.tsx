@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { CATEGORIES, HYPS } from '../core/hypotheses'
+import { DEFAULT_DRIVERS } from '../config/defaults'
+import { CATEGORIES, defaultParams, HYPS } from '../core/hypotheses'
+import { sensitivityFor } from '../core/snapshot'
 import type { WidgetConfig } from '../config/types'
 import { patchUI, updateWidget, useUI } from '../state/store'
 import { actorHypIds } from './PageWidgets'
@@ -8,10 +10,23 @@ import { HypChecklist } from './HypChecklist'
 import type { Env } from './env'
 import { Popover } from './Popover'
 
+let needDriversCache: string[] | null = null
+/** Six leviers qui pèsent le plus sur le besoin généré (calculés une fois, sur les valeurs de l'Excel, pour que la liste ne bouge pas pendant qu'on joue avec les curseurs). */
+function needDrivers(): string[] {
+  if (!needDriversCache) {
+    const score = new Map<string, number>()
+    for (const s of [0, 1, 2]) for (const r of sensitivityFor(defaultParams(), s)) score.set(r.id, (score.get(r.id) ?? 0) + Math.max(Math.abs(r.low), Math.abs(r.high)))
+    needDriversCache = [...score].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => id)
+  }
+  return needDriversCache
+}
+
 export function DriversWidget({ wc, env }: { wc: WidgetConfig; env: Env }) {
   const ui = useUI()
   const consultant = ui.mode === 'consultant'
-  const visible = env.config.hyps.visible
+  // liste par défaut (non personnalisée) : adaptée à la lentille ; sinon choix de l'utilisateur
+  const untouched = env.config.hyps.visible.length === DEFAULT_DRIVERS.length && DEFAULT_DRIVERS.every((id) => env.config.hyps.visible.includes(id))
+  const visible = untouched && env.snap.lens === 'need' ? needDrivers() : env.config.hyps.visible
   const [q] = useState('')
   const fromActor = wc.hypSource === 'actor' && env.route.kind === 'actor'
   const ids = fromActor

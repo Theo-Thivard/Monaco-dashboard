@@ -20,7 +20,4 @@ export const LABEL_DEFS: { group: string; key: string; def: string }[] = [
   { group: 'Cascade', key: 'bridge:total', def: 'Besoin 2035' },
   { group: 'Cascade', key: 'bridge:out', def: 'Hors Monaco' },
   { group: 'Cascade', key: 'bridge:addr', def: 'Adressable 2035' },
-  { group: 'Écarts', key: 'whatChanged:ref', def: 'Référence' },
-  { group: 'Écarts', key: 'whatChanged:cross', def: 'Effets croisés' },
-  { group: 'Écarts', key: 'whatChanged:cur', def: 'Scénario actuel' },
 ]

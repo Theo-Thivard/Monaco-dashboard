@@ -1,5 +1,6 @@
 // Configuration par défaut = vue client recommandée pour une présentation.
-// Hiérarchie : 1 synthèse · 2 leviers · 3 résultat · 4 pourquoi · (détail) · (méthodologie).
+// Livrable 2 (besoins générés à Monaco) : trajectoire et chiffres des trois scénarios d'abord ;
+// pages Scénario / Acteur : hypothèses à gauche, cascade et trajectoire à droite.
 
 import type { Layout } from 'react-grid-layout'
 import { defaultKpiOrder, defaultKpiVisible } from '../core/kpis'
@@ -23,22 +24,29 @@ const NOTES_TEXT = `- Source du modèle : voir « Source du modèle » ci-dessou
 
 const w = (c: WidgetConfig): WidgetConfig => c
 
+/** Empile des rangées de widgets : y = somme des hauteurs précédentes (positions déjà compactes). */
+function stack(rows: [id: string, x: number, w: number, h: number, dy?: number][][]): Layout[] {
+  const out: Layout[] = []
+  let y = 0
+  for (const row of rows) {
+    for (const [i, x, w, h, dy = 0] of row) out.push({ i, x, y: y + dy, w, h })
+    y += Math.max(...row.map((r) => (r[4] ?? 0) + r[3]))
+  }
+  return out
+}
+
 export const scenarioWidgets = (): WidgetConfig[] => [
   w({ id: 'headline', kind: 'headline', tier: 'client', visible: true }),
   w({ id: 'kpis', kind: 'kpis', tier: 'client', visible: true }),
 
-  w({ id: 'sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Principaux leviers', subtitle: 'Modifiez une hypothèse : les résultats se mettent à jour en direct' }),
+  w({ id: 'sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Hypothèses et trajectoire', subtitle: 'Modifiez une hypothèse : la cascade et la trajectoire se mettent à jour en direct' }),
   w({ id: 'drivers', kind: 'drivers', tier: 'client', visible: true, title: 'Hypothèses clés' }),
-  w({ id: 'ch-sensitivity', kind: 'chart', tier: 'client', visible: true, datasetId: 'sensitivity', chartType: 'tornado', legend: false }),
-  w({ id: 'ch-whatChanged', kind: 'chart', tier: 'client', visible: true, datasetId: 'whatChanged', chartType: 'waterfall', legend: false }),
-
-  w({ id: 'sec-result', kind: 'section', tier: 'client', visible: true, title: 'Résultat principal', subtitle: 'Demande adressable à Monaco à l\'horizon 2035' }),
-  w({ id: 'ch-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true }),
-  w({ id: 'ch-scenarios', kind: 'chart', tier: 'client', visible: true, datasetId: 'scenarios', chartType: 'bar', legend: true }),
-
-  w({ id: 'sec-why', kind: 'section', tier: 'client', visible: true, title: 'Comprendre le résultat', subtitle: 'D\'où vient la demande, et ce qui la fait varier' }),
   w({ id: 'ch-bridge', kind: 'chart', tier: 'client', visible: true, datasetId: 'bridge', chartType: 'waterfall', legend: false }),
+  w({ id: 'ch-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true }),
+
+  w({ id: 'sec-why', kind: 'section', tier: 'client', visible: true, title: 'Comprendre le résultat', subtitle: 'D\'où vient la demande, scénario par scénario' }),
   w({ id: 'ch-addrByBlock', kind: 'chart', tier: 'client', visible: true, datasetId: 'addrByBlock', chartType: 'hbar', legend: false }),
+  w({ id: 'ch-scenarios', kind: 'chart', tier: 'client', visible: true, datasetId: 'scenarios', chartType: 'bar', legend: true }),
 
   w({ id: 'sec-detail', kind: 'section', tier: 'client', visible: true, collapse: 'detail', title: 'Analyse détaillée', subtitle: 'Tableaux et vues complémentaires' }),
   w({ id: 'tb-detail', kind: 'chart', tier: 'detail', visible: true, datasetId: 'detailTable', chartType: 'table' }),
@@ -55,55 +63,32 @@ export const scenarioWidgets = (): WidgetConfig[] => [
 ]
 
 // Grille de 24 colonnes ; positions déjà compactées (le compactage vertical de la grille ne les modifie pas).
-export const scenarioLayout = (): Layout[] => [
-  { i: 'headline', x: 0, y: 0, w: 24, h: 5 },
-  { i: 'kpis', x: 0, y: 5, w: 24, h: 4 },
-  { i: 'sec-levers', x: 0, y: 9, w: 24, h: 2 },
-  { i: 'drivers', x: 0, y: 11, w: 9, h: 17 },
-  { i: 'ch-sensitivity', x: 9, y: 11, w: 15, h: 9 },
-  { i: 'ch-whatChanged', x: 9, y: 20, w: 15, h: 8 },
-  { i: 'sec-result', x: 0, y: 28, w: 24, h: 2 },
-  { i: 'ch-trajectory', x: 0, y: 30, w: 14, h: 13 },
-  { i: 'ch-scenarios', x: 14, y: 30, w: 10, h: 13 },
-  { i: 'sec-why', x: 0, y: 43, w: 24, h: 2 },
-  { i: 'ch-bridge', x: 0, y: 45, w: 12, h: 13 },
-  { i: 'ch-addrByBlock', x: 12, y: 45, w: 12, h: 13 },
-  { i: 'sec-detail', x: 0, y: 58, w: 24, h: 2 },
-  { i: 'tb-detail', x: 0, y: 60, w: 24, h: 12 },
-  { i: 'ch-trajectoryBlocks', x: 0, y: 72, w: 12, h: 12 },
-  { i: 'ch-addrByBlockScenario', x: 12, y: 72, w: 12, h: 12 },
-  { i: 'ch-rateByBlock', x: 0, y: 84, w: 8, h: 11 },
-  { i: 'ch-socleAi', x: 8, y: 84, w: 8, h: 11 },
-  { i: 'ch-blockOverview', x: 16, y: 84, w: 8, h: 11 },
-  { i: 'sec-method', x: 0, y: 95, w: 24, h: 2 },
-  { i: 'tx-method', x: 0, y: 97, w: 9, h: 12 },
-  { i: 'tb-assumptions', x: 9, y: 97, w: 15, h: 22 },
-  { i: 'tx-notes', x: 0, y: 109, w: 9, h: 10 },
-]
-
-/** Empile des rangées de widgets : y = somme des hauteurs précédentes (positions déjà compactes). */
-function stack(rows: [id: string, x: number, w: number, h: number, dy?: number][][]): Layout[] {
-  const out: Layout[] = []
-  let y = 0
-  for (const row of rows) {
-    for (const [i, x, w, h, dy = 0] of row) out.push({ i, x, y: y + dy, w, h })
-    y += Math.max(...row.map((r) => (r[4] ?? 0) + r[3]))
-  }
-  return out
-}
+export const scenarioLayout = (): Layout[] => stack([
+  [['headline', 0, 24, 5]],
+  [['kpis', 0, 24, 4]],
+  [['sec-levers', 0, 24, 2]],
+  [['drivers', 0, 9, 22], ['ch-bridge', 9, 15, 11], ['ch-trajectory', 9, 15, 11, 11]],
+  [['sec-why', 0, 24, 2]],
+  [['ch-addrByBlock', 0, 12, 13], ['ch-scenarios', 12, 12, 13]],
+  [['sec-detail', 0, 24, 2]],
+  [['tb-detail', 0, 24, 12]],
+  [['ch-trajectoryBlocks', 0, 12, 12], ['ch-addrByBlockScenario', 12, 12, 12]],
+  [['ch-rateByBlock', 0, 8, 11], ['ch-socleAi', 8, 8, 11], ['ch-blockOverview', 16, 8, 11]],
+  [['sec-method', 0, 24, 2]],
+  [['tx-method', 0, 9, 12], ['tb-assumptions', 9, 15, 22], ['tx-notes', 0, 9, 10, 12]],
+])
 
 const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le dashboard s'adapte automatiquement : aucun calcul n'est écrit dans le dashboard.`
 
 export const globalWidgets = (): WidgetConfig[] => [
-  w({ id: 'g-headline', kind: 'headline', tier: 'client', visible: true }),
+  w({ id: 'g-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true, title: 'Évolution du besoin IT 2026 → 2035', subtitle: 'Trois scénarios (profil annuel interpolé entre 2026 et 2035)' }),
   w({ id: 'g-cards', kind: 'scenarioCards', tier: 'client', visible: true }),
-  w({ id: 'g-sec-compare', kind: 'section', tier: 'client', visible: true, title: 'Comparer les scénarios', subtitle: 'Un même modèle, trois jeux d\'hypothèses' }),
-  w({ id: 'g-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'trajectory', chartType: 'line', legend: true }),
-  w({ id: 'g-scenarios', kind: 'chart', tier: 'client', visible: true, datasetId: 'scenarios', chartType: 'bar', legend: true }),
-  w({ id: 'g-sec-actors', kind: 'section', tier: 'client', visible: true, title: 'Qui porte la demande ?', subtitle: 'Contribution de chaque acteur à la demande adressable' }),
+  w({ id: 'g-headline', kind: 'headline', tier: 'client', visible: true }),
+  w({ id: 'g-sec-actors', kind: 'section', tier: 'client', visible: true, title: 'Qui génère le besoin ?', subtitle: 'Contribution de chaque acteur, par scénario' }),
   w({ id: 'g-actors', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorsAddr', chartType: 'hbar', legend: true }),
   w({ id: 'g-spread', kind: 'chart', tier: 'client', visible: true, datasetId: 'spreadByActor', chartType: 'hbar', legend: false }),
   w({ id: 'g-sec-detail', kind: 'section', tier: 'client', visible: true, collapse: 'detail', title: 'Analyse détaillée', subtitle: 'Tableau de synthèse et vues complémentaires' }),
+  w({ id: 'g-scenarios', kind: 'chart', tier: 'detail', visible: true, datasetId: 'scenarios', chartType: 'bar', legend: true }),
   w({ id: 'g-detail', kind: 'chart', tier: 'detail', visible: true, datasetId: 'detailTable', chartType: 'table' }),
   w({ id: 'g-blocks', kind: 'chart', tier: 'detail', visible: true, datasetId: 'addrByBlockScenario', chartType: 'stackedBar', legend: true }),
   w({ id: 'g-socle', kind: 'chart', tier: 'detail', visible: true, datasetId: 'socleAi', chartType: 'stackedBar', legend: true }),
@@ -113,15 +98,15 @@ export const globalWidgets = (): WidgetConfig[] => [
   w({ id: 'g-model', kind: 'modelInfo', tier: 'method', visible: true, title: 'Source du modèle', subtitle: 'Fichier Excel lu à chaque lancement' }),
 ]
 export const globalLayout = (): Layout[] => stack([
+  [['g-trajectory', 0, 24, 15]],
+  [['g-cards', 0, 24, 7]],
   [['g-headline', 0, 24, 5]],
-  [['g-cards', 0, 24, 6]],
-  [['g-sec-compare', 0, 24, 2]],
-  [['g-trajectory', 0, 14, 13], ['g-scenarios', 14, 10, 13]],
   [['g-sec-actors', 0, 24, 2]],
   [['g-actors', 0, 14, 15], ['g-spread', 14, 10, 15]],
   [['g-sec-detail', 0, 24, 2]],
+  [['g-scenarios', 0, 12, 12], ['g-socle', 12, 12, 12]],
   [['g-detail', 0, 24, 12]],
-  [['g-blocks', 0, 12, 12], ['g-socle', 12, 12, 12]],
+  [['g-blocks', 0, 24, 12]],
   [['g-sec-method', 0, 24, 2]],
   [['g-method', 0, 12, 10], ['g-notes', 12, 12, 10]],
   [['g-model', 0, 24, 16]],
@@ -133,11 +118,10 @@ export const actorWidgets = (): WidgetConfig[] => [
   w({ id: 'a-sec-levers', kind: 'section', tier: 'client', visible: true, title: 'Leviers de l\'acteur', subtitle: 'Les hypothèses qui font réellement varier cet acteur' }),
   w({ id: 'a-drivers', kind: 'drivers', tier: 'client', visible: true, title: 'Hypothèses de l\'acteur', hypSource: 'actor' }),
   w({ id: 'a-bridge', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorBridge', chartType: 'waterfall', legend: false }),
-  w({ id: 'a-sens', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorSensitivity', chartType: 'tornado', legend: false }),
+  w({ id: 'a-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorTrajectory', chartType: 'line', legend: true }),
   w({ id: 'a-sec-scen', kind: 'section', tier: 'client', visible: true, title: 'Selon les scénarios', subtitle: 'La même analyse pour Bas, Central et Haut' }),
   w({ id: 'a-scenarios', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorScenarios', chartType: 'bar', legend: true }),
-  w({ id: 'a-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorTrajectory', chartType: 'line', legend: true }),
-  w({ id: 'a-sec-detail', kind: 'section', tier: 'client', visible: true, collapse: 'detail', title: 'Détail du calcul', subtitle: 'De la baseline 2026 à la demande adressable 2035' }),
+  w({ id: 'a-sec-detail', kind: 'section', tier: 'client', visible: true, collapse: 'detail', title: 'Détail du calcul', subtitle: 'De la baseline 2026 à 2035' }),
   w({ id: 'a-table', kind: 'chart', tier: 'detail', visible: true, datasetId: 'actorTable', chartType: 'table' }),
   w({ id: 'a-note', kind: 'actorNote', tier: 'detail', visible: true, title: 'Méthode de calcul' }),
 ]
@@ -145,9 +129,9 @@ export const actorLayout = (): Layout[] => stack([
   [['a-headline', 0, 24, 5]],
   [['a-kpis', 0, 24, 4]],
   [['a-sec-levers', 0, 24, 2]],
-  [['a-drivers', 0, 9, 18], ['a-bridge', 9, 15, 9], ['a-sens', 9, 15, 9, 9]],
+  [['a-drivers', 0, 9, 22], ['a-bridge', 9, 15, 11], ['a-trajectory', 9, 15, 11, 11]],
   [['a-sec-scen', 0, 24, 2]],
-  [['a-scenarios', 0, 10, 13], ['a-trajectory', 10, 14, 13]],
+  [['a-scenarios', 0, 24, 12]],
   [['a-sec-detail', 0, 24, 2]],
   [['a-table', 0, 12, 12], ['a-note', 12, 12, 12]],
 ])
@@ -159,7 +143,7 @@ export const PAGE_DEFAULTS: Record<'global' | 'scenario' | 'actor', () => PageCo
 }
 
 export const createDefaultConfig = (): DashboardConfig => ({
-  version: 3,
+  version: 4,
   brand: 'Monaco · Besoins IT 2035',
   footnote: 'Sources : IMSEE 2024 · hypothèses de travail. Puissances exprimées en puissance IT. Les totaux peuvent différer légèrement de la somme des éléments affichés (arrondis d\'affichage uniquement ; les calculs sont réalisés en pleine précision).',
   theme: { preset: 'cabinet', tokens: {}, metrics: defaultMetrics() },

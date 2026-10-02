@@ -38,7 +38,7 @@ export interface WidgetConfig {
 export interface PageConfig { widgets: WidgetConfig[]; layout: Layout[] }
 
 export interface DashboardConfig {
-  version: 3
+  version: 4
   /** nom court affiché dans la barre de navigation */
   brand: string
   footnote: string
