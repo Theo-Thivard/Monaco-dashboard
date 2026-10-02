@@ -13,7 +13,7 @@ const modelFile =
 // Version du code, affichages enregistrés (variants/) et anciennes versions : registre affiché dans le menu « Versions ».
 const readJson = <T,>(p: string, fallback: T): T => { try { return JSON.parse(readFileSync(p, 'utf8')) as T } catch { return fallback } }
 const registryRoot = process.env.REGISTRY_ROOT ?? '.'
-const current = readJson<{ slug: string; label: string }>(`${registryRoot}/version.json`, { slug: 'v6', label: 'V6' })
+const current = readJson<{ slug: string; label: string }>(`${registryRoot}/version.json`, { slug: 'v4', label: 'V4' })
 const archived = readJson<{ slug: string; label: string }[]>(`${registryRoot}/versions.json`, [])
 const variants = readJson<{ slug: string; label: string }[]>(`${registryRoot}/variants/index.json`, [])
 const registry = [
