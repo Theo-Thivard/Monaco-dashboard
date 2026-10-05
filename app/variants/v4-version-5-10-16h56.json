@@ -1,0 +1,908 @@
+{
+  "app": "monaco-dashboard",
+  "config": {
+    "version": 4,
+    "brand": "Monaco · Besoins IT 2035",
+    "footnote": "Sources : IMSEE 2024 · hypothèses de travail. Puissances exprimées en puissance IT. Les totaux peuvent différer légèrement de la somme des éléments affichés (arrondis d'affichage uniquement ; les calculs sont réalisés en pleine précision).",
+    "theme": {
+      "preset": "cabinet",
+      "tokens": {},
+      "metrics": {
+        "gap": 16,
+        "pad": 18,
+        "radius": 6,
+        "rowHeight": 24,
+        "maxWidth": 1680,
+        "fontScale": 1
+      },
+      "typo": {
+        "titles": {
+          "size": 1,
+          "bold": false
+        },
+        "subtitles": {
+          "size": 1,
+          "bold": false
+        },
+        "figures": {
+          "size": 1,
+          "bold": false
+        },
+        "labels": {
+          "size": 1.1500000000000001,
+          "bold": false
+        },
+        "body": {
+          "size": 1.05,
+          "bold": false
+        }
+      }
+    },
+    "format": {
+      "powerUnit": "MW",
+      "powerDecimals": 2,
+      "pctDecimals": 1,
+      "ratioDecimals": 2,
+      "unitSuffix": "IT"
+    },
+    "labels": {
+      "scenpanel:sub:1": "**{hausse}** d'ici 2035",
+      "scenpanel:sub:2": "**{hausse}** d'ici 2035",
+      "kpi:base": "Besoin IT [MW IT ; 2026]",
+      "kpi:need": "Besoin IT [MW IT ; 2035]",
+      "kpi:cagr": "Taux de croissance annuel moyen du besoin [% p.a. ; 2026-2035]",
+      "scenpanel:sub:0": "**{hausse}** d'ici 2035",
+      "kpi:addressable": "Demande adressable [MW IT ; 2035]",
+      "kpi:rate": "Taux adressable [% ; 2035]",
+      "kpi:aiAddressable": "Demande adressable liée à l'IA [MW IT ; 2035]",
+      "kpi:captiveShare": "Part du secteur public dans l'adressable [% ; 2035]",
+      "kpi:financeAddr": "Adressable finance [MW IT ; 2035]",
+      "kpi:range": "Amplitude Bas – Haut, adressable [MW IT ; 2035]",
+      "kpi:privAddr": "Adressable privé hors finance [MW IT ; 2035]",
+      "actorkpi:base": "Besoin [MW IT ; 2026]",
+      "actorkpi:need": "Besoin [MW IT ; 2035]",
+      "actorkpi:addressable": "Demande adressable [MW IT ; 2035]",
+      "actorkpi:weightNeed": "Poids dans le besoin Monaco [% ; 2035]",
+      "actorkpi:rate": "Part captable [% ; 2035]",
+      "actorkpi:weight": "Part dans l'adressable Monaco [% ; 2035]"
+    },
+    "kpis": {
+      "order": [
+        "base",
+        "need",
+        "addressable",
+        "rate",
+        "cagr",
+        "growth",
+        "aiNeed",
+        "aiShare",
+        "aiAddressable",
+        "captiveShare",
+        "financeAddr",
+        "range",
+        "privAddr",
+        "rangeNeed"
+      ],
+      "visible": [
+        "rate",
+        "cagr",
+        "base",
+        "need",
+        "addressable"
+      ]
+    },
+    "actors": {
+      "order": null,
+      "hidden": []
+    },
+    "hyps": {
+      "sets": {},
+      "notes": {}
+    },
+    "units": {},
+    "pages": {
+      "global": {
+        "widgets": [
+          {
+            "id": "g-cards",
+            "kind": "scenarioCards",
+            "tier": "client",
+            "visible": true
+          },
+          {
+            "id": "g-headline",
+            "kind": "headline",
+            "tier": "client",
+            "visible": true,
+            "headline": {
+              "kicker": " ",
+              "title": "Besoin **IT** à Monaco en 2026 : **{2026}**",
+              "hideBullets": true
+            }
+          },
+          {
+            "id": "g-trajectory",
+            "kind": "chart",
+            "tier": "client",
+            "visible": true,
+            "datasetId": "trajectory",
+            "chartType": "area",
+            "legend": true,
+            "subtitle": "",
+            "axisMin": 2,
+            "axisMax": 10,
+            "showInitial": true,
+            "lensOverrides": {
+              "addressable": {
+                "axisMin": 0,
+                "axisMax": 8
+              }
+            }
+          },
+          {
+            "id": "g-sec-actors",
+            "kind": "section",
+            "tier": "client",
+            "visible": true,
+            "title": "Décomposition de la demande",
+            "subtitle": ""
+          },
+          {
+            "id": "g-actors",
+            "kind": "chart",
+            "tier": "client",
+            "visible": true,
+            "datasetId": "actorsAddr",
+            "chartType": "hbar",
+            "legend": true
+          },
+          {
+            "id": "g-blocks",
+            "kind": "chart",
+            "tier": "client",
+            "visible": true,
+            "datasetId": "addrByBlockScenario",
+            "chartType": "stackedBar",
+            "legend": true,
+            "showInitial": true,
+            "title": "Répartition de la demande par entité et par scénario [{unité} ; 2026 et 2035]",
+            "lensOverrides": {
+              "need": {
+                "legend": true
+              }
+            }
+          },
+          {
+            "id": "g-sec-detail",
+            "kind": "section",
+            "tier": "client",
+            "visible": true,
+            "collapse": "detail",
+            "title": "Analyse détaillée",
+            "subtitle": ""
+          },
+          {
+            "id": "g-socle",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "socleAi",
+            "chartType": "stackedBar",
+            "legend": true,
+            "subtitle": "",
+            "title": "Impact de l'IA sur le besoin [{unité} ; 2035]"
+          },
+          {
+            "id": "g-spread",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "spreadByActor",
+            "chartType": "hbar",
+            "legend": false
+          },
+          {
+            "id": "g-detail",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "detailTable",
+            "chartType": "table"
+          },
+          {
+            "id": "g-scenarios",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": false,
+            "datasetId": "scenarios",
+            "chartType": "bar",
+            "legend": true
+          },
+          {
+            "id": "g-sec-method",
+            "kind": "section",
+            "tier": "client",
+            "visible": false,
+            "collapse": "method",
+            "title": "Méthodologie",
+            "subtitle": "Comment le modèle passe des hypothèses aux résultats"
+          },
+          {
+            "id": "g-method",
+            "kind": "text",
+            "tier": "detail",
+            "visible": false,
+            "title": "Principe",
+            "text": "Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le tableau de bord s'adapte automatiquement : aucun calcul n'est écrit dans le tableau de bord."
+          },
+          {
+            "id": "g-notes",
+            "kind": "text",
+            "tier": "detail",
+            "visible": false,
+            "title": "Points d'attention",
+            "text": "- Source du modèle : fichier Excel, origine et contrôles détaillés dans « Source du modèle ».\n- Une hypothèse marquée « sans effet » ne change plus aucun résultat de l'Excel actuel (sa formule a été modifiée).\n- Seul 2035 est calculé par l'Excel. Les années intermédiaires sont interpolées : croissance composée pour le besoin, montée linéaire pour l'IA.\n- Sources des hypothèses : colonne « Source / rationnel » de l'Excel (IMSEE 2024, benchmarks Axis, entretiens)."
+          },
+          {
+            "id": "g-model",
+            "kind": "modelInfo",
+            "tier": "detail",
+            "visible": false,
+            "title": "Source du modèle",
+            "subtitle": "Fichier Excel relu à chaque lancement"
+          }
+        ],
+        "layout": [
+          {
+            "i": "g-cards",
+            "x": 0,
+            "y": 0,
+            "w": 17,
+            "h": 4.5
+          },
+          {
+            "i": "g-headline",
+            "x": 17,
+            "y": 0,
+            "w": 7,
+            "h": 4.5
+          },
+          {
+            "i": "g-trajectory",
+            "x": 0,
+            "y": 4.5,
+            "w": 24,
+            "h": 14
+          },
+          {
+            "i": "g-sec-actors",
+            "x": 0,
+            "y": 18.5,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "g-actors",
+            "x": 0,
+            "y": 20.5,
+            "w": 12,
+            "h": 12
+          },
+          {
+            "i": "g-blocks",
+            "x": 12,
+            "y": 20.5,
+            "w": 12,
+            "h": 12
+          },
+          {
+            "i": "g-sec-detail",
+            "x": 0,
+            "y": 32.5,
+            "w": 24,
+            "h": 1.5
+          },
+          {
+            "i": "g-socle",
+            "x": 0,
+            "y": 34,
+            "w": 12,
+            "h": 9
+          },
+          {
+            "i": "g-spread",
+            "x": 12,
+            "y": 34,
+            "w": 12,
+            "h": 9
+          },
+          {
+            "i": "g-detail",
+            "x": 0,
+            "y": 43,
+            "w": 24,
+            "h": 13
+          },
+          {
+            "i": "g-scenarios",
+            "x": 0,
+            "y": 53,
+            "w": 12,
+            "h": 12
+          },
+          {
+            "i": "g-sec-method",
+            "x": 0,
+            "y": 55,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "g-method",
+            "x": 0,
+            "y": 53,
+            "w": 12,
+            "h": 10
+          },
+          {
+            "i": "g-notes",
+            "x": 12,
+            "y": 53,
+            "w": 12,
+            "h": 10
+          },
+          {
+            "i": "g-model",
+            "x": 0,
+            "y": 53,
+            "w": 24,
+            "h": 16
+          }
+        ]
+      },
+      "scenario": {
+        "widgets": [
+          {
+            "id": "headline",
+            "kind": "headline",
+            "tier": "client",
+            "visible": true,
+            "headline": {
+              "title": "Le besoin IT à Monaco atteint **{actif}** en 2035, soit **{hausse}** de plus qu'en 2026 ({2026}).",
+              "hideBullets": true
+            },
+            "entityText": {
+              "scenario:0": {
+                "headline": {
+                  "title": "Le besoin à Monaco atteint **{actif}** en 2035, soit **{hausse}** de plus qu'en 2026 ({2026}).",
+                  "kicker": " "
+                }
+              },
+              "scenario:1": {
+                "headline": {
+                  "title": "Le besoin à Monaco atteint **{actif}** en 2035, soit **{hausse}** de plus qu'en 2026 ({2026}).",
+                  "kicker": " "
+                }
+              },
+              "scenario:2": {
+                "headline": {
+                  "title": "Le besoin à Monaco atteint **{actif}** en 2035, soit **{hausse}** de plus qu'en 2026 ({2026}).",
+                  "kicker": " "
+                }
+              }
+            }
+          },
+          {
+            "id": "kpis",
+            "kind": "kpis",
+            "tier": "client",
+            "visible": true
+          },
+          {
+            "id": "sec-levers",
+            "kind": "section",
+            "tier": "client",
+            "visible": false,
+            "title": "Cascade et trajectoire",
+            "subtitle": "Réglez les hypothèses dans le panneau de gauche : les résultats se recalculent immédiatement"
+          },
+          {
+            "id": "ch-bridge",
+            "kind": "chart",
+            "tier": "client",
+            "visible": true,
+            "datasetId": "bridge",
+            "chartType": "waterfall",
+            "legend": false,
+            "entityText": {
+              "scenario:0": {}
+            },
+            "title": "Lecture en cascade du besoin [{unité} ; 2026-2035]",
+            "subtitle": "Du besoin 2026 au besoin 2035"
+          },
+          {
+            "id": "ch-trajectory",
+            "kind": "chart",
+            "tier": "client",
+            "visible": true,
+            "datasetId": "trajectory",
+            "chartType": "line",
+            "legend": true,
+            "showInitial": true,
+            "lensOverrides": {
+              "need": {
+                "axisMin": 1,
+                "axisMax": 10,
+                "chartType": "area"
+              }
+            }
+          },
+          {
+            "id": "sec-why",
+            "kind": "section",
+            "tier": "client",
+            "visible": true,
+            "title": "Comprendre le résultat",
+            "subtitle": "Qui porte la demande, pour le scénario affiché"
+          },
+          {
+            "id": "ch-addrByBlock",
+            "kind": "chart",
+            "tier": "client",
+            "visible": true,
+            "datasetId": "addrByBlock",
+            "chartType": "hbar",
+            "legend": false,
+            "showInitial": true,
+            "lensOverrides": {
+              "need": {
+                "legend": true,
+                "chartType": "hbar"
+              }
+            },
+            "entityText": {
+              "scenario:1": {
+                "title": "Qui porte la demande ? [{unité} ; 2035]"
+              },
+              "scenario:0": {}
+            },
+            "subtitle": "Par acteur, scénario affiché"
+          },
+          {
+            "id": "ch-scenarios",
+            "kind": "chart",
+            "tier": "client",
+            "visible": false,
+            "datasetId": "scenarios",
+            "chartType": "bar",
+            "legend": true
+          },
+          {
+            "id": "sec-detail",
+            "kind": "section",
+            "tier": "client",
+            "visible": true,
+            "collapse": "detail",
+            "title": "Analyse détaillée",
+            "subtitle": "Tableaux et graphiques complémentaires"
+          },
+          {
+            "id": "tb-detail",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "detailTable",
+            "chartType": "table",
+            "entityText": {
+              "scenario:0": {}
+            },
+            "title": "Détail par acteur et par scénario [{unité} ; 2026 et 2035]",
+            "subtitle": ""
+          },
+          {
+            "id": "ch-trajectoryBlocks",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "trajectoryBlocks",
+            "chartType": "stackedArea",
+            "legend": true,
+            "entityText": {
+              "scenario:0": {}
+            },
+            "title": "Évolution du besoin par acteur [{unité} ; 2026-2035]"
+          },
+          {
+            "id": "ch-addrByBlockScenario",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "addrByBlockScenario",
+            "chartType": "stackedBar",
+            "legend": true,
+            "showInitial": true,
+            "entityText": {
+              "scenario:0": {}
+            },
+            "title": "Répartition par acteur et par scénario [{unité} ; 2035]"
+          },
+          {
+            "id": "ch-rateByBlock",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "rateByBlock",
+            "chartType": "hbar",
+            "legend": false,
+            "entityText": {
+              "scenario:0": {},
+              "scenario:1": {
+                "subtitle": "Croissance du besoin entre 2026 et 2035"
+              }
+            },
+            "title": "Taux par acteur[{unité} ; 2035]"
+          },
+          {
+            "id": "ch-socleAi",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "socleAi",
+            "chartType": "stackedBar",
+            "legend": true,
+            "entityText": {
+              "scenario:1": {}
+            },
+            "title": "Impact de l'IA sur le besoin [{unité} ; 2035]",
+            "subtitle": ""
+          },
+          {
+            "id": "ch-blockOverview",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "blockOverview",
+            "chartType": "bar",
+            "legend": true,
+            "entityText": {
+              "scenario:0": {}
+            },
+            "title": "Besoin par acteur[{unité} ; 2026 et 2035]"
+          },
+          {
+            "id": "sec-method",
+            "kind": "section",
+            "tier": "client",
+            "visible": true,
+            "collapse": "method",
+            "title": "Hypothèses & méthodologie",
+            "subtitle": "Hypothèses du modèle, sources et points d'attention"
+          },
+          {
+            "id": "tx-method",
+            "kind": "text",
+            "tier": "method",
+            "visible": false,
+            "title": "Méthodologie",
+            "text": "Le modèle de calcul est le classeur Excel lui-même. Le tableau de bord lit ses valeurs et ses formules à chaque lancement, puis les recalcule avec les hypothèses que vous réglez. Toute modification de l'Excel est donc reprise automatiquement.\n\nPour chaque acteur (DSP, DENJS, APDP, DITN, CHPG, Monaco Telecom, finance, privé hors finance), l'Excel part du besoin IT de 2026, applique la croissance des effectifs et de l'intensité numérique, puis ajoute une surcouche IA : cela donne le besoin 2035. La demande adressable en est la part hébergée à Monaco, calculée séparément pour le besoin classique et pour l'IA.\n\nChacun des trois scénarios (Bas, Central, Haut) a ses propres hypothèses. Le scénario actif pilote les indicateurs et les graphiques qui n'en montrent qu'un."
+          },
+          {
+            "id": "tb-assumptions",
+            "kind": "assumptionsTable",
+            "tier": "method",
+            "visible": true,
+            "title": "Registre des hypothèses"
+          },
+          {
+            "id": "tx-notes",
+            "kind": "text",
+            "tier": "method",
+            "visible": false,
+            "title": "Points d'attention",
+            "text": "- Source du modèle : fichier Excel, origine et contrôles détaillés dans « Source du modèle ».\n- Une hypothèse marquée « sans effet » ne change plus aucun résultat de l'Excel actuel (sa formule a été modifiée).\n- Seul 2035 est calculé par l'Excel. Les années intermédiaires sont interpolées : croissance composée pour le besoin, montée linéaire pour l'IA.\n- Sources des hypothèses : colonne « Source / rationnel » de l'Excel (IMSEE 2024, benchmarks Axis, entretiens)."
+          }
+        ],
+        "layout": [
+          {
+            "i": "headline",
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 1.5
+          },
+          {
+            "i": "kpis",
+            "x": 0,
+            "y": 1.5,
+            "w": 24,
+            "h": 3
+          },
+          {
+            "i": "sec-levers",
+            "x": 0,
+            "y": 5,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "ch-bridge",
+            "x": 0,
+            "y": 4.5,
+            "w": 12,
+            "h": 14
+          },
+          {
+            "i": "ch-trajectory",
+            "x": 12,
+            "y": 4.5,
+            "w": 12,
+            "h": 14
+          },
+          {
+            "i": "sec-why",
+            "x": 0,
+            "y": 18.5,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "ch-addrByBlock",
+            "x": 0,
+            "y": 20.5,
+            "w": 24,
+            "h": 10
+          },
+          {
+            "i": "ch-scenarios",
+            "x": 0,
+            "y": 23,
+            "w": 12,
+            "h": 11
+          },
+          {
+            "i": "sec-detail",
+            "x": 0,
+            "y": 30.5,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "ch-trajectoryBlocks",
+            "x": 0,
+            "y": 32.5,
+            "w": 12,
+            "h": 12
+          },
+          {
+            "i": "ch-addrByBlockScenario",
+            "x": 12,
+            "y": 32.5,
+            "w": 12,
+            "h": 12
+          },
+          {
+            "i": "ch-rateByBlock",
+            "x": 0,
+            "y": 44.5,
+            "w": 8,
+            "h": 11
+          },
+          {
+            "i": "ch-socleAi",
+            "x": 8,
+            "y": 44.5,
+            "w": 8,
+            "h": 11
+          },
+          {
+            "i": "ch-blockOverview",
+            "x": 16,
+            "y": 44.5,
+            "w": 8,
+            "h": 11
+          },
+          {
+            "i": "tb-detail",
+            "x": 0,
+            "y": 55.5,
+            "w": 24,
+            "h": 10
+          },
+          {
+            "i": "sec-method",
+            "x": 0,
+            "y": 65.5,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "tb-assumptions",
+            "x": 0,
+            "y": 67.5,
+            "w": 24,
+            "h": 22
+          },
+          {
+            "i": "tx-method",
+            "x": 0,
+            "y": 71,
+            "w": 9,
+            "h": 12
+          },
+          {
+            "i": "tx-notes",
+            "x": 9,
+            "y": 71,
+            "w": 15,
+            "h": 10
+          }
+        ]
+      },
+      "actor": {
+        "widgets": [
+          {
+            "id": "a-headline",
+            "kind": "headline",
+            "tier": "client",
+            "visible": true,
+            "headline": {
+              "hideBullets": true,
+              "title": "**{acteur}** : **{actif}** de besoin en 2035, soit **{poids}** du besoin total."
+            }
+          },
+          {
+            "id": "a-kpis",
+            "kind": "actorKpis",
+            "tier": "client",
+            "visible": true
+          },
+          {
+            "id": "a-sec-levers",
+            "kind": "section",
+            "tier": "client",
+            "visible": false,
+            "title": "Cascade et trajectoire de l'acteur",
+            "subtitle": "Le panneau de gauche ne montre que les hypothèses qui jouent sur cet acteur"
+          },
+          {
+            "id": "a-bridge",
+            "kind": "chart",
+            "tier": "client",
+            "visible": true,
+            "datasetId": "actorBridge",
+            "chartType": "waterfall",
+            "legend": false
+          },
+          {
+            "id": "a-trajectory",
+            "kind": "chart",
+            "tier": "client",
+            "visible": true,
+            "datasetId": "actorTrajectory",
+            "chartType": "line",
+            "legend": true,
+            "showInitial": true,
+            "lensOverrides": {
+              "need": {
+                "chartType": "area"
+              }
+            }
+          },
+          {
+            "id": "a-sec-scen",
+            "kind": "section",
+            "tier": "client",
+            "visible": false,
+            "title": "Selon les scénarios",
+            "subtitle": "La même analyse pour les scénarios Bas, Central et Haut"
+          },
+          {
+            "id": "a-scenarios",
+            "kind": "chart",
+            "tier": "client",
+            "visible": false,
+            "datasetId": "actorScenarios",
+            "chartType": "bar",
+            "legend": true
+          },
+          {
+            "id": "a-sec-detail",
+            "kind": "section",
+            "tier": "client",
+            "visible": true,
+            "collapse": "detail",
+            "title": "Détail du calcul",
+            "subtitle": "De 2026 à 2035, étape par étape"
+          },
+          {
+            "id": "a-table",
+            "kind": "chart",
+            "tier": "detail",
+            "visible": true,
+            "datasetId": "actorTable",
+            "chartType": "table"
+          },
+          {
+            "id": "a-note",
+            "kind": "actorNote",
+            "tier": "detail",
+            "visible": false,
+            "title": "Méthode de calcul"
+          }
+        ],
+        "layout": [
+          {
+            "i": "a-headline",
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 1.5
+          },
+          {
+            "i": "a-kpis",
+            "x": 0,
+            "y": 1.5,
+            "w": 24,
+            "h": 3.5
+          },
+          {
+            "i": "a-sec-levers",
+            "x": 0,
+            "y": 5.5,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "a-bridge",
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 13.5
+          },
+          {
+            "i": "a-trajectory",
+            "x": 12,
+            "y": 5,
+            "w": 12,
+            "h": 13.5
+          },
+          {
+            "i": "a-sec-scen",
+            "x": 0,
+            "y": 21,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "a-scenarios",
+            "x": 0,
+            "y": 23,
+            "w": 24,
+            "h": 12
+          },
+          {
+            "i": "a-sec-detail",
+            "x": 0,
+            "y": 18.5,
+            "w": 24,
+            "h": 2
+          },
+          {
+            "i": "a-table",
+            "x": 0,
+            "y": 20.5,
+            "w": 14,
+            "h": 7.5
+          },
+          {
+            "i": "a-note",
+            "x": 14,
+            "y": 37,
+            "w": 10,
+            "h": 12
+          }
+        ]
+      }
+    }
+  }
+}
