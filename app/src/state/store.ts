@@ -139,6 +139,7 @@ export function sanitizeConfig(x: unknown): DashboardConfig {
     actor: cleanPage(c.pages?.actor, d.pages.actor),
   }
   const kpiOrder = Array.isArray(c.kpis?.order) ? [...c.kpis!.order, ...d.kpis.order.filter((k) => !c.kpis!.order.includes(k))] : d.kpis.order
+  const actorKpiOrder = Array.isArray(c.actorKpis?.order) ? [...c.actorKpis!.order, ...d.actorKpis.order.filter((k) => !c.actorKpis!.order.includes(k))] : d.actorKpis.order
   return {
     ...d,
     version: 4,
@@ -148,6 +149,7 @@ export function sanitizeConfig(x: unknown): DashboardConfig {
     format: { ...d.format, ...(c.format ?? {}) },
     labels: { ...(c.labels ?? {}) },
     kpis: { order: kpiOrder, visible: Array.isArray(c.kpis?.visible) ? c.kpis!.visible : d.kpis.visible },
+    actorKpis: { order: actorKpiOrder, visible: Array.isArray(c.actorKpis?.visible) ? c.actorKpis!.visible : d.actorKpis.visible },
     actors: {
       order: Array.isArray(c.actors?.order) ? c.actors!.order.filter((id) => typeof id === 'string') : null,
       hidden: Array.isArray(c.actors?.hidden) ? c.actors!.hidden.filter((id) => typeof id === 'string') : [],
@@ -471,6 +473,18 @@ export function moveActor(id: string, dir: -1 | 1, current: string[]) {
 
 export const toggleKpi = (id: string) =>
   updateConfig((c) => ({ ...c, kpis: { ...c.kpis, visible: c.kpis.visible.includes(id) ? c.kpis.visible.filter((x) => x !== id) : [...c.kpis.visible, id] } }))
+export const toggleActorKpi = (id: string) =>
+  updateConfig((c) => ({ ...c, actorKpis: { ...c.actorKpis, visible: c.actorKpis.visible.includes(id) ? c.actorKpis.visible.filter((x) => x !== id) : [...c.actorKpis.visible, id] } }))
+export function moveActorKpi(id: string, dir: -1 | 1) {
+  updateConfig((c) => {
+    const o = [...c.actorKpis.order]
+    const i = o.indexOf(id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= o.length) return c
+    ;[o[i], o[j]] = [o[j], o[i]]
+    return { ...c, actorKpis: { ...c.actorKpis, order: o } }
+  })
+}
 export function moveKpi(id: string, dir: -1 | 1) {
   updateConfig((c) => {
     const o = [...c.kpis.order]
@@ -550,6 +564,7 @@ export function diffFromDefault(s: AppState): DiffSummary {
     texts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.title !== w.title || o.subtitle !== w.subtitle || o.note !== w.note || o.text !== w.text || JSON.stringify(o.entityText ?? null) !== JSON.stringify(w.entityText ?? null)) }).length
   }
   vis += (JSON.stringify([...c.kpis.visible].sort()) !== JSON.stringify([...d.kpis.visible].sort()) ? 1 : 0)
+    + (JSON.stringify([...c.actorKpis.visible].sort()) !== JSON.stringify([...d.actorKpis.visible].sort()) ? 1 : 0)
     + allHypContexts().filter((ctx) => JSON.stringify([...hypsOf(c, ctx)].sort()) !== JSON.stringify([...defaultHypSet(ctx)].sort())).length
   vis += JSON.stringify(c.actors) !== JSON.stringify(d.actors) ? 1 : 0
   const metrics = Object.entries(c.theme.metrics).filter(([k, v]) => (d.theme.metrics as unknown as Record<string, number>)[k] !== v).length

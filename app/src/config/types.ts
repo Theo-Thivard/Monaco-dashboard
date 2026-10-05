@@ -71,6 +71,8 @@ export interface DashboardConfig {
   /** libellés personnalisés : kpi:<id>, hyp:<id>, block:<id>, scenario:<i>, series:<id>, bridge:<id>… */
   labels: Record<string, string>
   kpis: { order: string[]; visible: string[] }
+  /** indicateurs de la page acteur : même principe que `kpis` (le filtre par lecture est appliqué à l'affichage) */
+  actorKpis: { order: string[]; visible: string[] }
   /** ordre et visibilité des acteurs (graphiques et menu) */
   actors: ActorPrefsConfig
   /** hypothèses affichées par bandeau : « need », « addressable », « actor:<id> » (seuls les bandeaux modifiés sont stockés ; les autres suivent le défaut) */

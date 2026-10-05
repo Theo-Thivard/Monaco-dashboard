@@ -3,7 +3,7 @@
 // pages Scénario / Acteur : hypothèses à gauche, cascade et trajectoire à droite.
 
 import type { Layout } from 'react-grid-layout'
-import { defaultKpiOrder, defaultKpiVisible } from '../core/kpis'
+import { defaultActorKpiOrder, defaultActorKpiVisible, defaultKpiOrder, defaultKpiVisible } from '../core/kpis'
 import { defaultFormat } from '../core/format'
 import { defaultMetrics } from './theme'
 import { defaultTypography } from './typography'
@@ -148,6 +148,7 @@ export const createDefaultConfig = (): DashboardConfig => ({
   format: defaultFormat(),
   labels: Object.fromEntries([0, 1, 2].map((i) => [`scenpanel:sub:${i}`, '**{hausse}** d\'ici 2035'])),
   kpis: { order: defaultKpiOrder(), visible: defaultKpiVisible() },
+  actorKpis: { order: defaultActorKpiOrder(), visible: defaultActorKpiVisible() },
   actors: { order: null, hidden: [] },
   hyps: { sets: {}, notes: {} },
   units: {},

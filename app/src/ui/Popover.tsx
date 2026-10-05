@@ -31,7 +31,7 @@ export function Popover({ trigger, children, align = 'left', className = '' }: {
       if (!host.current?.contains(t) && !pop.current?.contains(t)) setOpen(false)
     }
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    const close = (e: Event) => { if (!pop.current?.contains(e.target as Node)) setOpen(false) }
+    const close = (e: Event) => { if (!(e.target instanceof Node) || !pop.current?.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', down)
     document.addEventListener('keydown', key)
     window.addEventListener('resize', close)

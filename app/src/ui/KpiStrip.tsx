@@ -52,6 +52,41 @@ function Card({ def, env }: { def: KpiDef; env: Env }) {
   )
 }
 
+export interface PickerItem { id: string; label: string; labelKey: string; category?: string }
+
+/** Choix des indicateurs affichés (vue consultant) : coche pour afficher / masquer, flèches pour l'ordre, libellé modifiable. Commun aux pages scénario et acteur. */
+export function KpiPicker({ env, items, visible, onToggle, onMove, categories }: {
+  env: Env; items: PickerItem[]; visible: string[]; onToggle: (id: string) => void; onMove: (id: string, dir: -1 | 1) => void; categories?: readonly string[]
+}) {
+  const groups = categories ? categories.map((cat) => ({ cat, items: items.filter((k) => k.category === cat) })) : [{ cat: '', items }]
+  return (
+    <Popover className="kpi-custom" align="right" trigger={({ toggle, open }) => <button className={'tool' + (open ? ' on' : '')} onClick={toggle}>⚙ Indicateurs</button>}>
+      {() => (
+        <div className="pop-body">
+          <div className="pop-title">Indicateurs affichés</div>
+          {groups.map(({ cat, items: list }) => (
+            <div key={cat} className="cl-group">
+              {cat && <div className="cl-head"><span className="cl-title static">{cat}</span></div>}
+              {list.map((k) => (
+                <div key={k.id} className="cl-item kpi-row">
+                  <label>
+                    <input type="checkbox" checked={visible.includes(k.id)} onChange={() => onToggle(k.id)} />
+                    <input className="inline-rename" type="text" value={env.label(k.labelKey, k.label)} onChange={(e) => setLabel(k.labelKey, e.target.value, k.label)} aria-label="Libellé" />
+                  </label>
+                  <span className="order">
+                    <button onClick={() => onMove(k.id, -1)} aria-label="Monter">↑</button>
+                    <button onClick={() => onMove(k.id, 1)} aria-label="Descendre">↓</button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </Popover>
+  )
+}
+
 export function KpiStrip({ env }: { env: Env }) {
   const { config } = env
   const ui = useUI()
@@ -63,30 +98,10 @@ export function KpiStrip({ env }: { env: Env }) {
         {!shown.length && <p className="empty small">Aucun indicateur sélectionné.</p>}
       </div>
       {ui.mode === 'consultant' && (
-        <Popover className="kpi-custom" align="right" trigger={({ toggle, open }) => <button className={'tool' + (open ? ' on' : '')} onClick={toggle}>⚙ Indicateurs</button>}>
-          {() => (
-            <div className="pop-body">
-              <div className="pop-title">Indicateurs affichés</div>
-              {(['Demande', 'Structure', 'Incertitude'] as const).map((cat) => (
-                <div key={cat} className="cl-group">
-                  <div className="cl-head"><span className="cl-title static">{cat}</span></div>
-                  {kpisForLens(config.kpis.order, env.snap.lens).map((id) => KPI_BY_ID[id]).filter((k) => k.category === cat).map((k) => (
-                    <div key={k.id} className="cl-item kpi-row">
-                      <label>
-                        <input type="checkbox" checked={config.kpis.visible.includes(k.id)} onChange={() => toggleKpi(k.id)} />
-                        <input className="inline-rename" type="text" value={env.label(`kpi:${k.id}`, k.label)} onChange={(e) => setLabel(`kpi:${k.id}`, e.target.value, k.label)} aria-label="Libellé" />
-                      </label>
-                      <span className="order">
-                        <button onClick={() => moveKpi(k.id, -1)} aria-label="Monter">↑</button>
-                        <button onClick={() => moveKpi(k.id, 1)} aria-label="Descendre">↓</button>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-        </Popover>
+        <KpiPicker
+          env={env} visible={config.kpis.visible} onToggle={toggleKpi} onMove={moveKpi} categories={['Demande', 'Structure', 'Incertitude']}
+          items={kpisForLens(config.kpis.order, env.snap.lens).map((id) => KPI_BY_ID[id]).map((k) => ({ id: k.id, label: k.label, labelKey: `kpi:${k.id}`, category: k.category }))}
+        />
       )}
     </div>
   )

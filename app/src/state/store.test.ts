@@ -38,6 +38,13 @@ describe('configuration', () => {
     expect(c.pages.scenario.layout).toHaveLength(0) // positions orphelines écartées
     expect(c.pages.global.widgets.length).toBeGreaterThan(5) // pages absentes : défaut
     expect(c.kpis.order.length).toBeGreaterThan(5)
+    expect(c.actorKpis.visible).toEqual(createDefaultConfig().actorKpis.visible) // configuration sans indicateurs d'acteur : défaut
+  })
+  it('indicateurs d\'acteur : une sélection modifiée est comptée comme écart et conservée', () => {
+    const c = createDefaultConfig()
+    c.actorKpis.visible = c.actorKpis.visible.filter((k) => k !== 'growth')
+    expect(diffFromDefault(state({ config: c })).visibility).toBe(1)
+    expect(sanitizeConfig(JSON.parse(JSON.stringify(c))).actorKpis.visible).not.toContain('growth')
   })
 })
 
