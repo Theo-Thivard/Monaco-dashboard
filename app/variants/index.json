@@ -10,5 +10,11 @@
     "label": "V4 · V4.Couleurs",
     "base": "v4",
     "created": "2026-10-05"
+  },
+  {
+    "slug": "v4-couleurs-2",
+    "label": "V4 · Couleurs 2",
+    "base": "v4",
+    "created": "2026-10-05"
   }
 ]
