@@ -8,11 +8,13 @@ import { ACTOR_KPI_DEFS } from '../core/kpis'
 import { getModel } from '../core/model'
 import { navigate } from '../state/store'
 import { KpiCard } from './KpiStrip'
-import { SCENPANEL_SUB_ADDR, SCENPANEL_SUB_NEED } from './labels'
+import { SCENPANEL_SUB_ADDR, SCENPANEL_SUB_NEED, SCENPANEL_TITLE_ADDR, SCENPANEL_TITLE_NEED } from './labels'
 import type { Env } from './env'
+import { UnitText } from './UnitText'
+import { fillUnit } from '../core/titles'
 
 const ACTOR_KPIS_NEED = ['base', 'need', 'growth', 'weightNeed']
-const ACTOR_KPIS_ADDR = ['need', 'addressable', 'rate', 'weight']
+const ACTOR_KPIS_ADDR = ['base', 'need', 'addressable', 'rate', 'weight']
 
 /** Message clé : dépend de la page (globale / scénario / acteur) ; mêmes valeurs et même formateur que partout. */
 export function Headline({ env, wc }: { env: Env; wc?: WidgetConfig }) {
@@ -70,15 +72,15 @@ export function ScenarioCards({ env }: { env: Env }) {
   }
   return (
     <div className="scen-panel" role="group" aria-label={need ? 'Besoin IT 2035 par scénario' : 'Demande adressable 2035 par scénario'}>
-      <div className="scen-panel-title">{need ? env.label('scenpanel:need', 'Besoin IT généré à Monaco en 2035') : env.label('scenpanel:addr', 'Demande adressable à Monaco en 2035')}</div>
+      <div className="scen-panel-title">{fillUnit(need ? env.label('scenpanel:need', SCENPANEL_TITLE_NEED) : env.label('scenpanel:addr', SCENPANEL_TITLE_ADDR), env.unit('power'))}</div>
       <div className="scen-cols">
         {snap.results.map((r, i) => (
-          <button key={i} className="scen-col" onClick={() => navigate({ kind: 'scenario', scenario: i })} aria-label={`Ouvrir le scénario ${env.scenarioName(i)}`}>
+          <div key={i} className="scen-col" role="link" tabIndex={0} onClick={() => navigate({ kind: 'scenario', scenario: i })} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) navigate({ kind: 'scenario', scenario: i }) }} aria-label={`Ouvrir le scénario ${env.scenarioName(i)}`}>
             <span className="scen-card-head"><i className="dot" style={{ background: colors[i] }} /><span className="scen-name">{env.scenarioName(i)}</span><span className="scen-go">{env.label('scenpanel:go', 'Détail →')}</span></span>
-            <span className="kpi-value">{env.fmt('power', value(r), { unit: false })}<span className="kpi-unit">{env.unit('power')}</span></span>
+            <span className="kpi-value">{env.fmt('power', value(r), { unit: false })}<UnitText env={env} id={`scen:${i}`} def={env.unit('power')} className="kpi-unit" /></span>
             <span className="scen-bar"><i style={{ width: `${(100 * value(r)) / max}%`, background: colors[i] }} /></span>
             <span className="scen-meta">{sub(r, i).map((p, k) => (p.strong ? <strong key={k}>{p.t}</strong> : <span key={k}>{p.t}</span>))}</span>
-          </button>
+          </div>
         ))}
       </div>
     </div>
@@ -97,7 +99,7 @@ export function ActorKpis({ env }: { env: Env }) {
     <div className="kpis" style={{ ['--n' as string]: defs.length }}>
       {defs.map((k) => (
         <KpiCard key={k.id} label={env.label(`actorkpi:${k.id}`, k.label)} description={k.description} format={k.format}
-          cur={k.compute(cur)} env={env} emphasis={k.id === (snap.lens === 'need' ? 'need' : 'addressable')} />
+          cur={k.compute(cur)} env={env} unitId={`actorkpi:${k.id}`} emphasis={k.id === (snap.lens === 'need' ? 'need' : 'addressable')} />
       ))}
     </div>
   )

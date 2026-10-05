@@ -1,4 +1,5 @@
 import type { Env } from './env'
+import { UnitText } from './UnitText'
 import type { PreparedDataset } from './prepare'
 
 /** Tableau d'un jeu de données : mêmes séries, mêmes valeurs, même formateur que le graphique. */
@@ -39,7 +40,7 @@ export function DataTable({ prepared, env, decimals }: { prepared: PreparedDatas
           </tfoot>
         )}
       </table>
-      <div className="table-unit">{env.unit(ds.format)}</div>
+      <div className="table-unit"><UnitText env={env} id={`table:${ds.id}`} def={env.unit(ds.format)} /></div>
     </div>
   )
 }

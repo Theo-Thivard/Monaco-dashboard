@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as echarts from 'echarts/core'
-import { BarChart, LineChart, PieChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TitleComponent, TooltipComponent } from 'echarts/components'
+import { BarChart, LineChart, PieChart, ScatterChart } from 'echarts/charts'
+import { GridComponent, LegendComponent, MarkAreaComponent, TitleComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { EChartsCoreOption } from 'echarts/core'
 import type { WidgetConfig } from '../config/types'
@@ -12,7 +12,7 @@ import { prepareDataset } from './prepare'
 import { DataTable } from './DataTable'
 import type { Env } from './env'
 
-echarts.use([BarChart, LineChart, PieChart, GridComponent, LegendComponent, TitleComponent, TooltipComponent, CanvasRenderer])
+echarts.use([BarChart, LineChart, PieChart, ScatterChart, GridComponent, LegendComponent, MarkAreaComponent, TitleComponent, TooltipComponent, CanvasRenderer])
 
 function EChart({ option, fixed, onWidth }: { option: EChartsCoreOption; fixed: string; onWidth: (w: number) => void }) {
   const el = useRef<HTMLDivElement>(null)
@@ -58,9 +58,9 @@ export function ChartView({ wc, ds, type, env }: Props) {
   const { labels, figures, labelsBold, figuresBold } = chartTypo(typo, metrics.fontScale)
   const option = useMemo(
     () => (type === 'table' || ds.empty ? {} : buildOption(prepared, type, {
-      tokens: env.tokens, fmt: env.fmt, unit: env.unit, powerUnit: env.f.powerUnit, legend: wc.legend ?? true, decimals: wc.decimals, width, axisMin: wc.axisMin, axisMax: wc.axisMax, legendNames: prepared.ds.series.map((s) => s.name), typo: { labels, figures, labelsBold, figuresBold },
+      tokens: env.tokens, fmt: env.fmt, unit: env.unit, powerUnit: env.f.powerUnit, legend: wc.legend ?? true, showInitial: wc.showInitial, decimals: wc.decimals, width, axisMin: wc.axisMin, axisMax: wc.axisMax, legendNames: prepared.ds.series.map((s) => s.name), typo: { labels, figures, labelsBold, figuresBold },
     })),
-    [prepared, type, env, wc.legend, wc.decimals, wc.axisMin, wc.axisMax, width, labels, figures, labelsBold, figuresBold],
+    [prepared, type, env, wc.legend, wc.showInitial, wc.decimals, wc.axisMin, wc.axisMax, width, labels, figures, labelsBold, figuresBold],
   )
   if (ds.empty) return <div className="empty">{ds.empty}</div>
   if (type === 'table') return <DataTable prepared={prepared} env={env} decimals={wc.decimals} />

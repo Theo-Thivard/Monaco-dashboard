@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Layout } from 'react-grid-layout'
 import { createDefaultConfig, PAGE_DEFAULTS } from '../config/defaults'
+import { allHypContexts, defaultHypSet, hypsOf } from '../config/hyps'
 import { sanitizeTypography, typographyChanges } from '../config/typography'
 import type { DashboardConfig, EntityText, LensOverride, PageConfig, WidgetConfig } from '../config/types'
 import { defaultParams, HYP_BY_ID, HYPS, hypValue, type Params } from '../core/hypotheses'
@@ -107,6 +108,18 @@ function mergeParams(base: Params, x: unknown): Params {
   return out
 }
 
+/** Bandeaux d'hypothèses enregistrés : contextes connus, identifiants d'hypothèses existants (les autres bandeaux suivent le défaut). */
+function cleanSets(x: unknown): Record<string, string[]> {
+  const out: Record<string, string[]> = {}
+  if (x && typeof x === 'object') {
+    for (const ctx of allHypContexts()) {
+      const v = (x as Record<string, unknown>)[ctx]
+      if (Array.isArray(v)) out[ctx] = v.filter((id): id is string => typeof id === 'string' && !!HYP_BY_ID[id])
+    }
+  }
+  return out
+}
+
 /** Fusionne une configuration (stockée / importée) avec le défaut : tolérant aux versions (v2 -> v3 migrée). */
 export function sanitizeConfig(x: unknown): DashboardConfig {
   const d = createDefaultConfig()
@@ -139,7 +152,8 @@ export function sanitizeConfig(x: unknown): DashboardConfig {
       order: Array.isArray(c.actors?.order) ? c.actors!.order.filter((id) => typeof id === 'string') : null,
       hidden: Array.isArray(c.actors?.hidden) ? c.actors!.hidden.filter((id) => typeof id === 'string') : [],
     },
-    hyps: { visible: Array.isArray(c.hyps?.visible) ? c.hyps!.visible.filter((id) => HYP_BY_ID[id]) : d.hyps.visible, notes: { ...(c.hyps?.notes ?? {}) } },
+    hyps: { sets: cleanSets(c.hyps?.sets), notes: { ...(c.hyps?.notes ?? {}) } },
+    units: Object.fromEntries(Object.entries(c.units ?? {}).filter(([, v]) => typeof v === 'string')),
     pages,
   }
 }
@@ -419,9 +433,24 @@ export function addWidget(w: WidgetConfig, size: { w: number; h: number }) {
 export const removeWidget = (id: string) =>
   updateOwnPage(id, (p) => ({ widgets: p.widgets.filter((w) => w.id !== id), layout: p.layout.filter((l) => l.i !== id) }))
 
-export const toggleHypVisible = (id: string) =>
-  updateConfig((c) => ({ ...c, hyps: { ...c.hyps, visible: c.hyps.visible.includes(id) ? c.hyps.visible.filter((x) => x !== id) : [...c.hyps.visible, id] } }))
-export const setHypsVisible = (ids: string[]) => updateConfig((c) => ({ ...c, hyps: { ...c.hyps, visible: ids } }))
+/** Affiche / masque une hypothèse dans UN bandeau (contexte : « need », « addressable » ou « actor:<id> ») sans toucher aux autres. */
+export const toggleHypVisible = (ctx: string, id: string) =>
+  updateConfig((c) => {
+    const cur = hypsOf(c, ctx)
+    return { ...c, hyps: { ...c.hyps, sets: { ...c.hyps.sets, [ctx]: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] } } }
+  })
+export const setHypsVisible = (ctx: string, ids: string[]) => updateConfig((c) => ({ ...c, hyps: { ...c.hyps, sets: { ...c.hyps.sets, [ctx]: ids } } }))
+/** Remet un bandeau d'hypothèses à sa liste par défaut. */
+export const resetHypSet = (ctx: string) => updateConfig((c) => { const sets = { ...c.hyps.sets }; delete sets[ctx]; return { ...c, hyps: { ...c.hyps, sets } } })
+
+/** Unité écrite à la main dans une cellule de chiffres : `undefined` = revenir à l'unité par défaut, chaîne vide = pas d'unité. */
+export const setUnit = (key: string, value: string | undefined) =>
+  updateConfig((c) => {
+    const units = { ...c.units }
+    if (value === undefined) delete units[key]
+    else units[key] = value
+    return { ...c, units }
+  })
 
 export const setActorsAuto = () => updateConfig((c) => ({ ...c, actors: { ...c.actors, order: null } }))
 export const setActorsManual = (current: string[]) => updateConfig((c) => (c.actors.order ? c : { ...c, actors: { ...c.actors, order: current } }))
@@ -516,18 +545,18 @@ export function diffFromDefault(s: AppState): DiffSummary {
     layout += cp.layout.filter((l) => { const o = dp.layout.find((x) => x.i === l.i); return !o || o.x !== l.x || o.y !== l.y || o.w !== l.w || o.h !== l.h }).length
     vis += cp.widgets.filter((w) => w.visible !== (dp.widgets.find((x) => x.id === w.id)?.visible ?? true)).length
       + dp.widgets.filter((w) => !cp.widgets.some((x) => x.id === w.id)).length
-    charts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.chartType !== w.chartType || JSON.stringify(o.series ?? null) !== JSON.stringify(w.series ?? null) || o.legend !== w.legend || JSON.stringify(o.lensOverrides ?? null) !== JSON.stringify(w.lensOverrides ?? null)) }).length
+    charts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.chartType !== w.chartType || JSON.stringify(o.series ?? null) !== JSON.stringify(w.series ?? null) || o.legend !== w.legend || o.showInitial !== w.showInitial || JSON.stringify(o.lensOverrides ?? null) !== JSON.stringify(w.lensOverrides ?? null)) }).length
     bg += cp.widgets.filter((w) => w.bg || w.fg).length
     texts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.title !== w.title || o.subtitle !== w.subtitle || o.note !== w.note || o.text !== w.text || JSON.stringify(o.entityText ?? null) !== JSON.stringify(w.entityText ?? null)) }).length
   }
   vis += (JSON.stringify([...c.kpis.visible].sort()) !== JSON.stringify([...d.kpis.visible].sort()) ? 1 : 0)
-    + (JSON.stringify([...c.hyps.visible].sort()) !== JSON.stringify([...d.hyps.visible].sort()) ? 1 : 0)
+    + allHypContexts().filter((ctx) => JSON.stringify([...hypsOf(c, ctx)].sort()) !== JSON.stringify([...defaultHypSet(ctx)].sort())).length
   vis += JSON.stringify(c.actors) !== JSON.stringify(d.actors) ? 1 : 0
   const metrics = Object.entries(c.theme.metrics).filter(([k, v]) => (d.theme.metrics as unknown as Record<string, number>)[k] !== v).length
   return {
     assumptions, layout,
     theme: Object.keys(c.theme.tokens).length + metrics + typographyChanges(c.theme.typo) + (c.theme.preset !== d.theme.preset ? 1 : 0) + bg,
-    labels: Object.keys(c.labels).length + texts + (c.brand !== d.brand ? 1 : 0),
+    labels: [...new Set([...Object.keys(c.labels), ...Object.keys(d.labels)])].filter((k) => c.labels[k] !== d.labels[k]).length + Object.keys(c.units).length + texts + (c.brand !== d.brand ? 1 : 0),
     visibility: vis, charts, format: Object.entries(c.format).filter(([k, v]) => (d.format as unknown as Record<string, unknown>)[k] !== v).length,
   }
 }

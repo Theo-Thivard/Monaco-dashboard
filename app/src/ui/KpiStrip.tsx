@@ -4,6 +4,7 @@ import { KPI_BY_ID, kpiValue, kpisForLens, type KpiDef } from '../core/kpis'
 import { moveKpi, toggleKpi, setLabel, useUI } from '../state/store'
 import type { Env } from './env'
 import { Popover } from './Popover'
+import { UnitText } from './UnitText'
 
 /** Met en évidence brièvement une valeur qui vient de changer. */
 function useFlash(v: number): boolean {
@@ -26,15 +27,17 @@ export interface KpiCardProps {
   cur: number
   env: Env
   emphasis?: boolean
+  /** identifiant de la cellule (unité modifiable) */
+  unitId?: string
 }
 
 /** Carte d'indicateur : libellé et valeur lue directement (pas d'écart : le chiffre se lit tel quel). */
-export function KpiCard({ label, description, format, cur, env, emphasis }: KpiCardProps) {
+export function KpiCard({ label, description, format, cur, env, emphasis, unitId }: KpiCardProps) {
   const flash = useFlash(cur)
   return (
     <div className={'kpi' + (flash ? ' flash' : '') + (emphasis ? ' emphasis' : '')} title={description}>
       <div className="kpi-label">{label}</div>
-      <div className="kpi-value">{env.fmt(format, cur, { unit: false })}<span className="kpi-unit">{env.unit(format)}</span></div>
+      <div className="kpi-value">{env.fmt(format, cur, { unit: false })}<UnitText env={env} id={unitId ?? `kpi:${label}`} def={env.unit(format)} className="kpi-unit" /></div>
     </div>
   )
 }
@@ -44,7 +47,7 @@ function Card({ def, env }: { def: KpiDef; env: Env }) {
   return (
     <KpiCard
       label={env.label(`kpi:${def.id}`, def.label)} description={def.description} format={def.format}
-      cur={kpiValue(def, snap.active, snap.results)} env={env}
+      cur={kpiValue(def, snap.active, snap.results)} env={env} unitId={`kpi:${def.id}`}
     />
   )
 }

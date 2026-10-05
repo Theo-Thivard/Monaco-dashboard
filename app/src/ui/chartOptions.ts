@@ -27,6 +27,8 @@ export interface ChartEnv {
   axisMax?: number
   /** noms de séries de la légende (pour réserver assez de place si elle passe sur plusieurs lignes) */
   legendNames?: string[]
+  /** « Valeur initiale » cochée : étiquette 2026 au départ des courbes */
+  showInitial?: boolean
   /** typographie : zoom et gras des légendes / axes (labels) et des valeurs (figures) ; défaut ×1, normal */
   typo?: ChartTypo
 }
@@ -115,8 +117,9 @@ function axisTooltip(p: PreparedDataset, env: ChartEnv, showTotal: boolean) {
       const v = s.values[i]
       return `<div style="display:flex;justify-content:space-between;gap:18px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${p.colors[s.id]};margin-right:6px"></span>${esc(s.name)}</span><b>${env.fmt(s.format ?? ds.format, v)}</b></div>`
     })
-    if (showTotal && rows.length > 1) {
-      const tot = sum(rows.map((a) => ds.series.find((x) => x.id === a.seriesId)!.values[i]))
+    const real = rows.filter((a) => !ds.series.find((x) => x.id === a.seriesId)?.marker)
+    if (showTotal && real.length > 1) {
+      const tot = sum(real.map((a) => ds.series.find((x) => x.id === a.seriesId)!.values[i]))
       lines.push(`<div style="display:flex;justify-content:space-between;gap:18px;border-top:1px solid ${env.tokens.border};margin-top:4px;padding-top:4px"><span>Total</span><b>${env.fmt(ds.format, tot)}</b></div>`)
     }
     const hint = ds.hints?.[i] ? `<div style="color:${env.tokens.textMuted};margin-top:2px">${esc(ds.hints[i])}</div>` : ''
@@ -129,25 +132,42 @@ function bars(p: PreparedDataset, type: 'bar' | 'hbar' | 'stackedBar', env: Char
   const { ds } = p
   const horizontal = type === 'hbar'
   const stacked = type === 'stackedBar'
-  const manyLabels = !stacked && ds.categories.length * ds.series.length <= 12
-  const single = ds.series.length === 1
+  const real = ds.series.filter((s) => !s.marker)
+  const manyLabels = !stacked && ds.categories.length * real.length <= 12
+  const single = real.length === 1
   env = { ...env, legend: env.legend && ds.series.length > 1 }
+  const t = env.tokens
+  const shaded = ds.shaded
+  const bandOf = (s: (typeof real)[number], k: number) => (k === 0 && shaded && !horizontal
+    ? { markArea: { silent: true, itemStyle: { color: t.axis, opacity: 0.18 }, label: { show: true, position: 'insideTop', distance: 6, color: t.textMuted, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), fontFamily: FONT, formatter: shaded.label }, data: [[{ xAxis: ds.categories[shaded.from] }, { xAxis: ds.categories[shaded.to] }]] } }
+    : {})
   return {
     ...frame(env),
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: env.tokens.surfaceAlt, opacity: 0.6 } }, formatter: axisTooltip(p, env, stacked) },
     xAxis: horizontal ? valueAxis(ds, env, true) : catAxis(ds.categories, env),
     yAxis: horizontal ? catAxis(ds.categories, env, { inverse: true, axisLabel: { color: env.tokens.text, fontSize: fs(env, 'labels', 12), fontWeight: fw(env, 'labels'), width: Math.round(Math.min(150, Math.max(70, env.width * 0.32)) * ty(env).labels), overflow: 'break' } }) : valueAxis(ds, env),
-    series: ds.series.map((s) => ({
-      id: s.id, name: s.name, type: 'bar', stack: stacked ? 'total' : undefined,
-      barMaxWidth: single ? 26 : 34, barGap: '12%',
-      itemStyle: { color: p.colors[s.id], borderRadius: stacked ? 0 : horizontal ? [0, 2, 2, 0] : [2, 2, 0, 0] },
-      emphasis: { focus: 'series', itemStyle: { opacity: 0.92 } },
-      label: manyLabels
-        ? { show: true, position: horizontal ? 'right' : 'top', color: env.tokens.text, fontSize: fs(env, 'figures', 11), fontWeight: fw(env, 'figures'), fontFamily: FONT, formatter: (q: { dataIndex: number }) => env.fmt(s.format ?? ds.format, s.values[q.dataIndex], { unit: false, decimals: env.decimals }) }
-        : { show: false },
-      data: s.values.map((v) => v),
-      seriesId: s.id,
-    })),
+    series: [
+      ...real.map((s, k) => ({
+        id: s.id, name: s.name, type: 'bar', stack: stacked ? 'total' : undefined,
+        barMaxWidth: single ? 26 : 34, barGap: '12%',
+        itemStyle: { color: p.colors[s.id], borderRadius: stacked ? 0 : horizontal ? [0, 2, 2, 0] : [2, 2, 0, 0] },
+        emphasis: { focus: 'series', itemStyle: { opacity: 0.92 } },
+        label: manyLabels
+          ? { show: true, position: horizontal ? 'right' : 'top', color: env.tokens.text, fontSize: fs(env, 'figures', 11), fontWeight: fw(env, 'figures'), fontFamily: FONT, formatter: (q: { dataIndex: number }) => env.fmt(s.format ?? ds.format, s.values[q.dataIndex], { unit: false, decimals: env.decimals }) }
+          : { show: false },
+        data: s.values.map((v) => v),
+        seriesId: s.id,
+        ...bandOf(s, k),
+      })),
+      // valeur initiale (2026) : un trait par catégorie, avec sa valeur
+      ...ds.series.filter((s) => s.marker).map((s) => ({
+        id: s.id, seriesId: s.id, name: s.name, type: 'scatter', symbol: 'rect', z: 10,
+        symbolSize: horizontal ? [3, 24] : [24, 3],
+        itemStyle: { color: p.colors[s.id], borderColor: t.surface, borderWidth: 1 },
+        label: { show: true, position: horizontal ? 'top' : 'bottom', distance: horizontal ? 6 : 4, color: t.heading, fontSize: fs(env, 'figures', 10.5), fontWeight: fw(env, 'figures', 600), fontFamily: FONT, backgroundColor: t.surface, borderRadius: 3, padding: [0, 3], formatter: (q: { dataIndex: number }) => env.fmt(s.format ?? ds.format, s.values[q.dataIndex], { unit: false, decimals: env.decimals }) },
+        data: s.values.map((v, i) => (horizontal ? [v, ds.categories[i]] : [ds.categories[i], v])),
+      })),
+    ],
   } as EChartsCoreOption
 }
 
@@ -156,20 +176,28 @@ function lines(p: PreparedDataset, type: 'line' | 'area' | 'stackedArea' | 'bar'
   const { ds } = p
   const stacked = type === 'stackedArea'
   const last = ds.categories.length - 1
+  // valeur initiale : point et étiquette 2026 au départ (une seule étiquette quand tous les scénarios partent de la même valeur)
+  const initial = !!env.showInitial && !stacked && type !== 'bar'
+  const sameStart = ds.series.every((x) => Math.abs(x.values[0] - ds.series[0].values[0]) < 1e-6)
+  // départs différents : la plus haute valeur au-dessus du point, la plus basse en dessous, la médiane à gauche (pas de chevauchement)
+  const order = ds.series.map((x, i) => [x.values[0], i]).sort((a, b) => b[0] - a[0]).map((x) => x[1])
+  const startPos = ds.series.map((_, i) => (sameStart || order[0] === i ? 'top' : order[order.length - 1] === i ? 'bottom' : 'left')) as ('top' | 'bottom' | 'left')[]
   return {
-    ...frame(env, { grid: { left: 4, right: type === 'bar' ? 18 : 64, top: gridTop(env), bottom: 4, containLabel: true } }),
+    ...frame(env, { grid: { left: initial ? 34 : 4, right: type === 'bar' ? 18 : 64, top: gridTop(env), bottom: 4, containLabel: true } }),
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: env.tokens.axis, type: 'dashed' } }, formatter: axisTooltip(p, env, stacked) },
     xAxis: catAxis(ds.categories, env, { boundaryGap: type === 'bar', axisLabel: { color: env.tokens.textMuted, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), interval: 'auto' } }),
     yAxis: valueAxis(ds, env),
-    series: ds.series.map((s) => ({
+    series: ds.series.map((s, si) => ({
       id: s.id, seriesId: s.id, name: s.name, type: type === 'bar' ? 'bar' : 'line',
-      stack: stacked ? 'total' : undefined, smooth: false, showSymbol: false, symbolSize: 6,
+      stack: stacked ? 'total' : undefined, smooth: false, showSymbol: initial, symbolSize: initial ? (_v: unknown, q: { dataIndex: number }) => (q.dataIndex === 0 ? 9 : 0) : 6,
       lineStyle: { width: stacked ? 1 : 2.5, color: p.colors[s.id] },
       itemStyle: { color: p.colors[s.id] },
       areaStyle: type === 'area' ? { opacity: 0.1, color: p.colors[s.id] } : stacked ? { opacity: 0.88, color: p.colors[s.id] } : undefined,
       emphasis: { focus: 'series' },
       endLabel: type !== 'bar' ? { show: true, color: p.colors[s.id], fontWeight: fw(env, 'figures', 600), fontSize: fs(env, 'figures', 11.5), formatter: () => env.fmt(s.format ?? ds.format, s.values[last], { unit: false, decimals: env.decimals }) } : undefined,
-      data: s.values,
+      data: initial ? s.values.map((v, i) => (i === 0 && (si === 0 || !sameStart)
+        ? { value: v, label: { show: true, position: startPos[si], offset: [startPos[si] === 'left' ? -4 : 14, 0], color: p.colors[s.id], fontWeight: fw(env, 'figures', 600), fontSize: fs(env, 'figures', 11.5), fontFamily: FONT, formatter: () => env.fmt(s.format ?? ds.format, v, { unit: false, decimals: env.decimals }) } }
+        : v)) : s.values,
     })),
   } as EChartsCoreOption
 }

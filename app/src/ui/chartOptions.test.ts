@@ -62,7 +62,7 @@ describe('textes propres à un scénario / un acteur', () => {
   it('chaque page garde son texte ; la Globale garde les textes communs', async () => {
     const { entityKey, resolveEntityText } = await import('../config/resolve')
     const { updateWidgetEntity, updateWidget, getState } = await import('../state/store')
-    updateWidget('headline', { headline: { title: 'commun' } })
+    updateWidget('headline', { headline: { title: 'commun' }, entityText: undefined }) // l'affichage par défaut a ses propres textes par scénario
     updateWidgetEntity('headline', 'scenario:0', { headline: { title: 'Bas **{actif}**' } })
     updateWidgetEntity('headline', 'scenario:2', { title: 'Haut' })
     const w = getState().config.pages.scenario.widgets.find((x) => x.id === 'headline')!

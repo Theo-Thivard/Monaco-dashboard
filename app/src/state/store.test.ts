@@ -23,7 +23,7 @@ describe('configuration', () => {
     c.labels['scenario:1'] = 'Référence client'
     c.theme.tokens = { primary: '#123456' }
     c.format.powerUnit = 'kW'
-    c.pages.scenario.widgets = c.pages.scenario.widgets.map((w) => (w.id === 'ch-trajectory' ? { ...w, chartType: 'area' } : w))
+    c.pages.scenario.widgets = c.pages.scenario.widgets.map((w) => (w.id === 'ch-bridge' ? { ...w, chartType: 'area' } : w))
     c.pages.scenario.layout = c.pages.scenario.layout.map((l) => (l.i === 'kpis' ? { ...l, h: 6 } : l))
     const d = diffFromDefault(state({ config: c, params: withValue(defaultParams(), 'adrFin', 1, 0.4) }))
     expect(d.assumptions).toHaveLength(1)
@@ -81,13 +81,13 @@ describe('réglages de graphique par lecture', () => {
   it('une lecture ne modifie pas l\'autre ; vider un réglage le retire', async () => {
     const { resolveWidget } = await import('../config/resolve')
     const { updateWidgetLens, getState } = await import('./store')
-    updateWidgetLens('ch-trajectory', 'need', { axisMin: 2, axisMax: 7 })
-    updateWidgetLens('ch-trajectory', 'addressable', { axisMin: 0, axisMax: 4 })
-    const w = getState().config.pages.scenario.widgets.find((x) => x.id === 'ch-trajectory')!
+    updateWidgetLens('ch-bridge', 'need', { axisMin: 2, axisMax: 7 })
+    updateWidgetLens('ch-bridge', 'addressable', { axisMin: 0, axisMax: 4 })
+    const w = getState().config.pages.scenario.widgets.find((x) => x.id === 'ch-bridge')!
     expect(resolveWidget(w, 'need')).toMatchObject({ axisMin: 2, axisMax: 7 })
     expect(resolveWidget(w, 'addressable')).toMatchObject({ axisMin: 0, axisMax: 4 })
-    updateWidgetLens('ch-trajectory', 'need', { axisMin: undefined, axisMax: undefined })
-    const w2 = getState().config.pages.scenario.widgets.find((x) => x.id === 'ch-trajectory')!
+    updateWidgetLens('ch-bridge', 'need', { axisMin: undefined, axisMax: undefined })
+    const w2 = getState().config.pages.scenario.widgets.find((x) => x.id === 'ch-bridge')!
     expect(w2.lensOverrides?.need).toBeUndefined()
     expect(resolveWidget(w2, 'addressable').axisMax).toBe(4)
   })
