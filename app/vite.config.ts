@@ -22,7 +22,8 @@ const registry = [
   ...archived.slice().reverse().map((v) => ({ slug: v.slug, label: v.label, path: `${v.slug}/`, kind: 'version' })),
 ]
 // affichage enregistré appliqué par défaut à cette version (build « variante »)
-const variantFile = process.env.VARIANT_CONFIG
+// sans affichage enregistré, la version courante s'ouvre sur son affichage par défaut (default-display.json) ; pas pendant les tests
+const variantFile = process.env.VARIANT_CONFIG ?? (process.env.VITEST ? undefined : `${registryRoot}/default-display.json`)
 const variantConfig = variantFile && existsSync(variantFile) ? (readJson<{ config?: unknown }>(variantFile, {}).config ?? null) : null
 
 // base = nom du dépôt GitHub pour GitHub Pages
