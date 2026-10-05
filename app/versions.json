@@ -1,17 +1,1 @@
-[
-  {
-    "slug": "v1",
-    "ref": "origin/archive/dashboard-v1",
-    "label": "V1"
-  },
-  {
-    "slug": "v2",
-    "ref": "origin/archive/dashboard-v2",
-    "label": "V2"
-  },
-  {
-    "slug": "v3",
-    "ref": "0ecf0f041b27b784afdfd10b90ac3557c02f0036",
-    "label": "V3"
-  }
-]
+[]

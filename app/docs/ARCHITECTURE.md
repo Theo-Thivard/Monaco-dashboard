@@ -90,7 +90,7 @@ Vue consultant › ⚙ › « Enregistrer l'affichage sur GitHub… » : avec un
 - **Indicateurs de la page acteur sélectionnables** (`config.actorKpis`, `src/ui/KpiStrip.tsx › KpiPicker`) : en vue consultant, bouton « ⚙ Indicateurs » comme sur les pages scénario (cocher, ordonner, renommer) ; par défaut tous cochés, chaque lecture ne montre que ceux qui la concernent.
 - **Titres selon la lecture** (`config.titlesLinked`, `lensOverrides[lens].title|subtitle`, clés `scenario:0@addressable`) : par défaut les titres et sous-titres des blocs sont indépendants entre « Besoins générés » et « Besoins adressables » ; la case « Mêmes titres… » des réglages d'un bloc les lie (les titres propres à une lecture sont alors ignorés, sans être effacés).
 - **Unités modifiables** (`config.units`, `src/ui/UnitText.tsx`) : en vue consultant, clic sur l'unité d'une cellule pour écrire n'importe quel texte ou la supprimer.
-- L'affichage par défaut est dans `src/config/defaults.ts` (plus de `default-display.json`) ; les versions précédentes (V1 à V3) sont archivées dans `versions.json`.
+- L'affichage par défaut est dans `src/config/defaults.ts` (plus de `default-display.json`) ; les anciennes versions V1 à V3 ont été retirées (`versions.json` est vide).
 
 ## Typographie
 Panneau flottant `src/ui/TypographyPanel.tsx` (bouton AA). Taille globale = `theme.metrics.fontScale` (échelle `html`) ; cinq catégories (`titles`, `subtitles`, `figures`, `labels`, `body`) dans `theme.typo` (taille ×, gras), définies dans `src/config/typography.ts`. Le texte de l'interface suit des variables CSS `--ts-<catégorie>` / `--tw-<catégorie>` (`styles.css`) ; les graphiques (pixels) reçoivent les mêmes réglages via `ChartEnv.typo`. Enregistré avec la configuration (affichages enregistrés compris).
