@@ -10,5 +10,11 @@
     "label": "V4 · plein ecran",
     "base": "v4",
     "created": "2026-10-02"
+  },
+  {
+    "slug": "v5-affichage-5-10",
+    "label": "V5 · affichage_5_10",
+    "base": "v5",
+    "created": "2026-10-05"
   }
 ]
