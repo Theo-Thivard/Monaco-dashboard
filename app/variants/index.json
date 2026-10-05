@@ -4,5 +4,11 @@
     "label": "V5",
     "base": "v4",
     "created": "2026-10-05"
+  },
+  {
+    "slug": "v4-v4-couleurs",
+    "label": "V4 · V4.Couleurs",
+    "base": "v4",
+    "created": "2026-10-05"
   }
 ]
