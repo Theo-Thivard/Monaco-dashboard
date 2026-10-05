@@ -102,11 +102,24 @@ function valueAxis(ds: Dataset, env: ChartEnv, horizontal = false, extra: P = {}
   }
 }
 
+/** Largeur d'une zone de libellé sous l'axe horizontal : le graphique partagé entre ses catégories, marges déduites. Un libellé plus large passe à la ligne dans sa zone. */
+const catZoneW = (env: ChartEnv, n: number) => Math.max(36, Math.floor((env.width - 56) / Math.max(1, n)) - 8)
+
+/** Libellés d'axe horizontal : à la ligne dans leur zone quand chaque mot y tient, sinon inclinés (jamais coupés au milieu d'un mot ni superposés). */
+function catLabelLayout(cats: string[], env: ChartEnv, base: number, cap: number): P {
+  const zone = Math.min(cap, catZoneW(env, cats.length))
+  const longestWord = Math.max(0, ...cats.flatMap((c) => c.split(/\s+/).map((w) => w.length)))
+  const fits = (size: number) => longestWord * size * 0.6 * ty(env).labels <= zone
+  if (fits(base)) return { interval: 0, hideOverlap: false, width: zone, overflow: 'break', lineHeight: Math.round(13 * ty(env).labels) }
+  if (fits(9.5)) return { interval: 0, hideOverlap: false, width: zone, overflow: 'break', fontSize: fs(env, 'labels', 9.5), lineHeight: Math.round(12 * ty(env).labels) }
+  return { interval: 0, hideOverlap: false, rotate: 35 }
+}
+
 function catAxis(cats: string[], env: ChartEnv, extra: P = {}): P {
   const t = env.tokens
   return {
     type: 'category', data: cats,
-    axisLabel: { color: t.textMuted, fontSize: fs(env, 'labels', 11.5), fontWeight: fw(env, 'labels'), interval: 0, hideOverlap: false, width: Math.round(120 * ty(env).labels), overflow: 'break' },
+    axisLabel: { color: t.textMuted, fontSize: fs(env, 'labels', 11.5), fontWeight: fw(env, 'labels'), ...catLabelLayout(cats, env, 11.5, Math.round(120 * ty(env).labels)) },
     axisLine: { lineStyle: { color: t.border } }, axisTick: { show: false }, ...extra,
   }
 }
@@ -264,13 +277,13 @@ function waterfall(p: PreparedDataset, env: ChartEnv): EChartsCoreOption {
     axisMin = Math.max(0, lo - 2.5 * (hi - lo || hi * 0.05))
   }
   return {
-    ...frame(env, { legend: { show: false }, grid: { left: 4, right: 12, top: 26, bottom: 4, containLabel: true } }),
+    ...frame(env, { legend: { show: false }, grid: { left: (catLabelLayout(ds.categories, env, 11, 120) as { rotate?: number }).rotate ? 36 : 4, right: 12, top: 26, bottom: 4, containLabel: true } }),
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: t.surfaceAlt, opacity: 0.6 } },
       formatter: (raw: { dataIndex: number }[]) => {
         const i = raw[0].dataIndex
         return `<div style="font-weight:600;margin-bottom:4px">${esc(ds.categories[i])}</div><b>${env.fmt(ds.format, vals[i], { sign: steps[i] === 'delta' })}</b>${ds.hints?.[i] ? `<div style="color:${t.textMuted};margin-top:2px">${esc(ds.hints[i])}</div>` : ''}`
       } },
-    xAxis: catAxis(ds.categories, env, { axisLabel: { color: t.textMuted, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), interval: 0, width: Math.round(84 * ty(env).labels), overflow: 'break' } }),
+    xAxis: catAxis(ds.categories, env, { axisLabel: { color: t.textMuted, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), ...catLabelLayout(ds.categories, env, 11, Math.round(120 * ty(env).labels)) } }),
     yAxis: valueAxis(ds, env, false, { min: axisMin }),
     series: [
       { id: '__base', name: '__base', type: 'bar', stack: 'w', silent: true, itemStyle: { color: 'transparent' }, tooltip: { show: false }, data: low },
