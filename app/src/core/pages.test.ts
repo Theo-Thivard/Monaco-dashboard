@@ -65,7 +65,7 @@ describe.each([['défaut', defaultParams()], ['modifié', modified]])('pages Glo
       })
       it(`messages clés sans NaN (scénario ${s})`, () => {
         const f = defaultFormat()
-        const h = buildActorHeadline(snap, actor, f, 'x', actor.label, (id) => id)
+        const h = buildActorHeadline(snap, actor, f, actor.label, (id) => id)
         expect(JSON.stringify(h)).not.toMatch(/NaN|undefined|Infinity/)
       })
     })
@@ -97,7 +97,7 @@ describe('page acteur – lentille besoins générés', () => {
     close(v[v.length - 1], b.total); close(sum(v.slice(0, -1)), b.total)
     expect(ds(snap, 'actorScenarios', actor.id).series).toHaveLength(2)
     close(ds(snap, 'actorTrajectory', actor.id).series[1].values[9], b.total)
-    expect(JSON.stringify(buildActorHeadline(snap, actor, defaultFormat(), 'x', actor.label, (id) => id))).not.toMatch(/NaN|undefined|Infinity/)
+    expect(JSON.stringify(buildActorHeadline(snap, actor, defaultFormat(), actor.label, (id) => id))).not.toMatch(/NaN|undefined|Infinity/)
     const w = ACTOR_KPI_DEFS.find((k) => k.id === 'weightNeed')!.compute({ b, r: snap.active })
     close(w, b.total / snap.active.total)
   })

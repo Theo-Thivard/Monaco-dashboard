@@ -39,10 +39,15 @@ const fs = (env: ChartEnv, cat: 'labels' | 'figures', base: number) => Math.roun
 const fw = (env: ChartEnv, cat: 'labels' | 'figures', normal: 'normal' | 600 = 'normal') => (ty(env)[cat === 'labels' ? 'labelsBold' : 'figuresBold'] ? 'bold' : normal)
 
 /** Nombre de lignes occupées par la légende (estimation d'après la largeur du graphique). */
+/** Largeur maximale d'un libellé de légende : au-delà, le texte passe à la ligne au lieu de déborder sur ses voisins. */
+const legendTextW = (env: ChartEnv) => Math.max(70, Math.round(env.width * 0.4))
+const legendTextPx = (env: ChartEnv, n: string) => n.length * 6.6 * ty(env).labels
 function legendRows(env: ChartEnv): number {
   if (!env.legend || !env.legendNames?.length) return 1
-  const itemW = env.legendNames.reduce((a, n) => a + 10 + 6 + n.length * 6.6 * ty(env).labels + 16, 0)
-  return Math.max(1, Math.ceil(itemW / Math.max(80, env.width - 24)))
+  const cap = legendTextW(env)
+  const itemW = env.legendNames.reduce((a, n) => a + 10 + 6 + Math.min(cap, legendTextPx(env, n)) + 16, 0)
+  const lines = Math.max(...env.legendNames.map((n) => Math.ceil(legendTextPx(env, n) / cap)))
+  return Math.max(1, Math.ceil(itemW / Math.max(80, env.width - 24))) + (lines - 1)
 }
 /** Marge haute de la grille : la légende (sur une ou plusieurs lignes) ne recouvre jamais le graphique. */
 const gridTop = (env: ChartEnv, noLegend = 14) => (env.legend ? 14 + legendRows(env) * Math.round(20 * ty(env).labels) : noLegend)
@@ -69,7 +74,7 @@ function frame(env: ChartEnv, extra: P = {}): P {
     textStyle: { fontFamily: FONT, color: t.textMuted, fontSize: fs(env, 'labels', 12) },
     grid: { left: 10, right: 18, top: gridTop(env), bottom: 4, containLabel: true },
     legend: env.legend
-      ? { top: 0, left: 0, width: Math.max(80, env.width - 24), type: 'plain', icon: 'roundRect', itemWidth: fs(env, 'labels', 10), itemHeight: fs(env, 'labels', 10), itemGap: 16, textStyle: { color: t.textMuted, fontSize: fs(env, 'labels', 12), fontWeight: fw(env, 'labels'), fontFamily: FONT } }
+      ? { top: 0, left: 0, width: Math.max(80, env.width - 24), type: 'plain', icon: 'roundRect', itemWidth: fs(env, 'labels', 10), itemHeight: fs(env, 'labels', 10), itemGap: 16, textStyle: { color: t.textMuted, fontSize: fs(env, 'labels', 12), fontWeight: fw(env, 'labels'), fontFamily: FONT, width: legendTextW(env), overflow: 'break' } }
       : { show: false },
     tooltip: {
       confine: true, backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, padding: [8, 10],
@@ -287,7 +292,7 @@ function tornado(p: PreparedDataset, env: ChartEnv): EChartsCoreOption {
     legend: { ...(frame(env).legend as P), show: env.legend },
     grid: { left: labelW + 14, right: 24, top: gridTop(env, 10), bottom: 4, containLabel: false },
     xAxis: valueAxis(ds, env, true, { axisLabel: { color: t.axis, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), formatter: (v: number) => env.fmt(ds.format, v, { unit: false, sign: true, decimals: env.powerUnit === 'MW' ? 1 : 0 }) } }),
-    yAxis: catAxis(ds.categories, env, { inverse: true, axisLabel: { color: t.text, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), width: labelW, overflow: 'truncate', ellipsis: '…', margin: 10 }, axisLine: { lineStyle: { color: t.axis } } }),
+    yAxis: catAxis(ds.categories, env, { inverse: true, axisLabel: { color: t.text, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), width: labelW, overflow: 'break', margin: 10 }, axisLine: { lineStyle: { color: t.axis } } }),
     series: ds.series.map((s) => ({
       id: s.id, seriesId: s.id, name: s.name, type: 'bar', barGap: '-100%', barMaxWidth: 16, itemStyle: { color: p.colors[s.id] },
       label: { show: false }, data: s.values,
