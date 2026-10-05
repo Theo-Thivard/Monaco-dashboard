@@ -16,7 +16,6 @@ button { cursor: pointer; }
 .app.pad-right { padding-right: 400px; }
 /* panneau d'hypothèses épinglé */
 .hypside { position: fixed; top: 48px; bottom: 0; left: 0; width: 400px; z-index: 20; background: var(--c-surface); border-right: 1px solid var(--c-border); display: flex; flex-direction: column; }
-.hypside-tools { display: flex; gap: 12px; align-items: center; }
 .side-toggle { color: var(--c-navText); }
 .app.with-side > .page { width: calc(100% - 400px); max-width: none; margin-left: 400px; }
 .page { max-width: var(--m-maxw); margin: 0 auto; padding: 24px 32px 56px; }
@@ -32,7 +31,6 @@ button.danger { color: var(--c-negative); border-color: var(--c-negative); }
 button.armed { background: var(--c-negative) !important; color: #fff !important; border-color: var(--c-negative) !important; }
 button:disabled { opacity: .35; cursor: default; }
 button.wide { width: 100%; margin-top: 10px; padding: 8px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 4px; }
-.badge { margin-left: 6px; background: var(--c-accent); color: #fff; border-radius: 9px; font-size: 0.75rem; padding: 0 6px; }
 .seg { display: inline-flex; border: 1px solid var(--c-border); border-radius: 4px; overflow: hidden; background: var(--c-surface); }
 .seg button { border: 0; background: transparent; padding: 6px 14px; color: var(--c-textMuted); font-size: 0.93rem; }
 .seg button + button { border-left: 1px solid var(--c-border); }
@@ -105,7 +103,6 @@ button.wide { width: 100%; margin-top: 10px; padding: 8px; background: var(--c-s
 .pop-body.menu button { text-align: left; background: none; border: 0; border-radius: 4px; padding: 8px 10px; color: var(--c-text); }
 .pop-body.menu button:hover { background: var(--c-surfaceAlt); }
 .pop-title { font-weight: 600; color: var(--c-heading); margin-bottom: 8px; }
-.pop-help { font-size: 0.86rem; color: var(--c-textMuted); padding: 0 10px 6px; }
 .pop-sep { height: 1px; background: var(--c-border); margin: 4px 0; }
 
 /* ---------------------------------------------------------------- widgets */
@@ -329,7 +326,7 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
   .app.with-side > .page { width: auto; margin: 0; }
   @page { size: A3 landscape; margin: 12mm; }
   body { background: #fff; }
-  .topnav, .ctx-right, .drawer, .toast, .wtools, .grip, .section-toggle, .kpi-custom, .drivers-tools, .type-select, .initial-toggle, .unit-reset, .react-resizable-handle { display: none !important; }
+  .topnav, .ctx-right, .drawer, .toast, .wtools, .grip, .section-toggle, .kpi-custom, .drivers-tools, .type-select, .unit-reset, .react-resizable-handle { display: none !important; }
   .app, .app.pad-left, .app.pad-right { padding: 0; }
   .page { max-width: none; padding: 0; }
   .react-grid-item, .wframe { break-inside: avoid; }
@@ -377,7 +374,7 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 /* la grille a un pas vertical d'une demi-unité, sans marge : l'espace entre blocs est réservé à l'intérieur de chaque bloc */
 .grid > .react-grid-item > .wframe { height: calc(100% - var(--m-gap)); }
 
-/* ---------------------------------------------------------------- panneau de typographie (V5) */
+/* ---------------------------------------------------------------- panneau de typographie (V4) */
 .typo-toggle .aa-s { font-size: 0.8rem; } .typo-toggle .aa-l { font-size: 1.15rem; font-weight: 600; }
 .typo-toggle.open { background: color-mix(in srgb, var(--c-navActive) 10%, transparent); color: var(--c-navActive); }
 .typo-panel { position: fixed; top: 64px; right: 16px; z-index: 70; width: 300px; max-width: calc(100vw - 8px); max-height: calc(100vh - 80px); display: flex; flex-direction: column; background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); border-radius: 8px; box-shadow: 0 10px 32px rgba(0,0,0,.2); font-size: 14px; }
@@ -397,13 +394,11 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 .typo-body .wide { width: 100%; }
 @media print { .typo-panel { display: none; } }
 
-/* V6 : bandeau d'hypothèses par page, sélecteur « Curseurs des 3 scénarios », valeur initiale, unités modifiables */
+/* V4 : bandeau d'hypothèses par page, sélecteur « Curseurs des 3 scénarios », valeur initiale, unités modifiables */
 .drivers-band { font-size: calc(0.8rem * var(--ts-labels, 1)); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--c-textMuted); margin: 0 0 6px; }
 .mode-group { display: flex; flex-direction: column; gap: 3px; margin-left: auto; }
 .mode-group .mode-seg { margin-left: 0; }
 .mode-label { font-size: calc(0.78rem * var(--ts-labels, 1)); color: var(--c-textMuted); font-weight: var(--tw-labels); }
-.initial-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: calc(0.82rem * var(--ts-labels, 1)); color: var(--c-textMuted); white-space: nowrap; cursor: pointer; font-weight: var(--tw-labels); }
-.initial-toggle input { margin: 0; accent-color: var(--c-primary); }
 .unit-slot { display: inline-flex; align-items: baseline; gap: 2px; }
 .unit-click { cursor: text; border-bottom: 1px dashed var(--c-border); }
 .unit-click:hover { border-bottom-color: var(--c-primary); color: var(--c-primary); }

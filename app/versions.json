@@ -11,17 +11,7 @@
   },
   {
     "slug": "v3",
-    "ref": "origin/archive/dashboard-v3",
-    "label": "V3"
-  },
-  {
-    "slug": "v4",
     "ref": "0ecf0f041b27b784afdfd10b90ac3557c02f0036",
-    "label": "V4"
-  },
-  {
-    "slug": "v5",
-    "ref": "f5f605b2117749ac70ab56fbcba54ac50bcd6cc2",
-    "label": "V5"
+    "label": "V3"
   }
 ]

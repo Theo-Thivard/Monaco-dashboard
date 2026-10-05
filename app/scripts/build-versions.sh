@@ -59,7 +59,8 @@ jq -c '.[]' "$APP/versions.json" | while read -r v; do
     # dernier classeur embarqué (versions qui lisent l'Excel) ; la version en ligne est lue comme pour la version courante
     pin_latest_model "$PWD"
     [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs
-    npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
+    # clé de stockage propre à chaque version : une archive ne partage pas celle de la version courante
+    APP_SLUG="$slug" npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
   )
   save_cache "$key" "$DIST/$slug" "$slug-"
   echo "::endgroup::"

@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { ACTOR_BY_ID, actorBlock, actorHyps } from '../core/actors'
-import { HYP_BY_ID } from '../core/hypotheses'
 import { applyTokens, headlineTokens, toParts } from '../core/headlineText'
 import type { WidgetConfig } from '../config/types'
 import { buildActorHeadline, buildGlobalHeadline, buildHeadline, type Headline as HeadlineData } from '../core/insights'
@@ -119,8 +118,6 @@ export function ActorNote({ env }: { env: Env }) {
     </div>
   )
 }
-
-export const actorHypIds = (id: string) => (ACTOR_BY_ID[id as keyof typeof ACTOR_BY_ID] ? actorHyps(id as keyof typeof ACTOR_BY_ID).filter((h) => HYP_BY_ID[h]) : [])
 
 /** Formules de l'Excel qui calculent cet acteur (lues dans le classeur : elles suivent toute modification). */
 function ActorFormulas({ env, actor }: { env: Env; actor: import('../core/engine').Entity }) {

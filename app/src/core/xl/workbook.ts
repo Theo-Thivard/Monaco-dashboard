@@ -5,7 +5,6 @@ import * as XLSX from 'xlsx'
 import { FUNCTIONS, isMatrix, LAZY, scalar, toNum, toStr, XlError, compare, eqLoose as looseEq, type Any, type Matrix, type Val } from './functions'
 import { colToIndex, parseFormula, type Node } from './parser'
 
-export interface CellRef { sheet: number; row: number; col: number }
 
 interface Compiled { fn: (run: Run) => Any; refs: number[]; src: string }
 

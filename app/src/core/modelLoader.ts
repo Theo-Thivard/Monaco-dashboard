@@ -15,7 +15,6 @@ async function fetchBuffer(url: string, timeoutMs: number): Promise<{ buf: Array
   } finally { clearTimeout(t) }
 }
 
-export interface LoadResult { model: Model }
 
 export async function loadModel(): Promise<Model> {
   const forceBundled = /[?&]source=bundled\b/.test(location.search)
