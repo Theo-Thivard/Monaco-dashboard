@@ -10,7 +10,7 @@ export type WidgetKind = 'section' | 'headline' | 'kpis' | 'scenarioCards' | 'ac
 /** client = vue par défaut ; detail / method = repliés derrière leur section */
 export type Tier = 'client' | 'detail' | 'method'
 
-/** les trois scénarios ensemble (un curseur, variation proportionnelle, valeur du Central affichée) ou un curseur par scénario */
+/** curseurs des 3 scénarios : « Groupés » (un curseur, variation proportionnelle, valeur du Central affichée) ou « Indépendants » (un curseur par scénario) */
 export type HypMode = 'together' | 'three'
 
 export interface SeriesStyle { name?: string; color?: string; hidden?: boolean }
@@ -53,8 +53,8 @@ export interface WidgetConfig {
   showAllScenarios?: boolean
   /** drivers : les trois scénarios ensemble ou trois curseurs séparés */
   hypMode?: HypMode
-  /** drivers : hypothèses choisies par l'utilisateur (défaut) ou hypothèses de l'acteur affiché */
-  hypSource?: 'visible' | 'actor'
+  /** graphique : afficher la valeur initiale (2026) : étiquette au départ d'une courbe, repère 2026 sur les barres, barre 2026 d'un empilement */
+  showInitial?: boolean
 }
 
 export interface ActorPrefsConfig { order: string[] | null; hidden: string[] }
@@ -73,7 +73,10 @@ export interface DashboardConfig {
   kpis: { order: string[]; visible: string[] }
   /** ordre et visibilité des acteurs (graphiques et menu) */
   actors: ActorPrefsConfig
-  hyps: { visible: string[]; notes: Record<string, string> }
+  /** hypothèses affichées par bandeau : « need », « addressable », « actor:<id> » (seuls les bandeaux modifiés sont stockés ; les autres suivent le défaut) */
+  hyps: { sets: Record<string, string[]>; notes: Record<string, string> }
+  /** unités saisies à la main dans les cellules de chiffres (clé = cellule) ; chaîne vide = unité supprimée */
+  units: Record<string, string>
   /** une configuration par type de page : Globale, Scénario (Bas/Central/Haut), Acteur (les 8 acteurs) */
   pages: Record<PageKind, PageConfig>
 }

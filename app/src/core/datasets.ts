@@ -26,6 +26,8 @@ export interface DataSeries {
   format?: FormatKind
   /** couleur sémantique (clé de jeton) : 'scen0' | 'scen1' | 'scen2' | 'muted' | 'positive' | 'negative' */
   tone?: string
+  /** repère (valeur initiale 2026) tracé comme un trait sur chaque catégorie, sans être une barre ; exclu des totaux */
+  marker?: boolean
 }
 
 export interface Dataset {
@@ -45,6 +47,8 @@ export interface Dataset {
   /** cascade dont les totaux écrasent les écarts : l'axe est tronqué (signalé à l'utilisateur) */
   truncateAxis?: boolean
   empty?: string
+  /** catégories grisées en arrière-plan (situation actuelle 2026, par opposition aux projections 2035) : indices + légende */
+  shaded?: { from: number; to: number; label: string }
 }
 
 export interface DatasetCtx {
@@ -59,6 +63,8 @@ export interface DatasetCtx {
   actors?: ActorPrefs
   /** acteur de la page courante (jeux de données « acteur ») */
   actor?: Entity
+  /** « Valeur initiale » cochée sur le graphique : repères 2026, barre 2026… (jeux de données qui la gèrent) */
+  showInitial?: boolean
 }
 
 export interface DatasetDef {
@@ -67,6 +73,8 @@ export interface DatasetDef {
   subtitle: string
   kind: DatasetKind
   defaultChart: ChartType
+  /** le graphique sait afficher la valeur initiale (2026) quand on coche « Valeur initiale » */
+  supportsInitial?: boolean
   build: (c: DatasetCtx) => Dataset
 }
 
@@ -80,6 +88,9 @@ const lensSeriesName = (c: DatasetCtx) => (c.snap.lens === 'need' ? c.label('ser
 
 /** Acteurs affichés dans les graphiques « tous les acteurs » : classés par valeur décroissante (scénario central) sauf ordre manuel. */
 const actorIds = (c: DatasetCtx, value: (r: ScenarioResult, id: Entity) => number): Entity[] => arrangeActors(c.actors, (id) => value(c.snap.results[1], id))
+
+/** Repère « valeur initiale » : la valeur 2026 de chaque catégorie (profil annuel du dashboard : t = 0), dans la lecture courante. */
+const initialSeries = (c: DatasetCtx, values: number[]): DataSeries => ({ id: 'initial', name: c.label('series:initial', 'Valeur initiale (2026)'), values, tone: 'initial', marker: true })
 
 const years = Array.from({ length: HORIZON + 1 }, (_, i) => String(2026 + i))
 const blockName = (c: DatasetCtx, id: string, def: string) => c.label(`block:${id}`, def)
@@ -103,19 +114,23 @@ export function compatibleCharts(d: Pick<Dataset, 'kind' | 'stackable' | 'series
 
 export const DATASETS: DatasetDef[] = [
   {
-    id: 'addrByBlock', title: 'Où se situe la demande ?', subtitle: 'Répartition 2035 par bloc, scénario actif', kind: 'composition', defaultChart: 'hbar',
+    id: 'addrByBlock', title: 'Où se situe la demande ? [{unité} ; 2035]', subtitle: 'Par bloc, scénario affiché', kind: 'composition', defaultChart: 'hbar', supportsInitial: true,
     build: (c) => {
       const v = lv(c)
       const g = groupBlocks(c.snap.active).sort((a, b) => v(b) - v(a))
+      const start = groupBlocks(c.snap.trajectory[c.snap.scenario][0])
       return {
         id: 'addrByBlock', kind: 'composition', format: 'power', stackable: false,
         categories: g.map((x) => blockName(c, x.id, x.label)), categoryIds: g.map((x) => x.id),
-        series: [{ id: 'addr', name: lensSeriesName(c), values: g.map(v), total: v(c.snap.active) }],
+        series: [
+          { id: 'addr', name: lensSeriesName(c), values: g.map(v), total: v(c.snap.active) },
+          ...(c.showInitial ? [initialSeries(c, g.map((x) => v(start.find((y) => y.id === x.id)!)))] : []),
+        ],
       }
     },
   },
   {
-    id: 'scenarios', title: 'Trois scénarios, un même point de départ', subtitle: 'Besoin 2026 et 2035 (et demande adressable en vue adressable)', kind: 'comparison', defaultChart: 'bar',
+    id: 'scenarios', title: 'Besoin par scénario [{unité} ; 2026 et 2035]', subtitle: 'Avec la demande adressable en lecture adressable', kind: 'comparison', defaultChart: 'bar',
     build: (c) => ({
       id: 'scenarios', kind: 'comparison', format: 'power', stackable: false,
       categories: SCENARIOS.map((s, i) => c.label(`scenario:${i}`, s)),
@@ -127,14 +142,14 @@ export const DATASETS: DatasetDef[] = [
     }),
   },
   {
-    id: 'trajectory', title: 'Trajectoire 2026 → 2035', subtitle: 'Par scénario (profil annuel interpolé)', kind: 'timeseries', defaultChart: 'line',
+    id: 'trajectory', title: 'Évolution du besoin [{unité} ; 2026-2035]', subtitle: 'Par scénario (profil annuel interpolé)', kind: 'timeseries', defaultChart: 'line', supportsInitial: true,
     build: (c) => ({
       id: 'trajectory', kind: 'timeseries', format: 'power', stackable: false, categories: years,
       series: SCENARIOS.map((s, i) => ({ id: `s${i}`, name: c.label(`scenario:${i}`, s), values: c.snap.trajectory[i].map(lv(c)), total: lv(c)(c.snap.results[i]), tone: `scen${i}` })),
     }),
   },
   {
-    id: 'trajectoryBlocks', title: 'Trajectoire par bloc', subtitle: '2026 → 2035, scénario actif', kind: 'timeseries', defaultChart: 'stackedArea',
+    id: 'trajectoryBlocks', title: 'Évolution du besoin par bloc [{unité} ; 2026-2035]', subtitle: 'Scénario affiché', kind: 'timeseries', defaultChart: 'stackedArea',
     build: (c) => {
       const t = c.snap.trajectory[c.snap.scenario].map(groupBlocks)
       const idx = OUTPUT_GROUPS.map((_, i) => i).sort((a, b) => lv(c)(groupBlocks(c.snap.active)[b]) - lv(c)(groupBlocks(c.snap.active)[a]))
@@ -145,19 +160,24 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'addrByBlockScenario', title: 'Répartition par bloc et par scénario', subtitle: '2035', kind: 'comparison', defaultChart: 'stackedBar',
+    id: 'addrByBlockScenario', title: 'Répartition par bloc et par scénario [{unité} ; 2035]', subtitle: '', kind: 'comparison', defaultChart: 'stackedBar', supportsInitial: true,
     build: (c) => {
       const g = c.snap.results.map(groupBlocks)
       const idx = OUTPUT_GROUPS.map((_, i) => i).sort((a, b) => lv(c)(g[1][b]) - lv(c)(g[1][a]))
+      // « Valeur initiale » : la répartition actuelle (2026) en première barre, grisée en arrière-plan pour la distinguer des trois projections 2035
+      const start = groupBlocks(c.snap.trajectory[1][0])
+      const initial = !!c.showInitial
+      const names = SCENARIOS.map((s, i) => c.label(`scenario:${i}`, s))
       return {
         id: 'addrByBlockScenario', kind: 'comparison', format: 'power', stackable: true,
-        categories: SCENARIOS.map((s, i) => c.label(`scenario:${i}`, s)),
-        series: idx.map((i) => { const og = OUTPUT_GROUPS[i]; return { id: og.id, name: blockName(c, og.id, og.label), values: g.map((x) => lv(c)(x[i])) } }),
+        categories: [...(initial ? [c.label('series:initialBar', '2026 · actuel')] : []), ...names.map((n) => (initial ? `${n} · 2035` : n))],
+        shaded: initial ? { from: 0, to: 0, label: c.label('series:initialBand', 'Situation actuelle') } : undefined,
+        series: idx.map((i) => { const og = OUTPUT_GROUPS[i]; return { id: og.id, name: blockName(c, og.id, og.label), values: [...(initial ? [lv(c)(start[i])] : []), ...g.map((x) => lv(c)(x[i]))] } }),
       }
     },
   },
   {
-    id: 'bridge', title: 'Lecture en cascade', subtitle: 'Du besoin 2026 au besoin 2035 (puis à la demande adressable en vue adressable), scénario actif', kind: 'bridge', defaultChart: 'waterfall',
+    id: 'bridge', title: 'Lecture en cascade [{unité} ; 2026-2035]', subtitle: 'Du besoin 2026 au besoin 2035 (puis à la demande adressable en lecture adressable)', kind: 'bridge', defaultChart: 'waterfall',
     build: (c) => {
       const r = c.snap.active
       const steps: { name: string; v: number; t: 'total' | 'delta' }[] = [
@@ -179,7 +199,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'sensitivity', title: 'Quelles hypothèses comptent le plus ?', subtitle: 'Impact 2035 en passant de la valeur basse à la valeur haute', kind: 'sensitivity', defaultChart: 'tornado',
+    id: 'sensitivity', title: 'Quelles hypothèses comptent le plus ? [{unité} ; 2035]', subtitle: 'Impact en passant de la valeur basse à la valeur haute', kind: 'sensitivity', defaultChart: 'tornado',
     build: (c) => {
       const rows = c.snap.sensitivity.slice(0, 8)
       return {
@@ -194,7 +214,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'socleAi', title: 'Socle et intelligence artificielle', subtitle: '2035 : besoin hors IA vs surcouche IA', kind: 'comparison', defaultChart: 'stackedBar',
+    id: 'socleAi', title: 'Socle et intelligence artificielle [{unité} ; 2035]', subtitle: 'Besoin hors IA et surcouche IA', kind: 'comparison', defaultChart: 'stackedBar',
     build: (c) => {
       const need = c.snap.lens === 'need'
       return {
@@ -208,7 +228,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'rateByBlock', title: 'Taux par bloc', subtitle: 'Croissance du besoin 2026 → 2035, ou part captable en vue adressable', kind: 'composition', defaultChart: 'hbar',
+    id: 'rateByBlock', title: 'Taux par bloc [{unité} ; 2035]', subtitle: 'Croissance du besoin 2026 → 2035, ou part captable en lecture adressable', kind: 'composition', defaultChart: 'hbar',
     build: (c) => {
       const need = c.snap.lens === 'need'
       const f = (x: { base: number; total: number; addressable: number }) => (need ? (x.base ? x.total / x.base : 0) : x.total ? x.addressable / x.total : 0)
@@ -222,7 +242,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'blockOverview', title: 'Par bloc : 2026 et 2035', subtitle: 'Scénario actif', kind: 'comparison', defaultChart: 'bar',
+    id: 'blockOverview', title: 'Besoin par bloc [{unité} ; 2026 et 2035]', subtitle: 'Scénario affiché', kind: 'comparison', defaultChart: 'bar',
     build: (c) => {
       const g = groupBlocks(c.snap.active).sort((a, b) => b.total - a.total)
       return {
@@ -237,7 +257,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'detailTable', title: 'Détail par bloc et par scénario', subtitle: 'Besoin 2035 (et demande adressable en vue adressable)', kind: 'matrix', defaultChart: 'table',
+    id: 'detailTable', title: 'Détail par bloc et par scénario [{unité} ; 2026 et 2035]', subtitle: 'Avec la demande adressable en lecture adressable', kind: 'matrix', defaultChart: 'table',
     build: (c) => {
       const g0 = c.snap.results.map(groupBlocks)
       const idx = OUTPUT_GROUPS.map((_, i) => i).sort((a, b) => lv(c)(g0[1][b]) - lv(c)(g0[1][a]))
@@ -257,18 +277,21 @@ export const DATASETS: DatasetDef[] = [
 
   // ------------------------------------------------------------- page Globale
   {
-    id: 'actorsAddr', title: 'Qui porte la demande ?', subtitle: '2035, par acteur et par scénario', kind: 'comparison', defaultChart: 'hbar',
+    id: 'actorsAddr', title: 'Qui porte la demande ? [{unité} ; 2035]', subtitle: 'Par acteur et par scénario', kind: 'comparison', defaultChart: 'hbar', supportsInitial: true,
     build: (c) => {
       const ids = actorIds(c, (r, id) => lv(c)(actorBlock(r, id)))
       return {
         id: 'actorsAddr', kind: 'comparison', format: 'power', stackable: false,
         categories: ids.map((id) => actorName(c, id)), categoryIds: ids,
-        series: SCENARIOS.map((s, i) => ({ id: `s${i}`, name: c.label(`scenario:${i}`, s), values: ids.map((id) => lv(c)(actorBlock(c.snap.results[i], id))), total: lv(c)(c.snap.results[i]), tone: `scen${i}` })),
+        series: [
+          ...SCENARIOS.map((s, i) => ({ id: `s${i}`, name: c.label(`scenario:${i}`, s), values: ids.map((id) => lv(c)(actorBlock(c.snap.results[i], id))), total: lv(c)(c.snap.results[i]), tone: `scen${i}` })),
+          ...(c.showInitial ? [initialSeries(c, ids.map((id) => lv(c)(actorBlock(c.snap.trajectory[1][0], id))))] : []),
+        ],
       }
     },
   },
   {
-    id: 'spreadByActor', title: 'Qui explique l\'écart entre scénarios ?', subtitle: 'Écart 2035 entre Haut et Bas, par acteur', kind: 'comparison', defaultChart: 'hbar',
+    id: 'spreadByActor', title: 'Qui explique l\'écart entre scénarios ? [{unité} ; 2035]', subtitle: 'Écart Haut − Bas, par acteur', kind: 'comparison', defaultChart: 'hbar',
     build: (c) => {
       const lo = c.snap.results[0]
       const hi = c.snap.results[2]
@@ -284,7 +307,7 @@ export const DATASETS: DatasetDef[] = [
 
   // ------------------------------------------------------------- pages Acteurs
   {
-    id: 'actorBridge', title: 'Lecture en cascade', subtitle: 'De la baseline 2026 à 2035 pour cet acteur, scénario actif', kind: 'bridge', defaultChart: 'waterfall',
+    id: 'actorBridge', title: 'Lecture en cascade [{unité} ; 2026-2035]', subtitle: 'De la baseline 2026 à 2035 pour cet acteur, scénario affiché', kind: 'bridge', defaultChart: 'waterfall',
     build: (c) => {
       const b = c.actor ? actorBlock(c.snap.active, c.actor) : null
       if (!b) return noActor('actorBridge', 'bridge')
@@ -304,7 +327,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'actorScenarios', title: 'Besoin par scénario', subtitle: 'Besoin 2026 et 2035 de cet acteur (et demande adressable en vue adressable)', kind: 'comparison', defaultChart: 'bar',
+    id: 'actorScenarios', title: 'Besoin par scénario [{unité} ; 2026 et 2035]', subtitle: 'Avec la demande adressable en lecture adressable', kind: 'comparison', defaultChart: 'bar',
     build: (c) => {
       if (!c.actor) return noActor('actorScenarios', 'comparison')
       const bs = c.snap.results.map((r) => actorBlock(r, c.actor!))
@@ -320,7 +343,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'actorTrajectory', title: 'Trajectoire 2026 → 2035', subtitle: 'Par scénario (profil annuel interpolé)', kind: 'timeseries', defaultChart: 'line',
+    id: 'actorTrajectory', title: 'Évolution du besoin [{unité} ; 2026-2035]', subtitle: 'Par scénario (profil annuel interpolé)', kind: 'timeseries', defaultChart: 'line', supportsInitial: true,
     build: (c) => {
       if (!c.actor) return noActor('actorTrajectory', 'timeseries')
       return {
@@ -330,7 +353,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'actorSensitivity', title: 'Quelles hypothèses comptent le plus ?', subtitle: 'Impact 2035 sur cet acteur, de la valeur basse à la valeur haute', kind: 'sensitivity', defaultChart: 'tornado',
+    id: 'actorSensitivity', title: 'Quelles hypothèses comptent le plus ? [{unité} ; 2035]', subtitle: 'Impact sur cet acteur, de la valeur basse à la valeur haute', kind: 'sensitivity', defaultChart: 'tornado',
     build: (c) => {
       if (!c.actor) return noActor('actorSensitivity', 'sensitivity')
       const id = c.actor
@@ -348,7 +371,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'actorTable', title: 'Détail du calcul', subtitle: 'De la baseline à 2035, par scénario', kind: 'matrix', defaultChart: 'table',
+    id: 'actorTable', title: 'Détail du calcul [{unité} ; 2026-2035]', subtitle: 'De la baseline à 2035, par scénario', kind: 'matrix', defaultChart: 'table',
     build: (c) => {
       if (!c.actor) return noActor('actorTable', 'matrix')
       const bs = c.snap.results.map((r) => actorBlock(r, c.actor!))

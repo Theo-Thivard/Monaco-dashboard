@@ -54,11 +54,11 @@ export function useEnv(): Env {
   }, [config, snap, route])
 }
 
-export function useDataset(id: string | undefined, env: Env): Dataset | null {
+export function useDataset(id: string | undefined, env: Env, showInitial?: boolean): Dataset | null {
   return useMemo(() => {
     const def = id ? DATASET_BY_ID[id] : undefined
     if (!def) return null
-    const ctx: DatasetCtx = { snap: env.snap, label: env.label, hypLabel: env.hypLabel, fmtHypValue: env.fmtHypValue, actors: env.config.actors, actor: env.route.kind === 'actor' ? env.route.actor : undefined }
+    const ctx: DatasetCtx = { snap: env.snap, label: env.label, hypLabel: env.hypLabel, fmtHypValue: env.fmtHypValue, actors: env.config.actors, actor: env.route.kind === 'actor' ? env.route.actor : undefined, showInitial }
     return def.build(ctx)
-  }, [id, env])
+  }, [id, env, showInitial])
 }

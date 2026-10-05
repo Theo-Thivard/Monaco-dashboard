@@ -88,6 +88,7 @@ button.wide { width: 100%; margin-top: 10px; padding: 8px; background: var(--c-s
 .scen-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .scen-col { text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 16px; background: transparent; border: 0; color: var(--c-text); min-width: 0; border-radius: 6px; }
 .scen-col + .scen-col { border-left: 1px solid var(--c-border); border-radius: 0 6px 6px 0; }
+.scen-col { cursor: pointer; }
 .scen-col:hover { background: var(--c-surfaceAlt); }
 .scen-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
 .scen-name { font-weight: var(--tw-body, 600); color: var(--c-heading); } .scen-go { margin-left: auto; font-size: 0.86rem; color: var(--c-accent); }
@@ -328,7 +329,7 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
   .app.with-side > .page { width: auto; margin: 0; }
   @page { size: A3 landscape; margin: 12mm; }
   body { background: #fff; }
-  .topnav, .ctx-right, .drawer, .toast, .wtools, .grip, .section-toggle, .kpi-custom, .drivers-tools, .type-select, .react-resizable-handle { display: none !important; }
+  .topnav, .ctx-right, .drawer, .toast, .wtools, .grip, .section-toggle, .kpi-custom, .drivers-tools, .type-select, .initial-toggle, .unit-reset, .react-resizable-handle { display: none !important; }
   .app, .app.pad-left, .app.pad-right { padding: 0; }
   .page { max-width: none; padding: 0; }
   .react-grid-item, .wframe { break-inside: avoid; }
@@ -395,3 +396,17 @@ details { margin: 6px 0; } summary { cursor: pointer; font-weight: 500; padding:
 .typo-sep { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--c-textMuted); font-weight: 600; border-top: 1px solid var(--c-border); padding-top: 10px; }
 .typo-body .wide { width: 100%; }
 @media print { .typo-panel { display: none; } }
+
+/* V6 : bandeau d'hypothèses par page, sélecteur « Curseurs des 3 scénarios », valeur initiale, unités modifiables */
+.drivers-band { font-size: calc(0.8rem * var(--ts-labels, 1)); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--c-textMuted); margin: 0 0 6px; }
+.mode-group { display: flex; flex-direction: column; gap: 3px; margin-left: auto; }
+.mode-group .mode-seg { margin-left: 0; }
+.mode-label { font-size: calc(0.78rem * var(--ts-labels, 1)); color: var(--c-textMuted); font-weight: var(--tw-labels); }
+.initial-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: calc(0.82rem * var(--ts-labels, 1)); color: var(--c-textMuted); white-space: nowrap; cursor: pointer; font-weight: var(--tw-labels); }
+.initial-toggle input { margin: 0; accent-color: var(--c-primary); }
+.unit-slot { display: inline-flex; align-items: baseline; gap: 2px; }
+.unit-click { cursor: text; border-bottom: 1px dashed var(--c-border); }
+.unit-click:hover { border-bottom-color: var(--c-primary); color: var(--c-primary); }
+.unit-click.empty { opacity: .45; font-style: italic; }
+.unit-reset { border: 0; background: none; padding: 0 3px; color: var(--c-textMuted); font-size: 0.8em; cursor: pointer; }
+.unit-edit { font-family: inherit; color: var(--c-text); background: var(--c-surface); border: 1px solid var(--c-primary); border-radius: 3px; padding: 0 4px; min-width: 3ch; letter-spacing: 0; }

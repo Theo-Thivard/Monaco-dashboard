@@ -135,7 +135,7 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
           onReset={() => (ekey && !shared ? updateWidgetEntity(wc.id, ekey, { headline: { kicker: '', title: '', bullets: '' } }) : setText({ headline: undefined }))} />
       )}
       <LabelFields wc={wc} env={env} />
-      {wc.kind !== 'headline' && <Field label="Titre"><input type="text" value={widgetTitle(rw)} onChange={(e) => setText({ title: e.target.value })} /></Field>}
+      {wc.kind !== 'headline' && <Field label="Titre" hint="Légende « [unité ; date] » : écrivez {unité} pour que l'unité suive le réglage (MW IT, kW…)"><input type="text" value={widgetTitle(rw)} onChange={(e) => setText({ title: e.target.value })} /></Field>}
       {wc.kind !== 'headline' && <Field label="Sous-titre"><input type="text" value={widgetSubtitle(rw)} onChange={(e) => setText({ subtitle: e.target.value })} /></Field>}
       {wc.kind === 'text' && <Field label="Contenu"><textarea rows={9} value={rw.text ?? ''} onChange={(e) => setText({ text: e.target.value })} /></Field>}
       {wc.kind !== 'section' && wc.kind !== 'headline' && <Field label="Note de bas de carte" hint="Annotation ou précision méthodologique affichée sous le widget"><textarea rows={2} value={rw.note ?? ''} onChange={(e) => setText({ note: e.target.value || undefined })} /></Field>}
@@ -150,6 +150,7 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
             </select>
           </Field>
           {curType !== 'table' && <label className="inline"><input type="checkbox" checked={eff.legend ?? true} onChange={(e) => setL({ legend: e.target.checked })} /> Afficher la légende</label>}
+          {def?.supportsInitial && <label className="inline"><input type="checkbox" checked={!!wc.showInitial} onChange={(e) => set({ showInitial: e.target.checked })} /> Afficher la valeur initiale (2026)</label>}
           <Field label="Décimales (vide = automatique)"><NumberInput value={eff.decimals} min={0} max={4} onChange={(v) => setL({ decimals: v })} /></Field>
           {curType !== 'table' && curType !== 'donut' && curType !== 'pie' && (
             <>
@@ -167,15 +168,12 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
       {wc.kind === 'drivers' && (
         <>
           <h4>Hypothèses</h4>
-          <Field label="Scénarios modifiés par les curseurs">
+          <Field label="Curseurs des 3 scénarios">
             <select value={wc.hypMode === 'three' || (!wc.hypMode && wc.showAllScenarios) ? 'three' : 'together'} onChange={(e) => set({ hypMode: e.target.value as HypMode, showAllScenarios: undefined })}>
-              <option value="together">Les trois ensemble (valeur du Central, même %)</option><option value="three">Trois curseurs séparés</option>
+              <option value="together">Groupés (valeur du Central, même %)</option><option value="three">Indépendants (un curseur par scénario)</option>
             </select>
           </Field>
-          {env.route.kind === 'actor' && (
-            <label className="inline"><input type="checkbox" checked={wc.hypSource === 'actor'} onChange={(e) => set({ hypSource: e.target.checked ? 'actor' : 'visible' })} /> Seulement les hypothèses de l'acteur</label>
-          )}
-          <p className="drawer-help">Choisissez les hypothèses affichées avec « Afficher / masquer » dans le bloc.</p>
+          <p className="drawer-help">Le bandeau suit la page : Besoins générés, Besoins adressables ou l'acteur affiché, chacun avec sa propre liste. Choisissez les hypothèses avec « Afficher / masquer » dans le bloc.</p>
         </>
       )}
 

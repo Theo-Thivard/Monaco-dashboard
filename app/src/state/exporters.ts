@@ -26,7 +26,7 @@ export function buildCSV(env: Env): string {
   for (const k of KPI_DEFS) out.push(row(env.label(`kpi:${k.id}`, k.label), ...snap.results.map((r) => kpiValue(k, r, snap.results))))
   out.push('')
   const ds = DATASET_BY_ID.detailTable.build({ snap, label: env.label, hypLabel: env.hypLabel, fmtHypValue: env.fmtHypValue })
-  out.push(row(DATASET_BY_ID.detailTable.title + ' (kW)'))
+  out.push(row(DATASET_BY_ID.detailTable.title.replace(/\s*\[.*\]/, '') + ' (kW)'))
   out.push(row('Bloc', ...ds.series.map((s) => s.name)))
   ds.categories.forEach((c, i) => out.push(row(c, ...ds.series.map((s) => s.values[i]))))
   out.push(row('Total', ...ds.series.map((s) => s.total ?? '')))

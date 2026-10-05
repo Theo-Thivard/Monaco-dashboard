@@ -3,6 +3,10 @@ import { ACTOR_KPI_DEFS } from '../core/kpis'
 import { LENS_HINT, LENS_LABEL } from '../core/lens'
 import { OUTPUT_GROUPS } from '../core/engine'
 
+/** Titre du panneau des trois scénarios : légende « [unité ; date] » ({unité} suit le réglage MW / kW). */
+export const SCENPANEL_TITLE_NEED = 'Besoin IT généré à Monaco [{unité} ; 2035]'
+export const SCENPANEL_TITLE_ADDR = 'Demande adressable à Monaco [{unité} ; 2035]'
+
 /** Texte sous chaque valeur du panneau des scénarios (jetons : {2026} {hausse} {besoin} {taux} {valeur} ; **gras**). */
 export const SCENPANEL_SUB_NEED = '2026 : {2026} · **{hausse}** d\'ici 2035'
 export const SCENPANEL_SUB_ADDR = 'Besoin {besoin} · taux {taux}'
@@ -17,8 +21,8 @@ export const LABEL_DEFS: { group: string; key: string; def: string }[] = [
   { group: 'Navigation et en-têtes', key: 'lens:needHint', def: LENS_HINT.need },
   { group: 'Navigation et en-têtes', key: 'lens:addressableHint', def: LENS_HINT.addressable },
   { group: 'Navigation et en-têtes', key: 'ctx:global', def: 'Vue d\'ensemble des trois scénarios' },
-  { group: 'Panneau des trois scénarios', key: 'scenpanel:need', def: 'Besoin IT généré à Monaco en 2035' },
-  { group: 'Panneau des trois scénarios', key: 'scenpanel:addr', def: 'Demande adressable à Monaco en 2035' },
+  { group: 'Panneau des trois scénarios', key: 'scenpanel:need', def: SCENPANEL_TITLE_NEED },
+  { group: 'Panneau des trois scénarios', key: 'scenpanel:addr', def: SCENPANEL_TITLE_ADDR },
   { group: 'Panneau des trois scénarios', key: 'scenpanel:go', def: 'Détail →' },
   ...[0, 1, 2].map((i) => ({ group: 'Panneau des trois scénarios', key: `scenpanel:sub:${i}`, def: SCENPANEL_SUB_NEED })),
   ...[0, 1, 2].map((i) => ({ group: 'Panneau des trois scénarios', key: `scenpanel:subAddr:${i}`, def: SCENPANEL_SUB_ADDR })),

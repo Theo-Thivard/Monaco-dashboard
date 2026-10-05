@@ -4,6 +4,7 @@ import { createDefaultConfig } from '../config/defaults'
 import { defaultTypography } from '../config/typography'
 import { actorBlock, arrangeActors } from '../core/actors'
 import { DATASETS } from '../core/datasets'
+import { fillUnit } from '../core/titles'
 import type { Entity } from '../core/engine'
 import { lensValue } from '../core/lens'
 import { addWidget, diffFromDefault, getState, moveActor, moveKpi, patchUI, setActorsAuto, setActorsManual, toggleActorHidden, resetAll, resetAssumptions, resetDashboard, setLabel, toast, toggleKpi, updateConfig, updateWidget, useAppState } from '../state/store'
@@ -73,7 +74,7 @@ function ContentTab({ env }: { env: Env }) {
           <div className="cl-head"><span className="cl-title static">{title}</span></div>
           {config.pages[kind].widgets.filter((w) => w.tier === tier && w.kind !== 'section').map((w) => (
             <div key={w.id} className="cl-item">
-              <label><input type="checkbox" checked={w.visible} onChange={(e) => updateWidget(w.id, { visible: e.target.checked })} /><span>{widgetTitle(w) || w.id}</span></label>
+              <label><input type="checkbox" checked={w.visible} onChange={(e) => updateWidget(w.id, { visible: e.target.checked })} /><span>{fillUnit(widgetTitle(w), env.unit('power')) || w.id}</span></label>
               <button className="link" onClick={() => patchUI({ editLayout: true, selectedWidget: w.id, panel: 'widget' })}>réglages</button>
             </div>
           ))}
@@ -83,7 +84,7 @@ function ContentTab({ env }: { env: Env }) {
       <h4>Ajouter</h4>
       <div className="add-row">
         <select value={ds} onChange={(e) => setDs(e.target.value)} aria-label="Jeu de données">
-          {DATASETS.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+          {DATASETS.map((d) => <option key={d.id} value={d.id}>{fillUnit(d.title, env.unit('power'))}</option>)}
         </select>
         <button onClick={() => {
           const d = DATASETS.find((x) => x.id === ds)!

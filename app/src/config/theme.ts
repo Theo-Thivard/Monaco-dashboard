@@ -141,6 +141,7 @@ export function toneColor(tone: string | undefined, t: Tokens): string | undefin
     case 'scen1': return t.scen1
     case 'scen2': return t.scen2
     case 'muted': return t.axis
+    case 'initial': return t.warning
     case 'primary': return t.primary
     case 'accent': return t.accent
     case 'positive': return t.positive

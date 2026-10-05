@@ -10,6 +10,7 @@ import { ActorKpis, ActorNote, Headline, ScenarioCards } from './PageWidgets'
 import { KpiStrip } from './KpiStrip'
 import { ModelInfo } from './ModelInfo'
 import { TextWidget } from './TextWidget'
+import { fillUnit } from '../core/titles'
 import { useDataset, type Env } from './env'
 
 const BARE = new Set(['headline', 'kpis', 'scenarioCards', 'actorKpis', 'section'])
@@ -28,7 +29,7 @@ export function widgetSubtitle(wc: WidgetConfig): string {
 function ChartWidget({ wc, env: liveEnv }: { wc: WidgetConfig; env: Env }) {
   // les graphiques se redessinent après les contrôles : le curseur reste fluide pendant le glissement
   const env = useDeferredValue(liveEnv)
-  const ds = useDataset(wc.datasetId, env)
+  const ds = useDataset(wc.datasetId, env, wc.showInitial)
   const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
   if (!ds || !def) return <p className="empty small">Jeu de données inconnu.</p>
   const ok = compatibleCharts(ds)
@@ -51,6 +52,17 @@ function ChartTypeSelect({ wc, env }: { wc: WidgetConfig; env: Env }) {
   )
 }
 
+/** Case à cocher « Valeur initiale » des graphiques qui savent la montrer (valeur 2026 : départ de la courbe, repère sur les barres, barre 2026). */
+function InitialToggle({ wc, env }: { wc: WidgetConfig; env: Env }) {
+  const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
+  if (wc.kind !== 'chart' || !def?.supportsInitial || resolveWidget(wc, env.snap.lens).chartType === 'table') return null
+  return (
+    <label className="initial-toggle" title="Afficher la valeur initiale (2026) sur ce graphique">
+      <input type="checkbox" checked={!!wc.showInitial} onChange={(e) => updateWidget(wc.id, { showInitial: e.target.checked })} /> Valeur initiale
+    </label>
+  )
+}
+
 function Body({ wc, env }: { wc: WidgetConfig; env: Env }): ReactNode {
   switch (wc.kind) {
     case 'headline': return <Headline env={env} wc={wc} />
@@ -67,12 +79,12 @@ function Body({ wc, env }: { wc: WidgetConfig; env: Env }): ReactNode {
   }
 }
 
-function SectionHeader({ wc, expanded }: { wc: WidgetConfig; expanded: boolean }) {
+function SectionHeader({ wc, expanded, unit }: { wc: WidgetConfig; expanded: boolean; unit: string }) {
   return (
     <div className="section">
       <div>
-        <h3>{widgetTitle(wc)}</h3>
-        {widgetSubtitle(wc) && <p>{widgetSubtitle(wc)}</p>}
+        <h3>{fillUnit(widgetTitle(wc), unit)}</h3>
+        {widgetSubtitle(wc) && <p>{fillUnit(widgetSubtitle(wc), unit)}</p>}
       </div>
       {wc.collapse && (
         <button className="section-toggle" aria-expanded={expanded} onClick={() => toggleExpanded(wc.collapse!)}>
@@ -86,6 +98,9 @@ function SectionHeader({ wc, expanded }: { wc: WidgetConfig; expanded: boolean }
 function WidgetFrameBase({ wc: wcRaw, env }: { wc: WidgetConfig; env: Env }) {
   // textes propres au scénario / à l'acteur affiché (sinon textes communs de la page)
   const wc = resolveEntityText(wcRaw, entityKey(env.route))
+  // légende « [unité ; date] » : {unité} suit l'unité du graphique (ou MW IT pour les autres blocs)
+  const dsForUnit = useDataset(wc.datasetId, env)
+  const unit = env.unit(dsForUnit?.format ?? 'power')
   const ui = useUI()
   const edit = ui.editLayout
   const selected = edit && ui.selectedWidget === wc.id
@@ -107,7 +122,7 @@ function WidgetFrameBase({ wc: wcRaw, env }: { wc: WidgetConfig; env: Env }) {
     return (
       <div className={'wframe section-frame' + (selected ? ' selected' : '')} data-widget={wc.id} style={style} onMouseDown={() => edit && patchUI({ selectedWidget: wc.id })}>
         {edit && <span className="grip drag-handle" title="Déplacer">⠿</span>}
-        <SectionHeader wc={wc} expanded={wc.collapse ? ui.expanded[wc.collapse] : true} />
+        <SectionHeader wc={wc} expanded={wc.collapse ? ui.expanded[wc.collapse] : true} unit={unit} />
         {tools}{textEdit}
       </div>
     )
@@ -121,8 +136,8 @@ function WidgetFrameBase({ wc: wcRaw, env }: { wc: WidgetConfig; env: Env }) {
       </div>
     )
   }
-  const title = widgetTitle(wc)
-  const sub = widgetSubtitle(wc)
+  const title = fillUnit(widgetTitle(wc), unit)
+  const sub = fillUnit(widgetSubtitle(wc), unit)
   return (
     <div className={'wframe card' + (selected ? ' selected' : '')} data-widget={wc.id} style={style} onMouseDown={() => edit && patchUI({ selectedWidget: wc.id })}>
       <div className={'card-head' + (edit ? ' drag-handle' : '')}>
@@ -132,6 +147,7 @@ function WidgetFrameBase({ wc: wcRaw, env }: { wc: WidgetConfig; env: Env }) {
         </div>
         <div className="card-tools" onMouseDown={(e) => e.stopPropagation()}>
           {textEdit}
+          {!edit && <InitialToggle wc={wc} env={env} />}
           {ui.mode === 'consultant' && wc.kind === 'chart' && !edit && <ChartTypeSelect wc={wc} env={env} />}
           {tools}
         </div>
