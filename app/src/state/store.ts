@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Layout } from 'react-grid-layout'
 import { createDefaultConfig, PAGE_DEFAULTS } from '../config/defaults'
+import { sanitizeTypography, typographyChanges } from '../config/typography'
 import type { DashboardConfig, EntityText, LensOverride, PageConfig, WidgetConfig } from '../config/types'
 import { defaultParams, HYP_BY_ID, HYPS, hypValue, type Params } from '../core/hypotheses'
 import type { Lens } from '../core/lens'
@@ -22,6 +23,8 @@ export interface UIState {
   selectedWidget: string | null
   /** panneau d'hypothèses épinglé à gauche */
   sidebar: boolean
+  /** panneau flottant de typographie (taille et gras du texte) */
+  typoPanel: boolean
   toast: { id: number; msg: string; undo?: () => void } | null
 }
 
@@ -60,7 +63,7 @@ export const toggleSidebar = () => setState((s) => {
 
 const freshUI = (): UIState => ({
   mode: 'client', editLayout: false, expanded: { detail: false, method: false },
-  panel: null, settingsTab: 'content', selectedWidget: null, sidebar: readSidebar(), toast: null,
+  panel: null, settingsTab: 'content', selectedWidget: null, sidebar: readSidebar(), typoPanel: false, toast: null,
 })
 
 /** Affichage par défaut de cette publication : affichage enregistré (variante) ou affichage d'origine. */
@@ -126,7 +129,7 @@ export function sanitizeConfig(x: unknown): DashboardConfig {
     version: 4,
     brand: typeof c.brand === 'string' && c.brand ? c.brand : d.brand,
     footnote: typeof c.footnote === 'string' && !c.footnote.startsWith('Source : modèle Monaco_Besoins_IT_v') ? c.footnote : d.footnote,
-    theme: { ...d.theme, ...(c.theme ?? {}), metrics: { ...d.theme.metrics, ...(c.theme?.metrics ?? {}) }, tokens: { ...(c.theme?.tokens ?? {}) } },
+    theme: { ...d.theme, ...(c.theme ?? {}), metrics: { ...d.theme.metrics, ...(c.theme?.metrics ?? {}) }, tokens: { ...(c.theme?.tokens ?? {}) }, typo: sanitizeTypography(c.theme?.typo) },
     format: { ...d.format, ...(c.format ?? {}) },
     labels: { ...(c.labels ?? {}) },
     kpis: { order: kpiOrder, visible: Array.isArray(c.kpis?.visible) ? c.kpis!.visible : d.kpis.visible },
@@ -515,7 +518,7 @@ export function diffFromDefault(s: AppState): DiffSummary {
   const metrics = Object.entries(c.theme.metrics).filter(([k, v]) => (d.theme.metrics as unknown as Record<string, number>)[k] !== v).length
   return {
     assumptions, layout,
-    theme: Object.keys(c.theme.tokens).length + metrics + (c.theme.preset !== d.theme.preset ? 1 : 0) + bg,
+    theme: Object.keys(c.theme.tokens).length + metrics + typographyChanges(c.theme.typo) + (c.theme.preset !== d.theme.preset ? 1 : 0) + bg,
     labels: Object.keys(c.labels).length + texts + (c.brand !== d.brand ? 1 : 0),
     visibility: vis, charts, format: Object.entries(c.format).filter(([k, v]) => (d.format as unknown as Record<string, unknown>)[k] !== v).length,
   }

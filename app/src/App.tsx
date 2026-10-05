@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { getModel } from './core/model'
 import { SOURCE_LABEL } from './ui/ModelInfo'
 import { applyTheme } from './config/theme'
+import { applyTypography } from './config/typography'
+import { TypographyPanel } from './ui/TypographyPanel'
 import { AssumptionsDrawer } from './ui/AssumptionsDrawer'
 import { ContextBar } from './ui/ContextBar'
 import { HypSidebar } from './ui/HypSidebar'
@@ -32,6 +34,7 @@ export default function App() {
   const { config, tokens, route } = env
 
   useEffect(() => { applyTheme(tokens, config.theme.metrics) }, [tokens, config.theme.metrics])
+  useEffect(() => { applyTypography(config.theme.typo) }, [config.theme.typo])
 
   // titre de l'onglet = page courante
   const pageTitle = route.kind === 'global' ? 'Globale' : route.kind === 'scenario' ? `Scénario ${env.scenarioName(route.scenario)}` : env.actorLabel(route.actor)
@@ -70,6 +73,7 @@ export default function App() {
       {ui.panel === 'assumptions' && <AssumptionsDrawer env={env} />}
       {ui.panel === 'settings' && <SettingsDrawer env={env} />}
       {ui.panel === 'widget' && selected && <WidgetSettings wc={selected} env={env} />}
+      {ui.typoPanel && <TypographyPanel env={env} />}
       <Toast />
     </div>
   )

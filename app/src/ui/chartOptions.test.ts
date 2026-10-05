@@ -37,6 +37,14 @@ describe('options de graphique', () => {
   })
 })
 
+describe('typographie des graphiques', () => {
+  it('légende et axes suivent le zoom et le gras des légendes', () => {
+    const o = buildOption(prep, 'line', env({ typo: { labels: 2, figures: 1, labelsBold: true, figuresBold: false } })) as { legend: { textStyle: { fontSize: number; fontWeight: string } }; grid: { top: number } }
+    expect(o.legend.textStyle).toMatchObject({ fontSize: 24, fontWeight: 'bold' })
+    expect(o.grid.top).toBeGreaterThan((buildOption(prep, 'line', env()) as { grid: { top: number } }).grid.top)
+  })
+})
+
 describe('un bloc déplacé change de partie', () => {
   const page = createDefaultConfig().pages.global
   it('sous la section « détail » → détail ; au-dessus → vue client', () => {

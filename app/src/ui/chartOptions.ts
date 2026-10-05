@@ -8,6 +8,7 @@ import type { ChartType, Dataset } from '../core/datasets'
 import type { FormatKind } from '../core/hypotheses'
 import type { FmtOptions } from '../core/format'
 import { palette, type Tokens } from '../config/theme'
+import type { ChartTypo } from '../config/typography'
 import type { PreparedDataset } from './prepare'
 
 export interface ChartEnv {
@@ -26,16 +27,23 @@ export interface ChartEnv {
   axisMax?: number
   /** noms de séries de la légende (pour réserver assez de place si elle passe sur plusieurs lignes) */
   legendNames?: string[]
+  /** typographie : zoom et gras des légendes / axes (labels) et des valeurs (figures) ; défaut ×1, normal */
+  typo?: ChartTypo
 }
+
+const ty = (env: ChartEnv): ChartTypo => env.typo ?? { labels: 1, figures: 1, labelsBold: false, figuresBold: false }
+/** taille de police en px d'un texte de graphique : base × zoom de sa catégorie */
+const fs = (env: ChartEnv, cat: 'labels' | 'figures', base: number) => Math.round(base * ty(env)[cat] * 10) / 10
+const fw = (env: ChartEnv, cat: 'labels' | 'figures', normal: 'normal' | 600 = 'normal') => (ty(env)[cat === 'labels' ? 'labelsBold' : 'figuresBold'] ? 'bold' : normal)
 
 /** Nombre de lignes occupées par la légende (estimation d'après la largeur du graphique). */
 function legendRows(env: ChartEnv): number {
   if (!env.legend || !env.legendNames?.length) return 1
-  const itemW = env.legendNames.reduce((a, n) => a + 10 + 6 + n.length * 6.6 + 16, 0)
+  const itemW = env.legendNames.reduce((a, n) => a + 10 + 6 + n.length * 6.6 * ty(env).labels + 16, 0)
   return Math.max(1, Math.ceil(itemW / Math.max(80, env.width - 24)))
 }
 /** Marge haute de la grille : la légende (sur une ou plusieurs lignes) ne recouvre jamais le graphique. */
-const gridTop = (env: ChartEnv, noLegend = 14) => (env.legend ? 14 + legendRows(env) * 20 : noLegend)
+const gridTop = (env: ChartEnv, noLegend = 14) => (env.legend ? 14 + legendRows(env) * Math.round(20 * ty(env).labels) : noLegend)
 
 /** Valeur affichée (MW, %…) → valeur brute du jeu de données (kW, fraction…). */
 function fromDisplay(kind: FormatKind, v: number, powerUnit: 'MW' | 'kW'): number {
@@ -56,14 +64,14 @@ function frame(env: ChartEnv, extra: P = {}): P {
     animationDuration: 300,
     animationDurationUpdate: 250,
     animationEasing: 'cubicOut',
-    textStyle: { fontFamily: FONT, color: t.textMuted, fontSize: 12 },
+    textStyle: { fontFamily: FONT, color: t.textMuted, fontSize: fs(env, 'labels', 12) },
     grid: { left: 10, right: 18, top: gridTop(env), bottom: 4, containLabel: true },
     legend: env.legend
-      ? { top: 0, left: 0, width: Math.max(80, env.width - 24), type: 'plain', icon: 'roundRect', itemWidth: 10, itemHeight: 10, itemGap: 16, textStyle: { color: t.textMuted, fontSize: 12, fontFamily: FONT } }
+      ? { top: 0, left: 0, width: Math.max(80, env.width - 24), type: 'plain', icon: 'roundRect', itemWidth: fs(env, 'labels', 10), itemHeight: fs(env, 'labels', 10), itemGap: 16, textStyle: { color: t.textMuted, fontSize: fs(env, 'labels', 12), fontWeight: fw(env, 'labels'), fontFamily: FONT } }
       : { show: false },
     tooltip: {
       confine: true, backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, padding: [8, 10],
-      textStyle: { color: t.text, fontSize: 12, fontFamily: FONT }, extraCssText: 'box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:4px;',
+      textStyle: { color: t.text, fontSize: fs(env, 'labels', 12), fontFamily: FONT }, extraCssText: 'box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:4px;',
     },
     ...extra,
   }
@@ -75,7 +83,7 @@ function valueAxis(ds: Dataset, env: ChartEnv, horizontal = false, extra: P = {}
   return {
     type: 'value',
     axisLabel: {
-      color: t.axis, fontSize: 11, hideOverlap: true,
+      color: t.axis, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), hideOverlap: true,
       formatter: (v: number) => env.fmt(ds.format, v, { unit: false, decimals: power ? (env.powerUnit === 'MW' ? 1 : 0) : 0 }),
     },
     minInterval: power ? (env.powerUnit === 'MW' ? 100 : 1) : undefined,
@@ -91,7 +99,7 @@ function catAxis(cats: string[], env: ChartEnv, extra: P = {}): P {
   const t = env.tokens
   return {
     type: 'category', data: cats,
-    axisLabel: { color: t.textMuted, fontSize: 11.5, interval: 0, hideOverlap: false, width: 120, overflow: 'break' },
+    axisLabel: { color: t.textMuted, fontSize: fs(env, 'labels', 11.5), fontWeight: fw(env, 'labels'), interval: 0, hideOverlap: false, width: Math.round(120 * ty(env).labels), overflow: 'break' },
     axisLine: { lineStyle: { color: t.border } }, axisTick: { show: false }, ...extra,
   }
 }
@@ -128,14 +136,14 @@ function bars(p: PreparedDataset, type: 'bar' | 'hbar' | 'stackedBar', env: Char
     ...frame(env),
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: env.tokens.surfaceAlt, opacity: 0.6 } }, formatter: axisTooltip(p, env, stacked) },
     xAxis: horizontal ? valueAxis(ds, env, true) : catAxis(ds.categories, env),
-    yAxis: horizontal ? catAxis(ds.categories, env, { inverse: true, axisLabel: { color: env.tokens.text, fontSize: 12, width: Math.round(Math.min(150, Math.max(70, env.width * 0.32))), overflow: 'break' } }) : valueAxis(ds, env),
+    yAxis: horizontal ? catAxis(ds.categories, env, { inverse: true, axisLabel: { color: env.tokens.text, fontSize: fs(env, 'labels', 12), fontWeight: fw(env, 'labels'), width: Math.round(Math.min(150, Math.max(70, env.width * 0.32)) * ty(env).labels), overflow: 'break' } }) : valueAxis(ds, env),
     series: ds.series.map((s) => ({
       id: s.id, name: s.name, type: 'bar', stack: stacked ? 'total' : undefined,
       barMaxWidth: single ? 26 : 34, barGap: '12%',
       itemStyle: { color: p.colors[s.id], borderRadius: stacked ? 0 : horizontal ? [0, 2, 2, 0] : [2, 2, 0, 0] },
       emphasis: { focus: 'series', itemStyle: { opacity: 0.92 } },
       label: manyLabels
-        ? { show: true, position: horizontal ? 'right' : 'top', color: env.tokens.text, fontSize: 11, fontFamily: FONT, formatter: (q: { dataIndex: number }) => env.fmt(s.format ?? ds.format, s.values[q.dataIndex], { unit: false, decimals: env.decimals }) }
+        ? { show: true, position: horizontal ? 'right' : 'top', color: env.tokens.text, fontSize: fs(env, 'figures', 11), fontWeight: fw(env, 'figures'), fontFamily: FONT, formatter: (q: { dataIndex: number }) => env.fmt(s.format ?? ds.format, s.values[q.dataIndex], { unit: false, decimals: env.decimals }) }
         : { show: false },
       data: s.values.map((v) => v),
       seriesId: s.id,
@@ -151,7 +159,7 @@ function lines(p: PreparedDataset, type: 'line' | 'area' | 'stackedArea' | 'bar'
   return {
     ...frame(env, { grid: { left: 4, right: type === 'bar' ? 18 : 64, top: gridTop(env), bottom: 4, containLabel: true } }),
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: env.tokens.axis, type: 'dashed' } }, formatter: axisTooltip(p, env, stacked) },
-    xAxis: catAxis(ds.categories, env, { boundaryGap: type === 'bar', axisLabel: { color: env.tokens.textMuted, fontSize: 11, interval: 'auto' } }),
+    xAxis: catAxis(ds.categories, env, { boundaryGap: type === 'bar', axisLabel: { color: env.tokens.textMuted, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), interval: 'auto' } }),
     yAxis: valueAxis(ds, env),
     series: ds.series.map((s) => ({
       id: s.id, seriesId: s.id, name: s.name, type: type === 'bar' ? 'bar' : 'line',
@@ -160,7 +168,7 @@ function lines(p: PreparedDataset, type: 'line' | 'area' | 'stackedArea' | 'bar'
       itemStyle: { color: p.colors[s.id] },
       areaStyle: type === 'area' ? { opacity: 0.1, color: p.colors[s.id] } : stacked ? { opacity: 0.88, color: p.colors[s.id] } : undefined,
       emphasis: { focus: 'series' },
-      endLabel: type !== 'bar' ? { show: true, color: p.colors[s.id], fontWeight: 600, fontSize: 11.5, formatter: () => env.fmt(s.format ?? ds.format, s.values[last], { unit: false, decimals: env.decimals }) } : undefined,
+      endLabel: type !== 'bar' ? { show: true, color: p.colors[s.id], fontWeight: fw(env, 'figures', 600), fontSize: fs(env, 'figures', 11.5), formatter: () => env.fmt(s.format ?? ds.format, s.values[last], { unit: false, decimals: env.decimals }) } : undefined,
       data: s.values,
     })),
   } as EChartsCoreOption
@@ -182,11 +190,11 @@ function pie(p: PreparedDataset, type: 'donut' | 'pie', env: ChartEnv): EChartsC
     ...frame(env, { grid: undefined }),
     legend: { show: false },
     tooltip: { ...(frame(env).tooltip as P), trigger: 'item', formatter: (q: { dataIndex: number }) => `<b>${esc(ds.categories[q.dataIndex])}</b><br/>${env.fmt(ds.format, s.values[q.dataIndex])} · ${env.fmt('pct', share(s.values[q.dataIndex]))}` },
-    title: type === 'donut' ? { text: env.fmt(ds.format, total, { unit: false, decimals: env.decimals }), subtext: env.unit(ds.format), left: 'center', top: '40%', textStyle: { color: env.tokens.heading, fontSize: 22, fontWeight: 600, fontFamily: FONT }, subtextStyle: { color: env.tokens.textMuted, fontSize: 12, fontFamily: FONT } } : undefined,
+    title: type === 'donut' ? { text: env.fmt(ds.format, total, { unit: false, decimals: env.decimals }), subtext: env.unit(ds.format), left: 'center', top: '40%', textStyle: { color: env.tokens.heading, fontSize: fs(env, 'figures', 22), fontWeight: fw(env, 'figures', 600), fontFamily: FONT }, subtextStyle: { color: env.tokens.textMuted, fontSize: fs(env, 'labels', 12), fontWeight: fw(env, 'labels'), fontFamily: FONT } } : undefined,
     series: [{
       type: 'pie', radius: type === 'donut' ? ['52%', '74%'] : ['0%', '72%'], center: ['50%', '52%'], avoidLabelOverlap: true,
       itemStyle: { borderColor: env.tokens.surface, borderWidth: 2 },
-      label: { color: env.tokens.text, fontSize: 11.5, fontFamily: FONT, formatter: (q: { dataIndex: number }) => `${ds.categories[q.dataIndex]}\n${env.fmt('pct', share(s.values[q.dataIndex]))}` },
+      label: { color: env.tokens.text, fontSize: fs(env, 'labels', 11.5), fontWeight: fw(env, 'labels'), fontFamily: FONT, formatter: (q: { dataIndex: number }) => `${ds.categories[q.dataIndex]}\n${env.fmt('pct', share(s.values[q.dataIndex]))}` },
       labelLine: { lineStyle: { color: env.tokens.axis } },
       data: s.values.map((v, i) => ({ name: ds.categories[i], value: v, itemStyle: { color: colorOf(i) } })),
     }],
@@ -229,12 +237,12 @@ function waterfall(p: PreparedDataset, env: ChartEnv): EChartsCoreOption {
         const i = raw[0].dataIndex
         return `<div style="font-weight:600;margin-bottom:4px">${esc(ds.categories[i])}</div><b>${env.fmt(ds.format, vals[i], { sign: steps[i] === 'delta' })}</b>${ds.hints?.[i] ? `<div style="color:${t.textMuted};margin-top:2px">${esc(ds.hints[i])}</div>` : ''}`
       } },
-    xAxis: catAxis(ds.categories, env, { axisLabel: { color: t.textMuted, fontSize: 11, interval: 0, width: 84, overflow: 'break' } }),
+    xAxis: catAxis(ds.categories, env, { axisLabel: { color: t.textMuted, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), interval: 0, width: Math.round(84 * ty(env).labels), overflow: 'break' } }),
     yAxis: valueAxis(ds, env, false, { min: axisMin }),
     series: [
       { id: '__base', name: '__base', type: 'bar', stack: 'w', silent: true, itemStyle: { color: 'transparent' }, tooltip: { show: false }, data: low },
       { id: 'v', seriesId: 'v', name: ds.series[0].name, type: 'bar', stack: 'w', barMaxWidth: 46,
-        label: { show: true, position: 'top', color: t.text, fontSize: 11.5, fontWeight: 600, fontFamily: FONT, formatter: (q: { dataIndex: number }) => lab(q.dataIndex) },
+        label: { show: true, position: 'top', color: t.text, fontSize: fs(env, 'figures', 11.5), fontWeight: fw(env, 'figures', 600), fontFamily: FONT, formatter: (q: { dataIndex: number }) => lab(q.dataIndex) },
         data: high.map((h, i) => ({ value: h - low[i], itemStyle: { color: colors[i] } })) },
     ],
   } as EChartsCoreOption
@@ -250,8 +258,8 @@ function tornado(p: PreparedDataset, env: ChartEnv): EChartsCoreOption {
     tooltip: { ...(frame(env).tooltip as P), trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: t.surfaceAlt, opacity: 0.6 } }, formatter: axisTooltip(p, env, false) },
     legend: { ...(frame(env).legend as P), show: env.legend },
     grid: { left: labelW + 14, right: 24, top: gridTop(env, 10), bottom: 4, containLabel: false },
-    xAxis: valueAxis(ds, env, true, { axisLabel: { color: t.axis, fontSize: 11, formatter: (v: number) => env.fmt(ds.format, v, { unit: false, sign: true, decimals: env.powerUnit === 'MW' ? 1 : 0 }) } }),
-    yAxis: catAxis(ds.categories, env, { inverse: true, axisLabel: { color: t.text, fontSize: 11, width: labelW, overflow: 'truncate', ellipsis: '…', margin: 10 }, axisLine: { lineStyle: { color: t.axis } } }),
+    xAxis: valueAxis(ds, env, true, { axisLabel: { color: t.axis, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), formatter: (v: number) => env.fmt(ds.format, v, { unit: false, sign: true, decimals: env.powerUnit === 'MW' ? 1 : 0 }) } }),
+    yAxis: catAxis(ds.categories, env, { inverse: true, axisLabel: { color: t.text, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), width: labelW, overflow: 'truncate', ellipsis: '…', margin: 10 }, axisLine: { lineStyle: { color: t.axis } } }),
     series: ds.series.map((s) => ({
       id: s.id, seriesId: s.id, name: s.name, type: 'bar', barGap: '-100%', barMaxWidth: 16, itemStyle: { color: p.colors[s.id] },
       label: { show: false }, data: s.values,

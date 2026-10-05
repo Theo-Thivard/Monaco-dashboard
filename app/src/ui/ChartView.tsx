@@ -6,6 +6,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import type { EChartsCoreOption } from 'echarts/core'
 import type { WidgetConfig } from '../config/types'
 import type { ChartType, Dataset } from '../core/datasets'
+import { chartTypo } from '../config/typography'
 import { buildOption } from './chartOptions'
 import { prepareDataset } from './prepare'
 import { DataTable } from './DataTable'
@@ -53,11 +54,13 @@ interface Props { wc: WidgetConfig; ds: Dataset; type: ChartType; env: Env }
 export function ChartView({ wc, ds, type, env }: Props) {
   const prepared = useMemo(() => prepareDataset(ds, wc, env.tokens), [ds, wc.series, wc.seriesOrder, env.tokens])
   const [width, setWidth] = useState(600)
+  const { typo, metrics } = env.config.theme
+  const { labels, figures, labelsBold, figuresBold } = chartTypo(typo, metrics.fontScale)
   const option = useMemo(
     () => (type === 'table' || ds.empty ? {} : buildOption(prepared, type, {
-      tokens: env.tokens, fmt: env.fmt, unit: env.unit, powerUnit: env.f.powerUnit, legend: wc.legend ?? true, decimals: wc.decimals, width, axisMin: wc.axisMin, axisMax: wc.axisMax, legendNames: prepared.ds.series.map((s) => s.name),
+      tokens: env.tokens, fmt: env.fmt, unit: env.unit, powerUnit: env.f.powerUnit, legend: wc.legend ?? true, decimals: wc.decimals, width, axisMin: wc.axisMin, axisMax: wc.axisMax, legendNames: prepared.ds.series.map((s) => s.name), typo: { labels, figures, labelsBold, figuresBold },
     })),
-    [prepared, type, env, wc.legend, wc.decimals, wc.axisMin, wc.axisMax, width],
+    [prepared, type, env, wc.legend, wc.decimals, wc.axisMin, wc.axisMax, width, labels, figures, labelsBold, figuresBold],
   )
   if (ds.empty) return <div className="empty">{ds.empty}</div>
   if (type === 'table') return <DataTable prepared={prepared} env={env} decimals={wc.decimals} />

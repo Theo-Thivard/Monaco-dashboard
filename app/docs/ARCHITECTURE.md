@@ -1,6 +1,6 @@
 # Référence technique
 
-Document de référence pour la version actuelle (V4). Le tableau des versions est dans le [README](../README.md).
+Document de référence pour la version actuelle (V5). Le tableau des versions est dans le [README](../README.md).
 
 ## Le dashboard lit l'Excel à chaque lancement
 Le modèle de calcul **est** le classeur [`Monaco_Besoins_IT_v3.xlsx`](Monaco_Besoins_IT_v3.xlsx) : le dashboard lit *toutes* les valeurs **et toutes les formules** de tous les onglets, les recalcule lui-même avec les hypothèses que vous bougez, et n'écrit aucun calcul en dur.
@@ -82,3 +82,6 @@ GitHub Pages via `.github/workflows/deploy.yml`, à chaque push sur `main`.
 
 ## Enregistrer un affichage (copie de la version)
 Vue consultant › ⚙ › « Enregistrer l'affichage sur GitHub… » : avec un jeton personnel (limité à ce dépôt, *Contents* et *Pull requests* en Read and write), le navigateur crée une branche, écrit `variants/<version>-<nom>.json` (la configuration) et `variants/index.json` (la liste), ouvre la pull request et la fusionne. Le déploiement publie alors `/<version>-<nom>/` : même code que la version d'origine, avec cet affichage par défaut. La version d'origine et les précédentes ne sont jamais modifiées ; toutes sont listées dans ⚙ › Versions et affichages. Code : `src/state/github.ts`, `scripts/build-versions.sh`.
+
+## Typographie (V5)
+Panneau flottant `src/ui/TypographyPanel.tsx` (bouton AA). Taille globale = `theme.metrics.fontScale` (échelle `html`) ; cinq catégories (`titles`, `subtitles`, `figures`, `labels`, `body`) dans `theme.typo` (taille ×, gras), définies dans `src/config/typography.ts`. Le texte de l'interface suit des variables CSS `--ts-<catégorie>` / `--tw-<catégorie>` (`styles.css`) ; les graphiques (pixels) reçoivent les mêmes réglages via `ChartEnv.typo`. Enregistré avec la configuration (affichages enregistrés compris).

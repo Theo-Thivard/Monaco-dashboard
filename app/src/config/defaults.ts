@@ -6,6 +6,7 @@ import type { Layout } from 'react-grid-layout'
 import { defaultKpiOrder, defaultKpiVisible } from '../core/kpis'
 import { defaultFormat } from '../core/format'
 import { defaultMetrics } from './theme'
+import { defaultTypography } from './typography'
 import type { DashboardConfig, PageConfig, WidgetConfig } from './types'
 
 /** Six leviers qui pèsent le plus sur la demande adressable (classement par sensibilité, scénarios Bas/Central/Haut). */
@@ -139,7 +140,7 @@ export const createDefaultConfig = (): DashboardConfig => ({
   version: 4,
   brand: 'Monaco · Besoins IT 2035',
   footnote: 'Sources : IMSEE 2024 · hypothèses de travail. Puissances exprimées en puissance IT. Les totaux peuvent différer légèrement de la somme des éléments affichés (arrondis d\'affichage uniquement ; les calculs sont réalisés en pleine précision).',
-  theme: { preset: 'cabinet', tokens: {}, metrics: defaultMetrics() },
+  theme: { preset: 'cabinet', tokens: {}, metrics: defaultMetrics(), typo: defaultTypography() },
   format: defaultFormat(),
   labels: {},
   kpis: { order: defaultKpiOrder(), visible: defaultKpiVisible() },
