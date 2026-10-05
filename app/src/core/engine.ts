@@ -13,7 +13,7 @@ export const HORIZON = 9 // 2026 -> 2035
 
 
 export const ENTITY_LABEL: Record<Entity, string> = {
-  DSP: 'DSP', DENJS: 'DENJS', APDP: 'APDP', DITN: 'DITN', CHPG: 'CHPG',
+  DSP: 'DSP', AUTRES: 'Autres entités publiques', POMP: 'Corps Sapeurs Pompiers', DITN: 'DITN', CHPG: 'CHPG',
   MT: 'Monaco Telecom', FIN: 'Finance', PRIV: 'Privé hors finance',
 }
 
@@ -142,11 +142,13 @@ export function computeScenario(p: Params, s: number, t: number = HORIZON): Scen
 
 export const computeAll = (p: Params, t: number = HORIZON) => [0, 1, 2].map((s) => computeScenario(p, s, t))
 
-// Regroupement identique à 3_Output (DENJS + APDP + DITN)
+// Regroupement identique à 3_Output (v5 : une ligne par acteur)
 export interface GroupDef { id: string; label: string; members: Entity[]; /** besoin porté par le secteur public / l'opérateur (part captable conventionnelle) */ captive: boolean }
 export const OUTPUT_GROUPS: GroupDef[] = [
   { id: 'DSP', label: 'DSP', members: ['DSP'], captive: true },
-  { id: 'PUB', label: 'DENJS + APDP + DITN', members: ['DENJS', 'APDP', 'DITN'], captive: true },
+  { id: 'AUTRES', label: 'Autres entités publiques', members: ['AUTRES'], captive: true },
+  { id: 'POMP', label: 'Corps Sapeurs Pompiers', members: ['POMP'], captive: true },
+  { id: 'DITN', label: 'DITN', members: ['DITN'], captive: true },
   { id: 'CHPG', label: 'CHPG', members: ['CHPG'], captive: true },
   { id: 'MT', label: 'Monaco Telecom', members: ['MT'], captive: true },
   { id: 'FIN', label: 'Finance', members: ['FIN'], captive: false },

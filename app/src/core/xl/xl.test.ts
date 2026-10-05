@@ -4,8 +4,10 @@ import { Workbook } from './workbook'
 import { XlError } from './functions'
 
 import { fixture } from '../../test/withModel'
-// Copie FIGÉE du classeur v3 : ces tests ne changent pas quand le classeur du dépôt est modifié.
-const buf = fixture('reference-v3.xlsx')
+// Copie FIGÉE du classeur v5 : ces tests ne changent pas quand le classeur du dépôt est modifié.
+// nombre de formules du classeur v5
+const FORMULAS = 441
+const buf = fixture('reference-v5.xlsx')
 
 describe('formules Excel : analyse', () => {
   it('précédences d\'Excel', () => {
@@ -41,13 +43,13 @@ function mini(formula: string): Uint8Array {
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as Uint8Array
 }
 
-describe('classeur v3 (copie figée) : évaluateur contre les valeurs enregistrées par Excel', () => {
+describe('classeur v5 (copie figée) : évaluateur contre les valeurs enregistrées par Excel', () => {
   const wb = Workbook.fromBuffer(buf)
   const cached = XLSX.read(buf, { type: 'buffer', cellFormula: true })
 
   it('aucune formule illisible ni fonction inconnue', () => {
     expect(wb.problems).toEqual([])
-    expect(wb.formulaCount).toBe(427)
+    expect(wb.formulaCount).toBe(FORMULAS)
   })
 
   it('CHAQUE formule recalculée = valeur enregistrée dans le fichier', () => {
@@ -68,12 +70,13 @@ describe('classeur v3 (copie figée) : évaluateur contre les valeurs enregistr�
         if (!ok) bad.push(`${sh.name}!${key}: calculé ${String(v)} / Excel ${String(want)}`)
       }
     }
-    expect(n).toBe(427)
+    expect(n).toBe(FORMULAS)
     expect(bad).toEqual([])
   })
 
-  it('la nouvelle formule du CHPG (v3) est bien celle évaluée', () => {
+  it('les formules modifiées en v5 (CHPG, Pompiers) sont bien celles évaluées', () => {
     const sh = wb.sheet('2_Calculs')
-    expect(wb.formulaOf(sh, 62, 8)).toBe('H$13*F63*G63+G$13*H63') // I63
+    expect(wb.formulaOf(sh, 62, 8)).toBe('H$13*F63*G63+G$13*H63') // I63 (CHPG)
+    expect(wb.formulaOf(sh, 60, 8)).toBe('H$11*F61*G61+G$11*H61') // I61 (Corps Sapeurs Pompiers)
   })
 })

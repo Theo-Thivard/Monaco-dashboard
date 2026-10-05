@@ -27,5 +27,9 @@ describe('routes', () => {
     expect(parseRoute('#/scenario/haut?s=abc')).toEqual({ kind: 'scenario', scenario: 2 })
     expect(parseRoute('#s=abc')).toEqual(DEFAULT_ROUTE) // ancien format de partage -> Globale
   })
+  it('anciennes adresses DENJS / APDP (Excel v4) -> Autres entités publiques', () => {
+    expect(parseRoute('#/acteur/denjs')).toEqual({ kind: 'actor', actor: 'AUTRES' })
+    expect(parseRoute('#/acteur/apdp')).toEqual({ kind: 'actor', actor: 'AUTRES' })
+  })
   it('une seule route par page (adresses uniques)', () => expect(new Set(ALL.map(formatRoute)).size).toBe(ALL.length))
 })

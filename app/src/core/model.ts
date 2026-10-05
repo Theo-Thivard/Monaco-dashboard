@@ -8,10 +8,10 @@ import { HYPS, initHypotheses, type HypFromExcel, type Params } from './hypothes
 import { addr, Run, Workbook, type Sheet } from './xl/workbook'
 import { XlError, type Val } from './xl/functions'
 
-export type Entity = 'DSP' | 'DENJS' | 'APDP' | 'DITN' | 'CHPG' | 'MT' | 'FIN' | 'PRIV'
-export const ENTITIES: Entity[] = ['DSP', 'DENJS', 'APDP', 'DITN', 'CHPG', 'MT', 'FIN', 'PRIV']
+export type Entity = 'DSP' | 'AUTRES' | 'POMP' | 'DITN' | 'CHPG' | 'MT' | 'FIN' | 'PRIV'
+export const ENTITIES: Entity[] = ['DSP', 'AUTRES', 'POMP', 'DITN', 'CHPG', 'MT', 'FIN', 'PRIV']
 const ENTITY_MATCH: Record<Entity, (s: string) => boolean> = {
-  DSP: (s) => s === 'dsp', DENJS: (s) => s === 'denjs', APDP: (s) => s === 'apdp', DITN: (s) => s === 'ditn', CHPG: (s) => s === 'chpg',
+  DSP: (s) => s === 'dsp', AUTRES: (s) => s.startsWith('autres entites publiques'), POMP: (s) => s.includes('sapeurs pompiers') || s.startsWith('pompiers'), DITN: (s) => s === 'ditn', CHPG: (s) => s === 'chpg',
   MT: (s) => s.startsWith('monaco telecom'), FIN: (s) => s === 'finance', PRIV: (s) => s.startsWith('prive hors finance'),
 }
 
@@ -67,11 +67,15 @@ function labels(wb: Workbook, sh: Sheet): { row: number; col: number; text: stri
 // ------------------------------------------------------------------ hypothèses -> cellules d'entrée
 function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
   const labs = labels(wb, inputs)
-  const find = (label: string) => {
+  const find = (label: string, section?: string) => {
     const want = norm(label)
-    const hits = labs.filter((l) => l.text === want)
+    // un même intitulé peut servir dans plusieurs blocs (ex. « Surcroît métier santé » pour le CHPG et les Pompiers) : on cherche après le titre du bloc
+    const sec = section ? labs.find((l) => l.text.startsWith(norm(section))) : undefined
+    if (section && !sec) return null
+    const after = sec ? labs.filter((l) => l.row > sec.row) : labs
+    const hits = after.filter((l) => l.text === want)
     if (hits.length) return hits[0]
-    const pref = labs.filter((l) => l.text.startsWith(want) || (want.length > 12 && want.startsWith(l.text) && l.text.length > 12))
+    const pref = after.filter((l) => l.text.startsWith(want) || (want.length > 12 && want.startsWith(l.text) && l.text.length > 12))
     return pref[0] ?? null
   }
   const headerAbove = (row: number, test: (t: string) => boolean, need = 1): { row: number; cols: number[] } | null => {
@@ -90,7 +94,7 @@ function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
   const fromExcel: Record<string, HypFromExcel & { cells: number[] }> = {}
   const missing: string[] = []
   for (const h of HYPS) {
-    const hit = find(h.excelLabel)
+    const hit = find(h.excelLabel, h.excelSection)
     if (!hit) { missing.push(`« ${h.excelLabel} »`); continue }
     let cols: number[] = []
     let hdr: { row: number; cols: number[] } | null = null

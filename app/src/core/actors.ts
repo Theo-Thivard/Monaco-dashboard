@@ -33,14 +33,14 @@ export const ACTORS: ActorDef[] = [
     method: 'Socle bureautique des agents et applications métier de vidéosurveillance (parc de caméras, débit par caméra), puis surcouche IA.',
   },
   {
-    id: 'DENJS', slug: 'denjs', label: 'DENJS', short: 'DENJS', group: 'public',
-    description: 'Direction de l\'Éducation Nationale, de la Jeunesse et des Sports.',
+    id: 'AUTRES', slug: 'autres-entites-publiques', label: 'Autres entités publiques', short: 'Autres entités publiques', group: 'public',
+    description: 'Autres entités publiques (dont APDP, Caisses sociales, DENJS).',
     method: 'Projection générique du secteur public : croissance des effectifs et de l\'intensité numérique, puis surcouche IA.',
   },
   {
-    id: 'APDP', slug: 'apdp', label: 'APDP', short: 'APDP', group: 'public',
-    description: 'Autorité de Protection des Données Personnelles.',
-    method: 'Projection générique du secteur public : croissance des effectifs et de l\'intensité numérique, puis surcouche IA.',
+    id: 'POMP', slug: 'pompiers', label: 'Corps Sapeurs Pompiers', short: 'Sapeurs Pompiers', group: 'public',
+    description: 'Corps des Sapeurs Pompiers',
+    method: 'Croissance de l\'activité et de l\'intensité numérique, surcroît métier propre aux Pompiers, puis surcouche IA.',
   },
   {
     id: 'DITN', slug: 'ditn', label: 'DITN', short: 'DITN', group: 'public',
