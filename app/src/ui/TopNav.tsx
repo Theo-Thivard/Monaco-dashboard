@@ -26,25 +26,25 @@ function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
       {(close) => (
         <div className="pop-body menu">
           <div className="pop-title">Affichage</div>
+          <button onClick={() => { document.documentElement.requestFullscreen?.().catch(() => undefined); close() }}>Passer en plein écran</button>
           <button onClick={() => { setMode(consultant ? 'client' : 'consultant'); close() }}>{consultant ? 'Passer en vue client' : 'Passer en vue consultant'}</button>
           {consultant && <button onClick={() => { patchUI({ panel: 'settings' }); close() }}>Personnaliser le tableau de bord</button>}
           {consultant && <button onClick={() => { patchUI({ panel: 'settings', settingsTab: 'save' }); close() }}>Enregistrer l'affichage sur GitHub…</button>}
           {consultant && <button onClick={() => { patchUI({ editLayout: !s.ui.editLayout, selectedWidget: null, panel: null }); close() }}>{s.ui.editLayout ? 'Terminer la mise en page' : 'Modifier la mise en page'}</button>}
-          <div className="pop-sep" />
+          {consultant && <div className="pop-sep" />}
           {consultant && <div className="pop-title">Versions et affichages</div>}
           {consultant && __REGISTRY__.map((r) => (
             <a key={r.slug} className={'menu-link' + (r.slug === __APP_SLUG__ ? ' current' : '')} href={`${__SITE_ROOT__}${r.path}`} aria-current={r.slug === __APP_SLUG__ ? 'true' : undefined}>
               {r.label}{r.slug === __APP_SLUG__ ? ' · affichée' : ''}
             </a>
           ))}
-          {consultant && <div className="pop-sep" />}
-          <div className="pop-title">Partager et exporter</div>
-          <button onClick={() => { void copyLink(); close() }}>Copier un lien vers cette page</button>
+          <div className="pop-sep" />
+          <div className="pop-title">Exporter</div>
           <button onClick={() => { printPage(); close() }}>Imprimer / PDF</button>
           <button onClick={() => { download('monaco-resultats.csv', buildCSV(env), 'text/csv;charset=utf-8'); close() }}>Résultats (CSV pour Excel)</button>
-          <button onClick={() => { download('monaco-dashboard-config.json', exportJSON(), 'application/json'); close() }}>Configuration complète (JSON)</button>
-          <button onClick={() => { onImport(); close() }}>Importer une configuration…</button>
-          <button onClick={() => { document.documentElement.requestFullscreen?.().catch(() => undefined); close() }}>Plein écran</button>
+          {consultant && <button onClick={() => { void copyLink(); close() }}>Copier un lien vers cette page</button>}
+          {consultant && <button onClick={() => { download('monaco-dashboard-config.json', exportJSON(), 'application/json'); close() }}>Configuration complète (JSON)</button>}
+          {consultant && <button onClick={() => { onImport(); close() }}>Importer une configuration…</button>}
           {consultant && (
             <>
               <div className="pop-sep" />

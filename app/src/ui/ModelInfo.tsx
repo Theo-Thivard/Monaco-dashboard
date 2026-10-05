@@ -24,7 +24,7 @@ export function ModelInfo({ env }: { env: Env }) {
         : <ul className="mi-diag">{diagnostics.map((d, i) => <li key={i} className={d.level}>{d.level === 'error' ? '✕' : d.level === 'warning' ? '⚠' : 'ℹ'} {d.message}{d.where ? ` (${d.where})` : ''}</li>)}</ul>}
       <details>
         <summary>Valeurs de base lues dans l'Excel ({m.fixedInputs.length})</summary>
-        <p className="muted small">Constantes de l'Excel qui alimentent le résultat sans être pilotables dans le tableau de bord (baselines, effectifs…). Modifiez-les dans l'Excel.</p>
+        <p className="muted small">Constantes de l'Excel qui alimentent le résultat sans être pilotables dans le tableau de bord (puissance par salarié, effectifs…). Pour les changer, modifiez l'Excel.</p>
         <table className="data"><tbody>{m.fixedInputs.map((f) => <tr key={f.where}><th scope="row">{f.label}</th><td>{f.value.toLocaleString('fr-FR', { maximumFractionDigits: 6 })}</td><td className="muted">{f.where.split('!')[1]}</td></tr>)}</tbody></table>
       </details>
       <details>

@@ -214,21 +214,21 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'socleAi', title: 'Socle et intelligence artificielle [{unité} ; 2035]', subtitle: 'Besoin hors IA et surcouche IA', kind: 'comparison', defaultChart: 'stackedBar',
+    id: 'socleAi', title: 'Besoin hors IA et surcouche IA [{unité} ; 2035]', subtitle: 'Besoin hors IA, puis surcouche IA', kind: 'comparison', defaultChart: 'stackedBar',
     build: (c) => {
       const need = c.snap.lens === 'need'
       return {
         id: 'socleAi', kind: 'comparison', format: 'power', stackable: true,
         categories: SCENARIOS.map((s, i) => c.label(`scenario:${i}`, s)),
         series: [
-          { id: 'socle', name: c.label('series:socle', 'Socle hors IA'), values: c.snap.results.map((r) => (need ? r.need : r.addrBase)), total: undefined },
+          { id: 'socle', name: c.label('series:socle', 'Besoin hors IA'), values: c.snap.results.map((r) => (need ? r.need : r.addrBase)), total: undefined },
           { id: 'ai', name: c.label('series:ai', 'Surcouche IA'), values: c.snap.results.map((r) => (need ? r.ia : r.addrIa)) },
         ],
       }
     },
   },
   {
-    id: 'rateByBlock', title: 'Taux par bloc [{unité} ; 2035]', subtitle: 'Croissance du besoin 2026 → 2035, ou part captable en lecture adressable', kind: 'composition', defaultChart: 'hbar',
+    id: 'rateByBlock', title: 'Taux par bloc [{unité} ; 2035]', subtitle: 'Croissance du besoin entre 2026 et 2035, ou part hébergée à Monaco en lecture adressable', kind: 'composition', defaultChart: 'hbar',
     build: (c) => {
       const need = c.snap.lens === 'need'
       const f = (x: { base: number; total: number; addressable: number }) => (need ? (x.base ? x.total / x.base : 0) : x.total ? x.addressable / x.total : 0)
@@ -307,7 +307,7 @@ export const DATASETS: DatasetDef[] = [
 
   // ------------------------------------------------------------- pages Acteurs
   {
-    id: 'actorBridge', title: 'Lecture en cascade [{unité} ; 2026-2035]', subtitle: 'De la baseline 2026 à 2035 pour cet acteur, scénario affiché', kind: 'bridge', defaultChart: 'waterfall',
+    id: 'actorBridge', title: 'Lecture en cascade [{unité} ; 2026-2035]', subtitle: 'Du besoin 2026 au besoin 2035 de cet acteur, pour le scénario affiché', kind: 'bridge', defaultChart: 'waterfall',
     build: (c) => {
       const b = c.actor ? actorBlock(c.snap.active, c.actor) : null
       if (!b) return noActor('actorBridge', 'bridge')
@@ -371,17 +371,17 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'actorTable', title: 'Détail du calcul [{unité} ; 2026-2035]', subtitle: 'De la baseline à 2035, par scénario', kind: 'matrix', defaultChart: 'table',
+    id: 'actorTable', title: 'Détail du calcul [{unité} ; 2026-2035]', subtitle: 'Du besoin 2026 au besoin 2035, pour chaque scénario', kind: 'matrix', defaultChart: 'table',
     build: (c) => {
       if (!c.actor) return noActor('actorTable', 'matrix')
       const bs = c.snap.results.map((r) => actorBlock(r, c.actor!))
       const rows: { name: string; f: (b: (typeof bs)[number]) => number }[] = [
-        { name: 'Besoin 2026 (baseline)', f: (b) => b.base },
+        { name: 'Besoin 2026', f: (b) => b.base },
         { name: 'Besoin 2035 hors IA', f: (b) => b.need },
         { name: 'Surcouche IA', f: (b) => b.ia },
         { name: 'Besoin total 2035', f: (b) => b.total },
         ...(c.snap.lens === 'addressable' ? [
-          { name: 'Adressable – socle', f: (b: (typeof bs)[number]) => b.addrBase },
+          { name: 'Adressable – besoin hors IA', f: (b: (typeof bs)[number]) => b.addrBase },
           { name: 'Adressable – IA', f: (b: (typeof bs)[number]) => b.addrIa },
           { name: 'Demande adressable 2035', f: (b: (typeof bs)[number]) => b.addressable },
         ] : []),
