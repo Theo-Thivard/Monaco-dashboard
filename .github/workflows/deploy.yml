@@ -7,11 +7,25 @@ permissions:
   contents: write # mise à jour automatique de la liste des affichages dans le README
   pages: write
   id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: true
 jobs:
+  # Suppression d'un ancien classeur (pas la dernière version) : le site ne change pas, inutile de le reconstruire
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.chk.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: chk
+        run: app/scripts/should-deploy.sh "${{ github.event.before }}"
   build:
+    needs: check
+    if: needs.check.outputs.skip != 'true'
+    # une construction plus récente remplace celle en cours ; posé sur ce job (et non sur tout le workflow) pour qu'une publication sautée n'annule pas une construction en cours
+    concurrency:
+      group: pages-build
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +70,9 @@ jobs:
           path: app/dist
   deploy:
     needs: build
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     environment:
       name: github-pages
