@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PRESETS, TOKEN_GROUPS, defaultMetrics, type PresetId, type Tokens } from '../config/theme'
 import { createDefaultConfig } from '../config/defaults'
+import { defaultTypography } from '../config/typography'
 import { actorBlock, arrangeActors } from '../core/actors'
 import { DATASETS } from '../core/datasets'
 import type { Entity } from '../core/engine'
@@ -137,8 +138,8 @@ function LookTab({ env }: { env: Env }) {
       {metric('radius', 'Arrondi des angles (px)', 0, 20)}
       {metric('rowHeight', 'Hauteur d\'une ligne de grille (px)', 16, 40)}
       {metric('maxWidth', 'Largeur maximale de la page (px)', 1100, 2400, 20)}
-      {metric('fontScale', 'Taille du texte (×)', 0.85, 1.3, 0.05)}
-      <button className="wide" onClick={() => updateConfig((c) => ({ ...c, theme: { preset: c.theme.preset, tokens: {}, metrics: defaultMetrics() } }))}>Réinitialiser l'apparence</button>
+      {metric('fontScale', 'Taille du texte, tout (×)', 0.7, 2, 0.05)}
+      <button className="wide" onClick={() => updateConfig((c) => ({ ...c, theme: { preset: c.theme.preset, tokens: {}, metrics: defaultMetrics(), typo: defaultTypography() } }))}>Réinitialiser l'apparence</button>
     </>
   )
 }

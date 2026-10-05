@@ -104,6 +104,9 @@ export function TopNav({ env }: { env: Env }) {
         <div className="nav-tools">
           <button className="nav-icon" onClick={undo} disabled={!past} title="Annuler la dernière modification d'hypothèse (Ctrl+Z)" aria-label="Annuler">↶</button>
           <button className="nav-icon" onClick={redo} disabled={!future} title="Rétablir (Ctrl+Maj+Z)" aria-label="Rétablir">↷</button>
+          <button className={'nav-icon typo-toggle' + (ui.typoPanel ? ' open' : '')} onClick={() => patchUI({ typoPanel: !ui.typoPanel })} aria-pressed={ui.typoPanel} aria-label="Taille du texte" title="Taille et gras du texte">
+            <span aria-hidden="true"><span className="aa-s">A</span><span className="aa-l">A</span></span>
+          </button>
           <SettingsMenu env={env} onImport={() => fileRef.current?.click()} />
         </div>
       </nav>

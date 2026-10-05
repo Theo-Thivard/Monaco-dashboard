@@ -4,6 +4,7 @@ import type { ChartType } from '../core/datasets'
 import type { FormatSettings } from '../core/format'
 import type { PageKind } from '../state/route'
 import type { Metrics, PresetId, Tokens } from './theme'
+import type { Typography } from './typography'
 
 export type WidgetKind = 'section' | 'headline' | 'kpis' | 'scenarioCards' | 'actorKpis' | 'drivers' | 'chart' | 'assumptionsTable' | 'text' | 'actorNote' | 'modelInfo'
 /** client = vue par défaut ; detail / method = repliés derrière leur section */
@@ -65,7 +66,7 @@ export interface DashboardConfig {
   /** nom court affiché dans la barre de navigation */
   brand: string
   footnote: string
-  theme: { preset: PresetId; tokens: Partial<Tokens>; metrics: Metrics }
+  theme: { preset: PresetId; tokens: Partial<Tokens>; metrics: Metrics; /** taille et gras par catégorie de texte */ typo: Typography }
   format: FormatSettings
   /** libellés personnalisés : kpi:<id>, hyp:<id>, block:<id>, scenario:<i>, series:<id>, bridge:<id>… */
   labels: Record<string, string>
