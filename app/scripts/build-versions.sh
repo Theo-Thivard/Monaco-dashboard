@@ -64,9 +64,9 @@ CURRENT="$(jq -r .slug "$APP/version.json")"
     ref="$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$APP/versions.json")"
     [ -n "$ref" ] || { echo "version de base inconnue : $base"; exit 1; }
     wt="$WORK/base-$base"
-    src="$wt"; [ -f "$wt/app/package.json" ] && src="$wt/app" # dispositions récentes : le code est dans app/
-    if [ ! -d "$wt" ]; then
-      git -C "$REPO" worktree add --detach "$wt" "$ref" >/dev/null
+    [ -d "$wt" ] || git -C "$REPO" worktree add --detach "$wt" "$ref" >/dev/null
+    src="$wt"; [ -f "$wt/app/package.json" ] && src="$wt/app" # dispositions récentes : le code est dans app/ (à calculer une fois la copie de travail créée)
+    if [ ! -d "$src/node_modules" ]; then
       (cd "$src" && npm ci --no-audit --no-fund --loglevel=error && { [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs || true; })
     fi
   fi
