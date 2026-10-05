@@ -86,7 +86,7 @@ function SectionHeader({ wc, expanded, unit }: { wc: WidgetConfig; expanded: boo
 
 function WidgetFrameBase({ wc: wcRaw, env }: { wc: WidgetConfig; env: Env }) {
   // textes propres au scénario / à l'acteur affiché (sinon textes communs de la page)
-  const wc = resolveEntityText(wcRaw, entityKey(env.route))
+  const wc = resolveEntityText(resolveWidget(wcRaw, env.snap.lens, env.config.titlesLinked), entityKey(env.route), env.snap.lens, env.config.titlesLinked)
   // légende « [unité ; date] » : {unité} suit l'unité du graphique (ou MW IT pour les autres blocs)
   const dsForUnit = useDataset(wc.datasetId, env)
   const unit = env.unit(dsForUnit?.format ?? 'power')

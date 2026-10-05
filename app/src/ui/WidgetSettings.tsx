@@ -3,10 +3,10 @@ import type { EntityText, HypMode, LensOverride, SeriesStyle, WidgetConfig } fro
 import { headlineTokens } from '../core/headlineText'
 import { KPI_BY_ID } from '../core/kpis'
 import { LABEL_DEFS } from './labels'
-import { entityKey, resolveEntityText, resolveWidget } from '../config/resolve'
+import { entityKey, lensTextKey, resolveEntityText, resolveWidget } from '../config/resolve'
 import { useState } from 'react'
 import { LENS_LABEL } from '../core/lens'
-import { patchUI, removeWidget, updateWidgetEntity, updateWidgetLens, setLabel, updateLayoutItem, updateWidget } from '../state/store'
+import { patchUI, removeWidget, updateWidgetEntity, updateWidgetLens, setLabel, updateLayoutItem, updateWidget, setTitlesLinked } from '../state/store'
 import { useDataset, type Env } from './env'
 import { ColorField, Drawer, Field, NumberInput } from './fields'
 import { prepareDataset } from './prepare'
@@ -104,8 +104,25 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
   // textes : propres au scénario / à l'acteur affiché par défaut ; « tous » = textes communs (les saisies propres à une page sont alors retirées)
   const ekey = entityKey(env.route)
   const [shared, setShared] = useState(false)
-  const rw = resolveEntityText(wc, shared ? null : ekey)
-  const setText = (p: EntityText) => {
+  const lens = env.snap.lens
+  const linked = env.config.titlesLinked
+  const rw = resolveEntityText(resolveWidget(wc, lens, linked), shared ? null : ekey, lens, linked)
+  const setText = (all: EntityText) => {
+    // titres indépendants : titre et sous-titre sont propres à la lecture affichée (Besoins générés / adressables)
+    const { title, subtitle, ...other } = all
+    let p: EntityText = all
+    if (!linked && wc.kind !== 'headline' && (title !== undefined || subtitle !== undefined)) {
+      const own: EntityText = { ...(title !== undefined ? { title } : {}), ...(subtitle !== undefined ? { subtitle } : {}) }
+      if (ekey && !shared) updateWidgetEntity(wc.id, lensTextKey(ekey, lens), own)
+      else {
+        updateWidgetLens(wc.id, lens, own)
+        // une saisie propre à un scénario / acteur ne doit pas masquer le titre commun qu'on vient de modifier
+        const fields = Object.keys(own)
+        if (wc.entityText) updateWidget(wc.id, { entityText: Object.fromEntries(Object.entries(wc.entityText).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([f]) => !fields.includes(f)))])) })
+      }
+      if (!Object.keys(other).length) return
+      p = other
+    }
     if (ekey && !shared) return updateWidgetEntity(wc.id, ekey, p)
     const keys = Object.keys(p) as (keyof EntityText)[]
     const entityText = wc.entityText
@@ -135,6 +152,11 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
           onReset={() => (ekey && !shared ? updateWidgetEntity(wc.id, ekey, { headline: { kicker: '', title: '', bullets: '' } }) : setText({ headline: undefined }))} />
       )}
       <LabelFields wc={wc} env={env} />
+      {!['headline', 'kpis', 'actorKpis', 'scenarioCards'].includes(wc.kind) && (
+        <label className="inline" title="Décoché : le titre et le sous-titre de chaque bloc peuvent différer entre « Besoins générés » et « Besoins adressables » (lecture affichée en ce moment). Valable pour tous les blocs.">
+          <input type="checkbox" checked={linked} onChange={(e) => setTitlesLinked(e.target.checked)} /> Mêmes titres pour « Besoins générés » et « Besoins adressables »
+        </label>
+      )}
       {wc.kind !== 'headline' && <Field label="Titre" hint="Légende « [unité ; date] » : écrivez {unité} pour que l'unité suive le réglage (MW IT, kW…)"><input type="text" value={widgetTitle(rw)} onChange={(e) => setText({ title: e.target.value })} /></Field>}
       {wc.kind !== 'headline' && <Field label="Sous-titre"><input type="text" value={widgetSubtitle(rw)} onChange={(e) => setText({ subtitle: e.target.value })} /></Field>}
       {wc.kind === 'text' && <Field label="Contenu"><textarea rows={9} value={rw.text ?? ''} onChange={(e) => setText({ text: e.target.value })} /></Field>}

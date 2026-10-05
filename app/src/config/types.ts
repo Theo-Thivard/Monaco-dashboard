@@ -16,7 +16,7 @@ export type HypMode = 'together' | 'three'
 export interface SeriesStyle { name?: string; color?: string; hidden?: boolean }
 
 /** Réglages de graphique propres à une lecture (Besoins générés / adressables) : échelles, type, légende, séries… */
-export type LensOverride = Partial<Pick<WidgetConfig, 'chartType' | 'legend' | 'decimals' | 'axisMin' | 'axisMax' | 'series' | 'seriesOrder'>>
+export type LensOverride = Partial<Pick<WidgetConfig, 'chartType' | 'legend' | 'decimals' | 'axisMin' | 'axisMax' | 'series' | 'seriesOrder' | 'title' | 'subtitle'>>
 
 /** Textes propres à un scénario (« scenario:0 ») ou à un acteur (« actor:MT ») : ils l'emportent sur les textes communs de la page. */
 export type EntityText = Partial<Pick<WidgetConfig, 'title' | 'subtitle' | 'note' | 'text' | 'headline'>>
@@ -71,6 +71,8 @@ export interface DashboardConfig {
   /** libellés personnalisés : kpi:<id>, hyp:<id>, block:<id>, scenario:<i>, series:<id>, bridge:<id>… */
   labels: Record<string, string>
   kpis: { order: string[]; visible: string[] }
+  /** true : « Besoins générés » et « Besoins adressables » partagent les mêmes titres de blocs ; false (défaut) : chaque lecture peut avoir les siens */
+  titlesLinked: boolean
   /** indicateurs de la page acteur : même principe que `kpis` (le filtre par lecture est appliqué à l'affichage) */
   actorKpis: { order: string[]; visible: string[] }
   /** ordre et visibilité des acteurs (graphiques et menu) */
