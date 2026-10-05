@@ -3,7 +3,7 @@ import { ACTOR_KPI_DEFS } from '../core/kpis'
 import { LENS_HINT, LENS_LABEL } from '../core/lens'
 import { OUTPUT_GROUPS } from '../core/engine'
 
-/** Titre du panneau des trois scénarios : légende « [unité ; date] » ({unité} suit le réglage MW / kW). */
+/** Titre du panneau des trois scénarios, au format « … [unité ; date] » ({unité} suit le réglage MW / kW). */
 export const SCENPANEL_TITLE_NEED = 'Besoin IT généré à Monaco [{unité} ; 2035]'
 export const SCENPANEL_TITLE_ADDR = 'Demande adressable à Monaco [{unité} ; 2035]'
 
