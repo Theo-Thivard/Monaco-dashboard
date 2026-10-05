@@ -52,17 +52,6 @@ function ChartTypeSelect({ wc, env }: { wc: WidgetConfig; env: Env }) {
   )
 }
 
-/** Case à cocher « Valeur initiale » des graphiques qui savent la montrer (valeur 2026 : départ de la courbe, repère sur les barres, barre 2026). */
-function InitialToggle({ wc, env }: { wc: WidgetConfig; env: Env }) {
-  const def = wc.datasetId ? DATASET_BY_ID[wc.datasetId] : undefined
-  if (wc.kind !== 'chart' || !def?.supportsInitial || resolveWidget(wc, env.snap.lens).chartType === 'table') return null
-  return (
-    <label className="initial-toggle" title="Afficher la valeur initiale (2026) sur ce graphique">
-      <input type="checkbox" checked={!!wc.showInitial} onChange={(e) => updateWidget(wc.id, { showInitial: e.target.checked })} /> Valeur initiale
-    </label>
-  )
-}
-
 function Body({ wc, env }: { wc: WidgetConfig; env: Env }): ReactNode {
   switch (wc.kind) {
     case 'headline': return <Headline env={env} wc={wc} />
@@ -147,7 +136,6 @@ function WidgetFrameBase({ wc: wcRaw, env }: { wc: WidgetConfig; env: Env }) {
         </div>
         <div className="card-tools" onMouseDown={(e) => e.stopPropagation()}>
           {textEdit}
-          {!edit && <InitialToggle wc={wc} env={env} />}
           {ui.mode === 'consultant' && wc.kind === 'chart' && !edit && <ChartTypeSelect wc={wc} env={env} />}
           {tools}
         </div>

@@ -57,7 +57,7 @@ export function buildGlobalHeadline(snap: Snapshot, f: FormatSettings, scen: (i:
     [P(actorName(contrib.a), true), P(' explique '), P(fmt('pct', share, f, { decimals: 0 }), true), P(` de l'écart entre les scénarios ${scen(0)} et ${scen(2)}.`)],
     need
       ? [P('La surcouche IA pèse '), P(fmt('pct', lo.total ? lo.ia / lo.total : 0, f, { decimals: 0 }), true), P(' à '), P(fmt('pct', hi.total ? hi.ia / hi.total : 0, f, { decimals: 0 }), true), P(' du besoin 2035 selon le scénario.')]
-      : [P('Le taux adressable varie de '), P(fmt('pct', lo.rate, f), true), P(' à '), P(fmt('pct', hi.rate, f), true), P(' : l\'incertitude porte surtout sur la part captable du privé.')],
+      : [P('Le taux adressable varie de '), P(fmt('pct', lo.rate, f), true), P(' à '), P(fmt('pct', hi.rate, f), true), P(' : l\'incertitude porte surtout sur la part du privé hébergée à Monaco.')],
   ]
   return { kicker: need ? 'Vue d\'ensemble · besoins générés à Monaco' : 'Vue d\'ensemble · besoins adressables', title, bullets }
 }

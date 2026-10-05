@@ -34,7 +34,7 @@ export const LABEL_DEFS: { group: string; key: string; def: string }[] = [
   { group: 'Séries', key: 'series:base', def: 'Besoin 2026' },
   { group: 'Séries', key: 'series:need', def: 'Besoin total 2035' },
   { group: 'Séries', key: 'series:addr', def: 'Demande adressable 2035' },
-  { group: 'Séries', key: 'series:socle', def: 'Socle hors IA' },
+  { group: 'Séries', key: 'series:socle', def: 'Besoin hors IA' },
   { group: 'Séries', key: 'series:ai', def: 'Surcouche IA' },
   { group: 'Séries', key: 'series:rate', def: 'Taux adressable' },
   { group: 'Séries', key: 'series:low', def: 'Valeur basse' },

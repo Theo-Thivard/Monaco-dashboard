@@ -150,7 +150,7 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
             </select>
           </Field>
           {curType !== 'table' && <label className="inline"><input type="checkbox" checked={eff.legend ?? true} onChange={(e) => setL({ legend: e.target.checked })} /> Afficher la légende</label>}
-          {def?.supportsInitial && <label className="inline"><input type="checkbox" checked={!!wc.showInitial} onChange={(e) => set({ showInitial: e.target.checked })} /> Afficher la valeur initiale (2026)</label>}
+          {def?.supportsInitial && <label className="inline"><input type="checkbox" checked={!!wc.showInitial} onChange={(e) => set({ showInitial: e.target.checked })} /> Afficher la valeur initiale (2026) : départ des courbes, repère sur les barres, barre 2026</label>}
           <Field label="Décimales (vide = automatique)"><NumberInput value={eff.decimals} min={0} max={4} onChange={(v) => setL({ decimals: v })} /></Field>
           {curType !== 'table' && curType !== 'donut' && curType !== 'pie' && (
             <>
