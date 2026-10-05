@@ -149,6 +149,7 @@ export function sanitizeConfig(x: unknown): DashboardConfig {
     format: { ...d.format, ...(c.format ?? {}) },
     labels: { ...(c.labels ?? {}) },
     kpis: { order: kpiOrder, visible: Array.isArray(c.kpis?.visible) ? c.kpis!.visible : d.kpis.visible },
+    titlesLinked: typeof c.titlesLinked === 'boolean' ? c.titlesLinked : d.titlesLinked,
     actorKpis: { order: actorKpiOrder, visible: Array.isArray(c.actorKpis?.visible) ? c.actorKpis!.visible : d.actorKpis.visible },
     actors: {
       order: Array.isArray(c.actors?.order) ? c.actors!.order.filter((id) => typeof id === 'string') : null,
@@ -378,6 +379,7 @@ export const updateWidgetEntity = (id: string, key: string, patch: EntityText) =
       return { ...w, entityText: { ...w.entityText, [key]: cur } }
     }),
   }))
+export const setTitlesLinked = (titlesLinked: boolean) => updateConfig((c) => ({ ...c, titlesLinked }))
 export const setLabel = (key: string, value: string, def: string) =>
   updateConfig((c) => {
     const labels = { ...c.labels }
@@ -563,6 +565,7 @@ export function diffFromDefault(s: AppState): DiffSummary {
     bg += cp.widgets.filter((w) => w.bg || w.fg).length
     texts += cp.widgets.filter((w) => { const o = dp.widgets.find((x) => x.id === w.id); return o && (o.title !== w.title || o.subtitle !== w.subtitle || o.note !== w.note || o.text !== w.text || JSON.stringify(o.entityText ?? null) !== JSON.stringify(w.entityText ?? null)) }).length
   }
+  vis += (c.titlesLinked !== d.titlesLinked ? 1 : 0)
   vis += (JSON.stringify([...c.kpis.visible].sort()) !== JSON.stringify([...d.kpis.visible].sort()) ? 1 : 0)
     + (JSON.stringify([...c.actorKpis.visible].sort()) !== JSON.stringify([...d.actorKpis.visible].sort()) ? 1 : 0)
     + allHypContexts().filter((ctx) => JSON.stringify([...hypsOf(c, ctx)].sort()) !== JSON.stringify([...defaultHypSet(ctx)].sort())).length

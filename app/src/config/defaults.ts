@@ -148,6 +148,7 @@ export const createDefaultConfig = (): DashboardConfig => ({
   format: defaultFormat(),
   labels: Object.fromEntries([0, 1, 2].map((i) => [`scenpanel:sub:${i}`, '**{hausse}** d\'ici 2035'])),
   kpis: { order: defaultKpiOrder(), visible: defaultKpiVisible() },
+  titlesLinked: false,
   actorKpis: { order: defaultActorKpiOrder(), visible: defaultActorKpiVisible() },
   actors: { order: null, hidden: [] },
   hyps: { sets: {}, notes: {} },
