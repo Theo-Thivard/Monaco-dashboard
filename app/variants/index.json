@@ -1,17 +1,5 @@
 [
   {
-    "slug": "v3-plein-ecran",
-    "label": "V3 · plein ecran",
-    "base": "v3",
-    "created": "2026-10-02"
-  },
-  {
-    "slug": "v4-version-5-10-16h56",
-    "label": "V4 · Version 5_10_16h56",
-    "base": "v4",
-    "created": "2026-10-05"
-  },
-  {
     "slug": "v4-affichage-5-10-17h36",
     "label": "V4 · affichage 5_10 17h36",
     "base": "v4",
