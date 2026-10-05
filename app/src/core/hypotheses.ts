@@ -26,6 +26,8 @@ export interface HypDef {
   excelRow: string
   /** libellé de la ligne dans l'Excel (colonne D de 1_Inputs&Hyp) : c'est lui qui relie l'hypothèse à sa cellule */
   excelLabel: string
+  /** titre du bloc de l'Excel (colonne D) après lequel se trouve la ligne : sert à départager un intitulé répété dans plusieurs blocs */
+  excelSection?: string
   /** colonnes lues : trois scénarios (Bas / Central / Haut), la colonne « Bas », ou la colonne « Valeur » */
   excelMode: 'scenarios' | 'bas' | 'value'
   /** rôle dans la décomposition des écarts (intensité numérique, surcouche IA) */
@@ -38,7 +40,7 @@ export const CATEGORIES: { id: string; title: string }[] = [
   { id: 'growth', title: 'Croissance & usages' },
   { id: 'ai', title: 'Intelligence artificielle' },
   { id: 'capture', title: 'Part captable à Monaco' },
-  { id: 'public', title: 'Entités publiques (DSP, CHPG)' },
+  { id: 'public', title: 'Entités publiques (DSP, CHPG, Pompiers)' },
   { id: 'baseline', title: 'Baseline 2026' },
 ]
 
@@ -71,7 +73,7 @@ export const HYPS: HypDef[] = [
   ia('iaPub', 'Surcouche IA 2035 – public', 'Surcouche IA 2035 – public'),
   ia('iaFin', 'Surcouche IA 2035 – finance', 'Surcouche IA 2035 – finance'),
   ia('iaPriv', 'Surcouche IA 2035 – hors finance', 'Surcouche IA 2035 – hors finance'),
-  adr('adrPub', 'Part captable – public, CHPG, DSP, Monaco Telecom', 'Part adressable Monaco – public / CHPG / DSP / MT', 'Part du besoin hors IA hébergée à Monaco pour les entités publiques et Monaco Telecom'),
+  adr('adrPub', 'Part captable – public, CHPG, DSP, Monaco Telecom', 'Part adressable Monaco – public', 'Part du besoin hors IA hébergée à Monaco pour les entités publiques et Monaco Telecom'),
   adr('adrFin', 'Part captable – finance', 'Part adressable Monaco – finance', 'Part du besoin hors IA de la finance hébergée à Monaco'),
   adr('adrPriv', 'Part captable – privé hors finance', 'Part adressable Monaco – privé hors finance', 'Part du besoin hors IA du privé hors finance hébergée à Monaco'),
   adr('adrIaPub', 'Part captable de l\'IA – public', 'Part adressable Monaco – surcouche IA public', 'Part de la surcouche IA du secteur public hébergée à Monaco'),
@@ -80,8 +82,10 @@ export const HYPS: HypDef[] = [
   hyp({ id: 'camBase', label: 'Caméras en 2026', description: 'Parc de caméras DSP en 2026', category: 'public', unit: 'count', min: 500, max: 10000, step: 10, excelLabel: 'Caméras 2026', excelMode: 'value' }),
   hyp({ id: 'camAdd', label: 'Ajout annuel de caméras', description: 'Caméras ajoutées chaque année', category: 'public', unit: 'count', min: 0, max: 1000, step: 5, excelLabel: 'Ajout annuel de caméras', excelMode: 'value' }),
   hyp({ id: 'bitrate', label: 'Facteur de débit 8 MP / 2 MP', description: 'Multiplication du débit vidéo par caméra lors du passage de 2 MP à 8 MP (4K)', category: 'public', unit: 'ratio', min: 1, max: 16, step: 0.05, excelLabel: 'Facteur bitrate 8MP / 2MP', excelMode: 'value' }),
-  hyp({ id: 'gChpg', label: 'Activité du CHPG (croissance annuelle)', description: 'Croissance annuelle de l\'activité hospitalière', category: 'public', unit: 'pct', min: -0.02, max: 0.10, step: 0.001, excelLabel: 'Croissance annuelle activité CHPG', excelMode: 'scenarios' }),
-  hyp({ id: 'santeChpg', label: 'Digitalisation santé du CHPG (2035)', description: 'Surcroît de besoin métier lié à la digitalisation de la santé', category: 'public', unit: 'pct', min: 0, max: 1, step: 0.01, excelLabel: 'Surcroît métier santé / digitalisation 2035', excelMode: 'scenarios' }),
+  hyp({ id: 'gChpg', label: 'Activité du CHPG (croissance annuelle)', description: 'Croissance annuelle de l\'activité hospitalière', category: 'public', unit: 'pct', min: -0.02, max: 0.10, step: 0.001, excelLabel: 'Croissance annuelle activité CHPG', excelSection: 'Hypothèses CHPG', excelMode: 'scenarios' }),
+  hyp({ id: 'santeChpg', label: 'Digitalisation santé du CHPG (2035)', description: 'Surcroît de besoin métier lié à la digitalisation de la santé', category: 'public', unit: 'pct', min: 0, max: 1, step: 0.01, excelLabel: 'Surcroît métier santé / digitalisation 2035', excelSection: 'Hypothèses CHPG', excelMode: 'scenarios' }),
+  hyp({ id: 'gPomp', label: 'Activité des Pompiers (croissance annuelle)', description: 'Croissance annuelle de l\'activité du Corps des Sapeurs Pompiers', category: 'public', unit: 'pct', min: -0.02, max: 0.10, step: 0.001, excelLabel: 'Croissance annuelle activité Pompiers', excelSection: 'Hypothèses Pompiers', excelMode: 'scenarios' }),
+  hyp({ id: 'santePomp', label: 'Surcroît métier des Pompiers (2035)', description: 'Surcroît de besoin métier des Pompiers lié à la santé et à la digitalisation', category: 'public', unit: 'pct', min: 0, max: 1, step: 0.01, excelLabel: 'Surcroît métier santé / digitalisation 2035', excelSection: 'Hypothèses Pompiers', excelMode: 'scenarios' }),
   hyp({ id: 'wFin', label: 'Puissance IT par salarié – finance', description: 'Baseline 2026 : watts IT par salarié de la finance', category: 'baseline', unit: 'watt', min: 10, max: 500, step: 1, excelLabel: 'W IT / salarié finance – 2026', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios (colonne « Bas » de l\'Excel).' }),
   hyp({ id: 'wPriv', label: 'Puissance IT par salarié – hors finance', description: 'Baseline 2026 : watts IT par salarié du privé hors finance', category: 'baseline', unit: 'watt', min: 5, max: 300, step: 1, excelLabel: 'W IT / salarié hors finance – 2026', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios.' }),
   hyp({ id: 'wPub', label: 'Puissance IT par agent public (DSP)', description: 'Baseline 2026 : watts IT par agent, socle non-métier de la DSP', category: 'baseline', unit: 'watt', min: 5, max: 300, step: 1, excelLabel: 'W IT / agent public – socle non-métier DSP', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios.' }),

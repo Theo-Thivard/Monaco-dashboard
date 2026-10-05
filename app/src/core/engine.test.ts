@@ -40,14 +40,17 @@ describe.skipIf(!hasCache)('modèle = Excel (valeurs enregistrées dans le fichi
   })
 })
 
-describe('valeurs de référence figées (copie du classeur v3 du 02/10/2026)', () => {
+describe('valeurs de référence figées (copie du classeur v5 du 05/10/2026)', () => {
   it('résultats 2035 et hypothèses lues', () => {
-    withModel('reference-v3.xlsx', () => {
+    withModel('reference-v5.xlsx', () => {
       const r = computeAll(defaultParams())
-      expect(r.map((s) => s.addressable / 1000)).toEqual([1.1034263428502877, 1.8788011382060033, 3.8477394932990325].map((x) => expect.closeTo(x, 9)))
-      expect(r.map((s) => s.total / 1000)).toEqual([3.4476758957289526, 4.676217072617512, 6.716770109820354].map((x) => expect.closeTo(x, 9)))
+      expect(r.map((s) => s.addressable / 1000)).toEqual([1.1213760384678262, 1.9062276569738026, 3.9300297029725657].map((x) => expect.closeTo(x, 9)))
+      expect(r.map((s) => s.total / 1000)).toEqual([3.466290394887882, 4.705153308014733, 6.799060319493886].map((x) => expect.closeTo(x, 9)))
       expect(defaultParams().adrFin).toEqual([0.2, 0.35, 0.5])
       expect(defaultParams().camBase).toEqual([1300])
+      expect(defaultParams().santePomp).toEqual([0.075, 0.12, 0.25]) // bloc « Hypothèses Pompiers » (distinct de celui du CHPG)
+      expect(defaultParams().santeChpg).toEqual([0.05, 0.1, 0.2])
+      expect(r[0].blocks.map((b) => b.id)).toEqual(['DSP', 'AUTRES', 'POMP', 'DITN', 'CHPG', 'MT', 'FIN', 'PRIV'])
     })
   })
 })

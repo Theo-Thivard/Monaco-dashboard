@@ -12,6 +12,9 @@ export type Route =
 
 export const SCENARIO_SLUGS = ['bas', 'central', 'haut'] as const
 
+/** Anciennes adresses (Excel v4) : DENJS et APDP font désormais partie de « Autres entités publiques ». */
+const LEGACY_ACTOR_SLUGS: Record<string, Entity> = { denjs: 'AUTRES', apdp: 'AUTRES' }
+
 export const DEFAULT_ROUTE: Route = { kind: 'global' }
 
 /** « #/scenario/central », « #/acteur/dsp », « #/globale » */
@@ -34,6 +37,7 @@ export function parseRoute(hash: string): Route {
   if (a === 'acteur' || a === 'acteurs') {
     const actor = ACTOR_BY_SLUG[b]
     if (actor) return { kind: 'actor', actor: actor.id }
+    if (LEGACY_ACTOR_SLUGS[b]) return { kind: 'actor', actor: LEGACY_ACTOR_SLUGS[b] }
   }
   return DEFAULT_ROUTE
 }

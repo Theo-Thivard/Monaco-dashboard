@@ -11,7 +11,7 @@ import type { DashboardConfig, PageConfig, WidgetConfig } from './types'
 
 const METHOD_TEXT = `Le modèle de calcul est le classeur Excel lui-même. Le tableau de bord lit ses valeurs et ses formules à chaque lancement, puis les recalcule avec les hypothèses que vous réglez. Toute modification de l'Excel est donc reprise automatiquement.
 
-Pour chaque acteur (DSP, DENJS, APDP, DITN, CHPG, Monaco Telecom, finance, privé hors finance), l'Excel part du besoin IT de 2026, applique la croissance des effectifs et de l'intensité numérique, puis ajoute une surcouche IA : cela donne le besoin 2035. La demande adressable en est la part hébergée à Monaco, calculée séparément pour le besoin classique et pour l'IA.
+Pour chaque acteur (DSP, autres entités publiques, Sapeurs Pompiers, DITN, CHPG, Monaco Telecom, finance, privé hors finance), l'Excel part du besoin IT de 2026, applique la croissance des effectifs et de l'intensité numérique, puis ajoute une surcouche IA : cela donne le besoin 2035. La demande adressable en est la part hébergée à Monaco, calculée séparément pour le besoin classique et pour l'IA.
 
 Chacun des trois scénarios (Bas, Central, Haut) a ses propres hypothèses. Le scénario actif pilote les indicateurs et les graphiques qui n'en montrent qu'un.`
 
