@@ -73,3 +73,9 @@ export const ACTOR_KPI_DEFS: ActorKpiDef[] = [
   { id: 'weightNeed', label: 'Poids dans le besoin Monaco en 2035', description: 'Part de l\'acteur dans le besoin IT total 2035', format: 'pct', lenses: ['need'], compute: (v) => (v.r.total ? v.b.total / v.r.total : 0) },
   { id: 'growth', label: 'Multiplicateur de 2026 à 2035', description: 'Besoin 2035 ÷ besoin 2026 : combien de fois le besoin est multiplié sur la période', format: 'ratio', lenses: ['need'], compute: (v) => (v.b.base ? v.b.total / v.b.base : 0) },
 ]
+
+export const ACTOR_KPI_BY_ID: Record<string, ActorKpiDef> = Object.fromEntries(ACTOR_KPI_DEFS.map((k) => [k.id, k]))
+export const defaultActorKpiOrder = () => ACTOR_KPI_DEFS.map((k) => k.id)
+/** Par défaut tous les indicateurs sont cochés : chaque lecture (besoins générés / adressables) n'en montre que ceux qui la concernent. */
+export const defaultActorKpiVisible = () => ACTOR_KPI_DEFS.map((k) => k.id)
+export const actorKpisForLens = (ids: string[], lens: Lens) => ids.filter((id) => ACTOR_KPI_BY_ID[id]?.lenses.includes(lens))

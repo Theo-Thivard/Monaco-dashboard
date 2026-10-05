@@ -3,17 +3,14 @@ import { ACTOR_BY_ID, actorBlock, actorHyps } from '../core/actors'
 import { applyTokens, headlineTokens, toParts } from '../core/headlineText'
 import type { WidgetConfig } from '../config/types'
 import { buildActorHeadline, buildGlobalHeadline, buildHeadline, type Headline as HeadlineData } from '../core/insights'
-import { ACTOR_KPI_DEFS } from '../core/kpis'
+import { ACTOR_KPI_BY_ID, actorKpisForLens } from '../core/kpis'
 import { getModel } from '../core/model'
-import { navigate } from '../state/store'
-import { KpiCard } from './KpiStrip'
+import { moveActorKpi, navigate, toggleActorKpi, useUI } from '../state/store'
+import { KpiCard, KpiPicker } from './KpiStrip'
 import { SCENPANEL_SUB_ADDR, SCENPANEL_SUB_NEED, SCENPANEL_TITLE_ADDR, SCENPANEL_TITLE_NEED } from './labels'
 import type { Env } from './env'
 import { UnitText } from './UnitText'
 import { fillUnit } from '../core/titles'
-
-const ACTOR_KPIS_NEED = ['base', 'need', 'growth', 'weightNeed']
-const ACTOR_KPIS_ADDR = ['base', 'need', 'addressable', 'rate', 'weight']
 
 /** Message clé : dépend de la page (globale / scénario / acteur) ; mêmes valeurs et même formateur que partout. */
 export function Headline({ env, wc }: { env: Env; wc?: WidgetConfig }) {
@@ -92,14 +89,25 @@ export function ActorKpis({ env }: { env: Env }) {
   if (route.kind !== 'actor') return null
   const id = route.actor
   const cur = { b: actorBlock(snap.active, id), r: snap.active }
-  const ids = snap.lens === 'need' ? ACTOR_KPIS_NEED : ACTOR_KPIS_ADDR
-  const defs = ACTOR_KPI_DEFS.filter((k) => ids.includes(k.id))
+  const { config } = env
+  const ui = useUI()
+  const available = actorKpisForLens(config.actorKpis.order, snap.lens)
+  const defs = available.filter((k) => config.actorKpis.visible.includes(k)).map((k) => ACTOR_KPI_BY_ID[k])
   return (
-    <div className="kpis" style={{ ['--n' as string]: defs.length }}>
-      {defs.map((k) => (
-        <KpiCard key={k.id} label={env.label(`actorkpi:${k.id}`, k.label)} description={k.description} format={k.format}
-          cur={k.compute(cur)} env={env} unitId={`actorkpi:${k.id}`} emphasis={k.id === (snap.lens === 'need' ? 'need' : 'addressable')} />
-      ))}
+    <div className="kpis-wrap">
+      <div className="kpis" style={{ ['--n' as string]: Math.max(1, Math.min(defs.length, 6)) }}>
+        {defs.map((k) => (
+          <KpiCard key={k.id} label={env.label(`actorkpi:${k.id}`, k.label)} description={k.description} format={k.format}
+            cur={k.compute(cur)} env={env} unitId={`actorkpi:${k.id}`} emphasis={k.id === (snap.lens === 'need' ? 'need' : 'addressable')} />
+        ))}
+        {!defs.length && <p className="empty small">Aucun indicateur sélectionné.</p>}
+      </div>
+      {ui.mode === 'consultant' && (
+        <KpiPicker
+          env={env} visible={config.actorKpis.visible} onToggle={toggleActorKpi} onMove={moveActorKpi}
+          items={available.map((k) => ACTOR_KPI_BY_ID[k]).map((k) => ({ id: k.id, label: k.label, labelKey: `actorkpi:${k.id}` }))}
+        />
+      )}
     </div>
   )
 }
