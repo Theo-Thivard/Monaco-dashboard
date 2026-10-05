@@ -90,7 +90,7 @@ describe.each(cases)('cohérence (lentille adressable) : %s', (_n, params, s) =>
     expect(fmt('power', a.addressable, f)).toBe(fmt('power', d.scenarios.series[2].values[s], f))
   })
   it('message clé généré sans NaN', () => {
-    const h = buildHeadline(snap, defaultFormat(), 'x', (id) => id)
+    const h = buildHeadline(snap, defaultFormat(), (id) => id)
     expect(JSON.stringify(h)).not.toMatch(/NaN|undefined|Infinity/)
   })
   it('types de graphiques par défaut compatibles', () => {
@@ -131,7 +131,7 @@ describe.each(cases)('cohérence (lentille besoins générés, livrable 2) : %s'
   })
   it('indicateurs de la lentille : aucun écart de référence, aucun NaN', () => {
     for (const id of kpisForLens(KPI_DEFS.map((x) => x.id), 'need')) expect(Number.isFinite(k(id))).toBe(true)
-    expect(JSON.stringify(buildHeadline(snap, defaultFormat(), 'x', (i) => i))).not.toMatch(/NaN|undefined|Infinity/)
+    expect(JSON.stringify(buildHeadline(snap, defaultFormat(), (i) => i))).not.toMatch(/NaN|undefined|Infinity/)
     for (const def of DATASETS) expect(compatibleCharts(d[def.id])).toContain(def.defaultChart)
   })
 })

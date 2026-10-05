@@ -14,7 +14,7 @@ export interface Headline { kicker: string; title: Part[]; bullets: Part[][] }
 const P = (t: string, strong = false): Part => ({ t, strong })
 
 /** Message clé d'une page Scénario. */
-export function buildHeadline(snap: Snapshot, f: FormatSettings, scenarioName: string, hypLabel: (id: string) => string): Headline {
+export function buildHeadline(snap: Snapshot, f: FormatSettings, hypLabel: (id: string) => string): Headline {
   const r = snap.active
   const need = snap.lens === 'need'
   const title: Part[] = need
@@ -35,7 +35,7 @@ export function buildHeadline(snap: Snapshot, f: FormatSettings, scenarioName: s
     const span = Math.abs(top.high - top.low)
     bullets.push([P('Premier levier : '), P(hypLabel(top.id), true), P(` — jusqu'à ${fmt('power', span, f)} d'écart entre ses valeurs basse et haute.`)])
   }
-  return { kicker: `Scénario ${scenarioName}`, title, bullets }
+  return { kicker: '', title, bullets }
 }
 
 /** Message clé de la page Globale : comparaison des trois scénarios. */
@@ -59,11 +59,11 @@ export function buildGlobalHeadline(snap: Snapshot, f: FormatSettings, scen: (i:
       ? [P('La surcouche IA pèse '), P(fmt('pct', lo.total ? lo.ia / lo.total : 0, f, { decimals: 0 }), true), P(' à '), P(fmt('pct', hi.total ? hi.ia / hi.total : 0, f, { decimals: 0 }), true), P(' du besoin 2035 selon le scénario.')]
       : [P('Le taux adressable varie de '), P(fmt('pct', lo.rate, f), true), P(' à '), P(fmt('pct', hi.rate, f), true), P(' : l\'incertitude porte surtout sur la part du privé hébergée à Monaco.')],
   ]
-  return { kicker: need ? 'Vue d\'ensemble · besoins générés à Monaco' : 'Vue d\'ensemble · besoins adressables', title, bullets }
+  return { kicker: '', title, bullets }
 }
 
 /** Message clé d'une page acteur. */
-export function buildActorHeadline(snap: Snapshot, actor: ActorDef, f: FormatSettings, scenarioName: string, actorName: string, hypLabel: (id: string) => string): Headline {
+export function buildActorHeadline(snap: Snapshot, actor: ActorDef, f: FormatSettings, actorName: string, hypLabel: (id: string) => string): Headline {
   const r = snap.active
   const need = snap.lens === 'need'
   const v = (x: { total: number; addressable: number }) => lensValue(x, snap.lens)
@@ -83,5 +83,5 @@ export function buildActorHeadline(snap: Snapshot, actor: ActorDef, f: FormatSet
   ]
   if (top) bullets.push([P('Premier levier : '), P(hypLabel(top.id), true), P(` — jusqu'à ${fmt('power', Math.abs(top.high - top.low), f)} d'écart.`)])
   else bullets.push([P('Aucune hypothèse du modèle ne fait varier cet acteur.')])
-  return { kicker: `Acteurs · ${scenarioName}`, title, bullets }
+  return { kicker: '', title, bullets }
 }

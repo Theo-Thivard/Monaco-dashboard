@@ -20,8 +20,8 @@ export function Headline({ env, wc }: { env: Env; wc?: WidgetConfig }) {
   const { route, snap } = env
   const auto: HeadlineData = useMemo(() => {
     if (route.kind === 'global') return buildGlobalHeadline(snap, env.f, env.scenarioName, (a) => env.actorLabel(a.id, true))
-    if (route.kind === 'actor') return buildActorHeadline(snap, ACTOR_BY_ID[route.actor], env.f, env.scenarioName(snap.scenario), env.actorLabel(route.actor), env.hypLabel)
-    return buildHeadline(snap, env.f, env.scenarioName(snap.scenario), env.hypLabel)
+    if (route.kind === 'actor') return buildActorHeadline(snap, ACTOR_BY_ID[route.actor], env.f, env.actorLabel(route.actor), env.hypLabel)
+    return buildHeadline(snap, env.f, env.hypLabel)
   }, [env, route, snap])
   const o = wc?.headline
   const h: HeadlineData = useMemo(() => {
@@ -38,7 +38,7 @@ export function Headline({ env, wc }: { env: Env; wc?: WidgetConfig }) {
     <div className={'headline' + (o?.hideTitle ? ' only-bullets' : '') + (o?.hideBullets ? ' only-title' : '')}>
       {!o?.hideTitle && (
         <div className="hl-main">
-          <div className="kicker">{h.kicker}</div>
+          {h.kicker.trim() && <div className="kicker">{h.kicker}</div>}
           <h2>{h.title.map((p, i) => (p.strong ? <strong key={i}>{p.t}</strong> : <span key={i}>{p.t}</span>))}</h2>
         </div>
       )}
