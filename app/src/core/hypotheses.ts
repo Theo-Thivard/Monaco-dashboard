@@ -53,11 +53,11 @@ type Base = Pick<HypDef, 'id' | 'label' | 'description' | 'category' | 'unit' | 
 const hyp = (b: Base): HypDef => ({ control: 'slider', def: [], source: '', excelRow: '', single: b.excelMode !== 'scenarios', ...b })
 
 const eff = (id: string, label: string, excelLabel: string, description: string) =>
-  hyp({ id, label, description, category: 'growth', unit: 'pct', min: -0.02, max: 0.03, step: 0.001, excelLabel, excelMode: 'scenarios' })
+  hyp({ id, label, description, category: 'growth', unit: 'pct', min: -0.02, max: 0.08, step: 0.001, excelLabel, excelMode: 'scenarios' })
 const intens = (id: string, label: string, excelLabel: string) =>
-  hyp({ id, label, description: 'Hausse annuelle du besoin IT par utilisateur, hors IA, de 2026 à 2035', category: 'growth', unit: 'pct', min: 0, max: 0.12, step: 0.001, excelLabel, excelMode: 'scenarios', role: 'intensity' })
+  hyp({ id, label, description: 'Hausse annuelle du besoin IT par utilisateur, hors IA, de 2026 à 2035', category: 'growth', unit: 'pct', min: 0, max: 0.25, step: 0.001, excelLabel, excelMode: 'scenarios', role: 'intensity' })
 const ia = (id: string, label: string, excelLabel: string) =>
-  hyp({ id, label, description: 'Besoin IT additionnel lié à l\'IA en 2035, en % du besoin hors IA', category: 'ai', unit: 'pct', min: 0, max: 0.8, step: 0.01, excelLabel, excelMode: 'scenarios', role: 'ai' })
+  hyp({ id, label, description: 'Besoin IT additionnel lié à l\'IA en 2035, en % du besoin hors IA', category: 'ai', unit: 'pct', min: 0, max: 2, step: 0.01, excelLabel, excelMode: 'scenarios', role: 'ai' })
 const adr = (id: string, label: string, excelLabel: string, description: string) =>
   hyp({ id, label, description, category: 'capture', unit: 'pct', min: 0, max: 1, step: 0.01, excelLabel, excelMode: 'scenarios' })
 
@@ -77,14 +77,14 @@ export const HYPS: HypDef[] = [
   adr('adrIaPub', 'Part captable de l\'IA – public', 'Part adressable Monaco – surcouche IA public', 'Part de la surcouche IA du secteur public hébergée à Monaco'),
   adr('adrIaFin', 'Part captable de l\'IA – finance', 'Part adressable Monaco – surcouche IA finance', 'Part de la surcouche IA de la finance hébergée à Monaco'),
   adr('adrIaPriv', 'Part captable de l\'IA – hors finance', 'Part adressable Monaco – surcouche IA hors finance', 'Part de la surcouche IA du privé hors finance hébergée à Monaco'),
-  hyp({ id: 'camBase', label: 'Caméras en 2026', description: 'Parc de caméras DSP en 2026', category: 'public', unit: 'count', min: 500, max: 3000, step: 10, excelLabel: 'Caméras 2026', excelMode: 'value' }),
-  hyp({ id: 'camAdd', label: 'Ajout annuel de caméras', description: 'Caméras ajoutées chaque année', category: 'public', unit: 'count', min: 0, max: 200, step: 5, excelLabel: 'Ajout annuel de caméras', excelMode: 'value' }),
-  hyp({ id: 'bitrate', label: 'Facteur de débit 8 MP / 2 MP', description: 'Multiplication du débit vidéo par caméra lors du passage de 2 MP à 8 MP (4K)', category: 'public', unit: 'ratio', min: 1, max: 8, step: 0.05, excelLabel: 'Facteur bitrate 8MP / 2MP', excelMode: 'value' }),
-  hyp({ id: 'gChpg', label: 'Activité du CHPG (croissance annuelle)', description: 'Croissance annuelle de l\'activité hospitalière', category: 'public', unit: 'pct', min: -0.02, max: 0.04, step: 0.001, excelLabel: 'Croissance annuelle activité CHPG', excelMode: 'scenarios' }),
-  hyp({ id: 'santeChpg', label: 'Digitalisation santé du CHPG (2035)', description: 'Surcroît de besoin métier lié à la digitalisation de la santé', category: 'public', unit: 'pct', min: 0, max: 0.3, step: 0.01, excelLabel: 'Surcroît métier santé / digitalisation 2035', excelMode: 'scenarios' }),
-  hyp({ id: 'wFin', label: 'Puissance IT par salarié – finance', description: 'Baseline 2026 : watts IT par salarié de la finance', category: 'baseline', unit: 'watt', min: 10, max: 200, step: 1, excelLabel: 'W IT / salarié finance – 2026', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios (colonne « Bas » de l\'Excel).' }),
-  hyp({ id: 'wPriv', label: 'Puissance IT par salarié – hors finance', description: 'Baseline 2026 : watts IT par salarié du privé hors finance', category: 'baseline', unit: 'watt', min: 5, max: 100, step: 1, excelLabel: 'W IT / salarié hors finance – 2026', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios.' }),
-  hyp({ id: 'wPub', label: 'Puissance IT par agent public (DSP)', description: 'Baseline 2026 : watts IT par agent, socle non-métier de la DSP', category: 'baseline', unit: 'watt', min: 5, max: 100, step: 1, excelLabel: 'W IT / agent public – socle non-métier DSP', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios.' }),
+  hyp({ id: 'camBase', label: 'Caméras en 2026', description: 'Parc de caméras DSP en 2026', category: 'public', unit: 'count', min: 500, max: 10000, step: 10, excelLabel: 'Caméras 2026', excelMode: 'value' }),
+  hyp({ id: 'camAdd', label: 'Ajout annuel de caméras', description: 'Caméras ajoutées chaque année', category: 'public', unit: 'count', min: 0, max: 1000, step: 5, excelLabel: 'Ajout annuel de caméras', excelMode: 'value' }),
+  hyp({ id: 'bitrate', label: 'Facteur de débit 8 MP / 2 MP', description: 'Multiplication du débit vidéo par caméra lors du passage de 2 MP à 8 MP (4K)', category: 'public', unit: 'ratio', min: 1, max: 16, step: 0.05, excelLabel: 'Facteur bitrate 8MP / 2MP', excelMode: 'value' }),
+  hyp({ id: 'gChpg', label: 'Activité du CHPG (croissance annuelle)', description: 'Croissance annuelle de l\'activité hospitalière', category: 'public', unit: 'pct', min: -0.02, max: 0.10, step: 0.001, excelLabel: 'Croissance annuelle activité CHPG', excelMode: 'scenarios' }),
+  hyp({ id: 'santeChpg', label: 'Digitalisation santé du CHPG (2035)', description: 'Surcroît de besoin métier lié à la digitalisation de la santé', category: 'public', unit: 'pct', min: 0, max: 1, step: 0.01, excelLabel: 'Surcroît métier santé / digitalisation 2035', excelMode: 'scenarios' }),
+  hyp({ id: 'wFin', label: 'Puissance IT par salarié – finance', description: 'Baseline 2026 : watts IT par salarié de la finance', category: 'baseline', unit: 'watt', min: 10, max: 500, step: 1, excelLabel: 'W IT / salarié finance – 2026', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios (colonne « Bas » de l\'Excel).' }),
+  hyp({ id: 'wPriv', label: 'Puissance IT par salarié – hors finance', description: 'Baseline 2026 : watts IT par salarié du privé hors finance', category: 'baseline', unit: 'watt', min: 5, max: 300, step: 1, excelLabel: 'W IT / salarié hors finance – 2026', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios.' }),
+  hyp({ id: 'wPub', label: 'Puissance IT par agent public (DSP)', description: 'Baseline 2026 : watts IT par agent, socle non-métier de la DSP', category: 'baseline', unit: 'watt', min: 5, max: 300, step: 1, excelLabel: 'W IT / agent public – socle non-métier DSP', excelMode: 'bas', note: 'Baseline 2026 commune aux trois scénarios.' }),
 ]
 
 /** Valeurs lues dans l'Excel au chargement. */
