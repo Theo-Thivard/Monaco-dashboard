@@ -6,7 +6,8 @@ Dashboard interactif construit à partir du classeur Excel [`Monaco_Besoins_IT_v
 
 | Version &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Ce qu'elle apporte par rapport aux précédentes |
 |---|---|
-| [V4](https://theo-thivard.github.io/Monaco-dashboard/); <br> [V4 plein écran19h01](https://theo-thivard.github.io/Monaco-dashboard/v4-affichage-5-10-17h36/#/globale?s=eyJwIjp7fSwic2MiOjEsImwiOiJuZWVkIn0%3D) | Modification de la taille du texte ; **légende « [unité ; date] »** ; valeur 2026 au départ des courbes; **bandeaux d'hypothèses indépendants** (générés/adressables); **unité modifiable dans chaque cellule de chiffres**; menu client réduit à quatre actions. |
+| [V5](https://theo-thivard.github.io/Monaco-dashboard/v5/) | Affichage de la V4 enregistré comme version à part entière (même code, mise en page 19h01). |
+| [V4](https://theo-thivard.github.io/Monaco-dashboard/) | Modification de la taille du texte ; **légende « [unité ; date] »** ; valeur 2026 au départ des courbes; **bandeaux d'hypothèses indépendants** (générés/adressables); **unité modifiable dans chaque cellule de chiffres**; menu client réduit à quatre actions. |
 
 **À savoir pour toutes les versions**
 - **Trajectoire annuelle 2026 → 2035 = interpolation** (croissance composée du besoin, montée linéaire de l'IA). Seul 2035 est calculé par l'Excel ; ce principe est le même dans toutes les versions qui tracent une courbe annuelle.
