@@ -138,7 +138,7 @@ function bars(p: PreparedDataset, type: 'bar' | 'hbar' | 'stackedBar', env: Char
   env = { ...env, legend: env.legend && ds.series.length > 1 }
   const t = env.tokens
   const shaded = ds.shaded
-  const bandOf = (s: (typeof real)[number], k: number) => (k === 0 && shaded && !horizontal
+  const bandOf = (k: number) => (k === 0 && shaded && !horizontal
     ? { markArea: { silent: true, itemStyle: { color: t.axis, opacity: 0.18 }, label: { show: true, position: 'insideTop', distance: 6, color: t.textMuted, fontSize: fs(env, 'labels', 11), fontWeight: fw(env, 'labels'), fontFamily: FONT, formatter: shaded.label }, data: [[{ xAxis: ds.categories[shaded.from] }, { xAxis: ds.categories[shaded.to] }]] } }
     : {})
   return {
@@ -157,7 +157,7 @@ function bars(p: PreparedDataset, type: 'bar' | 'hbar' | 'stackedBar', env: Char
           : { show: false },
         data: s.values.map((v) => v),
         seriesId: s.id,
-        ...bandOf(s, k),
+        ...bandOf(k),
       })),
       // valeur initiale (2026) : un trait par catégorie, avec sa valeur
       ...ds.series.filter((s) => s.marker).map((s) => ({

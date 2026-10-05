@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { ACTORS, ACTOR_GROUPS, actorBlock, arrangeActors } from '../core/actors'
 import { buildCSV, download, printPage } from '../state/exporters'
 import { navigate, toggleSidebar, useUI } from '../state/store'
-import { diffFromDefault, exportJSON, importJSON, patchUI, redo, resetAll, resetAssumptions, resetDashboard, setMode, shareURL, toast, undo, useAppState } from '../state/store'
+import { exportJSON, importJSON, patchUI, redo, resetAll, resetAssumptions, resetDashboard, setMode, shareURL, toast, undo, useAppState } from '../state/store'
 import type { Env } from './env'
 import { NavDropdown } from './NavDropdown'
 import { ConfirmButton, Popover } from './Popover'
@@ -12,7 +12,6 @@ const SCENARIO_HINTS = ['Hypothèses prudentes', 'Hypothèses centrales', 'Hypot
 function SettingsMenu({ env, onImport }: { env: Env; onImport: () => void }) {
   const s = useAppState((x) => x)
   const consultant = s.ui.mode === 'consultant'
-  const modified = diffFromDefault(s).assumptions.length
   const copyLink = async () => {
     const url = shareURL()
     try { await navigator.clipboard.writeText(url); toast('Lien copié dans le presse-papiers') } catch { window.prompt('Copiez ce lien :', url) }

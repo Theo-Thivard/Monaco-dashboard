@@ -124,11 +124,3 @@ export function withValue(p: Params, id: string, s: number, v: number): Params {
 }
 
 /** Compare deux jeux d'hypothèses pour un scénario donné. */
-export function hypDiffers(a: Params, b: Params, id: string, s: number): boolean {
-  return hypValue(a, id, s) !== hypValue(b, id, s)
-}
-
-export function hypDefault(id: string, s: number): number {
-  const d = HYP_BY_ID[id].def
-  return d.length === 1 ? d[0] : d[s]
-}

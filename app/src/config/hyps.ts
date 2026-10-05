@@ -25,10 +25,6 @@ export function defaultHypSet(ctx: HypContext): string[] {
 
 export const allHypContexts = (): HypContext[] => ['need', 'addressable', ...ACTORS.map((a) => `actor:${a.id}`)]
 
-export function defaultHypSets(): Record<HypContext, string[]> {
-  return Object.fromEntries(allHypContexts().map((c) => [c, defaultHypSet(c)]))
-}
-
 /** Hypothèses affichées pour un contexte : choix de l'utilisateur, sinon liste par défaut. */
 export const hypsOf = (config: Pick<DashboardConfig, 'hyps'>, ctx: HypContext): string[] => config.hyps.sets[ctx] ?? defaultHypSet(ctx)
 

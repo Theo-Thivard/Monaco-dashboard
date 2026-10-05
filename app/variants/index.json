@@ -1,20 +1,8 @@
 [
   {
-    "slug": "v4-2eme-affichage-main",
-    "label": "V4 · 2eme affichage main",
-    "base": "v4",
+    "slug": "v3-plein-ecran",
+    "label": "V3 · plein ecran",
+    "base": "v3",
     "created": "2026-10-02"
-  },
-  {
-    "slug": "v4-plein-ecran",
-    "label": "V4 · plein ecran",
-    "base": "v4",
-    "created": "2026-10-02"
-  },
-  {
-    "slug": "v5-affichage-5-10",
-    "label": "V5 · affichage_5_10",
-    "base": "v5",
-    "created": "2026-10-05"
   }
 ]

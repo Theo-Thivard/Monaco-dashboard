@@ -7,7 +7,7 @@ import { createDefaultConfig, PAGE_DEFAULTS } from '../config/defaults'
 import { allHypContexts, defaultHypSet, hypsOf } from '../config/hyps'
 import { sanitizeTypography, typographyChanges } from '../config/typography'
 import type { DashboardConfig, EntityText, LensOverride, PageConfig, WidgetConfig } from '../config/types'
-import { defaultParams, HYP_BY_ID, HYPS, hypValue, type Params } from '../core/hypotheses'
+import { defaultParams, HYP_BY_ID, HYPS, type Params } from '../core/hypotheses'
 import type { Lens } from '../core/lens'
 import { getSnapshot, type Snapshot } from '../core/snapshot'
 import { DEFAULT_ROUTE, formatRoute, parseRoute, sameRoute, type PageKind, type Route } from './route'
@@ -42,7 +42,7 @@ export interface AppState {
 }
 
 // On ne stocke que les hypothèses que l'utilisateur a MODIFIÉES par rapport à l'Excel (les autres suivent l'Excel).
-// v6 : repart à zéro (les anciennes configurations ne sont pas reprises) ; une configuration jamais modifiée n'est plus stockée, elle suit le défaut du site.
+// v4 : repart à zéro (les anciennes configurations ne sont pas reprises) ; une configuration jamais modifiée n'est plus stockée, elle suit le défaut du site.
 // une clé par publication (version ou affichage enregistré) : elles partagent la même origine sans se mélanger
 const KEY = `monaco-dashboard-${__APP_SLUG__}`
 /** Révision de l'affichage par défaut de cette version : une configuration enregistrée dans le navigateur avant cette révision est remplacée par le nouveau défaut (la typographie choisie est conservée). */
@@ -186,7 +186,7 @@ function load(): AppState {
       if (!o.config) base.config = userDefaultConfig()
       else if (o.rev === CONFIG_REV) base.config = sanitizeConfig(o.config)
       else {
-        // défaut modifié depuis (p. ex. V5 : affichage plein écran) : nouveau défaut, en gardant la taille / le gras du texte déjà réglés
+        // défaut modifié depuis (p. ex. affichage plein écran) : nouveau défaut, en gardant la taille / le gras du texte déjà réglés
         const old = sanitizeConfig(o.config), d = userDefaultConfig()
         base.config = { ...d, theme: { ...d.theme, typo: old.theme.typo, metrics: { ...d.theme.metrics, fontScale: old.theme.metrics.fontScale } } }
       }
@@ -561,7 +561,4 @@ export function diffFromDefault(s: AppState): DiffSummary {
   }
 }
 
-export const pageKind = (r: Route): PageKind => r.kind
 export { PAGE_DEFAULTS }
-
-export const hypNow = (id: string, s: number) => hypValue(getState().params, id, s)

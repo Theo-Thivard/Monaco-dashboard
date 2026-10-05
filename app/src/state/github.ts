@@ -23,7 +23,7 @@ export interface SaveResult {
 
 const api = (path: string) => `https://api.github.com/repos/${REPO}${path}`
 
-/** « v6 » + « Vue client — Mars » → « v6-vue-client-mars » (unique parmi `taken`). */
+/** « v4 » + « Vue client — Mars » → « v6-vue-client-mars » (unique parmi `taken`). */
 export function variantSlug(base: string, name: string, taken: string[] = []): string {
   const clean = name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'affichage'
   let slug = `${base}-${clean}`

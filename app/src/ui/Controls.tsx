@@ -4,7 +4,7 @@ import { isDeadHyp } from '../core/actors'
 import { defaultParams, HYP_BY_ID, hypValue, type HypDef } from '../core/hypotheses'
 import type { HypMode } from '../config/types'
 import { resetParam, setLabel, setParam, setParamTogether, updateConfig, useAppState } from '../state/store'
-import { useEnv, type Env } from './env'
+import type { Env } from './env'
 
 /** Valeur affichée dans le champ : pourcentages en points de %, le reste tel quel. */
 const toField = (h: HypDef, v: number) => (h.unit === 'pct' ? v * 100 : v)

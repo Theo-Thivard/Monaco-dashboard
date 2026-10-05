@@ -11,7 +11,6 @@ export type { Entity }
 export const SCENARIOS = ['Bas', 'Central', 'Haut'] as const
 export const HORIZON = 9 // 2026 -> 2035
 
-export type ScenarioIdx = 0 | 1 | 2
 
 export const ENTITY_LABEL: Record<Entity, string> = {
   DSP: 'DSP', DENJS: 'DENJS', APDP: 'APDP', DITN: 'DITN', CHPG: 'CHPG',

@@ -279,7 +279,6 @@ export function getModel(): Model {
   if (!current) throw new ModelError('Modèle Excel non chargé.')
   return current
 }
-export const hasModel = () => current !== null
 
 // ------------------------------------------------------------------ évaluation d'un jeu d'hypothèses
 /** Valeurs à imposer aux cellules d'entrée pour un jeu d'hypothèses. */
