@@ -21,6 +21,7 @@ const block = [
 
 const text = readFileSync(readme, 'utf8')
 const re = /<!--AFFICHAGES:DEBUT-->[\s\S]*?<!--AFFICHAGES:FIN-->/
-if (!re.test(text)) { console.error('Repères <!--AFFICHAGES:DEBUT--> / <!--AFFICHAGES:FIN--> introuvables dans le README.'); process.exit(1) }
+// Repères absents (section retirée du README) : rien à mettre à jour, et ce n'est pas une erreur — la publication du site ne doit pas échouer pour ça.
+if (!re.test(text)) { console.log('Repères <!--AFFICHAGES:DEBUT--> / <!--AFFICHAGES:FIN--> absents du README : liste des affichages ignorée.'); process.exit(0) }
 const next = text.replace(re, block)
 if (next !== text) { writeFileSync(readme, next); console.log('README mis à jour.') } else console.log('README déjà à jour.')
