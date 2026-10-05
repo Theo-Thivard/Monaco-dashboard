@@ -2,7 +2,8 @@
 # Construit les anciennes versions du dashboard (listées dans versions.json) dans dist/<slug>/,
 # puis les AFFICHAGES enregistrés (variants/index.json) : même code que leur version, configuration enregistrée comme défaut,
 # afin qu'une nouvelle version ne remplace jamais l'ancienne : chacune garde son adresse.
-# Les archives sont FIGÉES : elles lisent la copie de l'Excel embarquée dans leur propre version (pas le fichier en ligne).
+# Toutes les versions et tous les affichages suivent le DERNIER classeur Excel du dépôt (N le plus élevé) : on le leur impose comme classeur embarqué
+# et ils lisent aussi la version en ligne (branche main), comme la version courante. Seul leur code reste figé.
 # Usage : app/scripts/build-versions.sh <dossier dist> <préfixe d'adresse, p. ex. /Monaco-dashboard>
 set -euo pipefail
 DIST="$(cd "$1" && pwd)"
@@ -13,6 +14,21 @@ WORK="$(mktemp -d)"
 trap 'cd "$REPO"; git worktree prune; rm -rf "$WORK"' EXIT
 
 export REGISTRY_ROOT="$APP" SITE_ROOT="$PREFIX/"
+
+# Dernier classeur Excel (Monaco_Besoins_IT_v<N>.xlsx, N le plus élevé) : à la racine du dépôt (ou dans app/ pour d'anciennes dispositions)
+LATEST_MODEL="$(ls "$REPO" "$APP" 2>/dev/null | grep -E '^Monaco_Besoins_IT_v[0-9]+\.xlsx$' | sort -V | tail -1)"
+LATEST_PATH="$REPO/$LATEST_MODEL"; [ -f "$LATEST_PATH" ] || LATEST_PATH="$APP/$LATEST_MODEL"
+[ -f "$LATEST_PATH" ] || { echo "Aucun classeur Monaco_Besoins_IT_v<N>.xlsx trouvé"; exit 1; }
+MODEL_KEY="$LATEST_MODEL-$(sha1sum "$LATEST_PATH" | cut -c1-12)"
+echo "Classeur de référence pour toutes les versions : $LATEST_MODEL"
+# remplace les classeurs d'une copie de travail (dossier code <src>) par le dernier : c'est lui que sync-model.mjs et vite.config.ts retiennent
+pin_latest_model() { # <dossier code>
+  local d
+  for d in "$1/.." "$1"; do
+    if ls "$d"/Monaco_Besoins_IT_v*.xlsx >/dev/null 2>&1; then rm -f "$d"/Monaco_Besoins_IT_v*.xlsx; cp "$LATEST_PATH" "$d/$LATEST_MODEL"; return 0; fi
+  done
+  cp "$LATEST_PATH" "$1/$LATEST_MODEL" # aucune copie dans cette disposition : on la dépose dans le dossier du code
+}
 
 # Cache des constructions d'archives (dossier BUILD_CACHE, conservé d'une publication à l'autre par le workflow)
 CACHE="${BUILD_CACHE:-}"
@@ -33,16 +49,17 @@ jq -c '.[]' "$APP/versions.json" | while read -r v; do
   ref="$(jq -r .ref <<<"$v")"
   echo "::group::Version $slug ($ref)"
   # une archive est figée : si son code n'a pas changé depuis la dernière publication, on réutilise sa construction
-  key="$slug-$(git -C "$REPO" rev-parse "$ref")"
+  key="$slug-$(git -C "$REPO" rev-parse "$ref")-$MODEL_KEY"
   if restore_cache "$key" "$DIST/$slug"; then echo "(inchangée : réutilisée)"; echo "::endgroup::"; continue; fi
   git -C "$REPO" worktree add --detach "$WORK/$slug" "$ref" >/dev/null
   (
     cd "$WORK/$slug"
     [ -f app/package.json ] && cd app # dispositions récentes : le code est dans app/
     npm ci --no-audit --no-fund --loglevel=error
-    # copie embarquée du classeur (versions qui lisent l'Excel) ; adresse « en ligne » volontairement inaccessible
+    # dernier classeur embarqué (versions qui lisent l'Excel) ; la version en ligne est lue comme pour la version courante
+    pin_latest_model "$PWD"
     [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs
-    MODEL_LIVE_URL="http://archive.invalid/model.xlsx" npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
+    npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
   )
   save_cache "$key" "$DIST/$slug" "$slug-"
   echo "::endgroup::"
@@ -55,7 +72,7 @@ CURRENT="$(jq -r .slug "$APP/version.json")"
   base="$(jq -r .base <<<"$v")"
   echo "::group::Affichage $slug (base $base)"
   if [ "$base" != "$CURRENT" ]; then
-    vkey="aff-$slug-$(git -C "$REPO" rev-parse "$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$APP/versions.json")")-$(sha1sum "$APP/variants/$slug.json" | cut -c1-12)"
+    vkey="aff-$slug-$(git -C "$REPO" rev-parse "$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$APP/versions.json")")-$(sha1sum "$APP/variants/$slug.json" | cut -c1-12)-$MODEL_KEY"
     if restore_cache "$vkey" "$DIST/$slug"; then echo "(inchangé : réutilisé)"; echo "::endgroup::"; continue; fi
   fi
   if [ "$base" = "$CURRENT" ]; then
@@ -67,13 +84,11 @@ CURRENT="$(jq -r .slug "$APP/version.json")"
     [ -d "$wt" ] || git -C "$REPO" worktree add --detach "$wt" "$ref" >/dev/null
     src="$wt"; [ -f "$wt/app/package.json" ] && src="$wt/app" # dispositions récentes : le code est dans app/ (à calculer une fois la copie de travail créée)
     if [ ! -d "$src/node_modules" ]; then
-      (cd "$src" && npm ci --no-audit --no-fund --loglevel=error && { [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs || true; })
+      (cd "$src" && npm ci --no-audit --no-fund --loglevel=error && pin_latest_model "$PWD" && { [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs || true; })
     fi
   fi
   (
     cd "$src"
-    # base figée (ancienne version) : copie embarquée du classeur ; version actuelle : classeur en ligne comme le site principal
-    [ "$base" = "$CURRENT" ] || export MODEL_LIVE_URL="http://archive.invalid/model.xlsx"
     VARIANT_CONFIG="$APP/variants/$slug.json" APP_SLUG="$slug" \
       npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
   )

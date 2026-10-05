@@ -44,6 +44,8 @@ export interface AppState {
 // v6 : repart à zéro (les anciennes configurations ne sont pas reprises) ; une configuration jamais modifiée n'est plus stockée, elle suit le défaut du site.
 // une clé par publication (version ou affichage enregistré) : elles partagent la même origine sans se mélanger
 const KEY = `monaco-dashboard-${__APP_SLUG__}`
+/** Révision de l'affichage par défaut de cette version : une configuration enregistrée dans le navigateur avant cette révision est remplacée par le nouveau défaut (la typographie choisie est conservée). */
+const CONFIG_REV = 2
 const HISTORY_MAX = 60
 
 const SIDEBAR_KEY = `monaco-dashboard-sidebar-${__APP_SLUG__}`
@@ -167,7 +169,13 @@ function load(): AppState {
       if (o.lens === 'need' || o.lens === 'addressable') base.lens = o.lens
       base.scenario = [0, 1, 2].includes(o.scenario) ? o.scenario : 1
       // config absente = « jamais personnalisée » : on suit toujours l'affichage par défaut le plus récent du site
-      base.config = o.config ? sanitizeConfig(o.config) : userDefaultConfig()
+      if (!o.config) base.config = userDefaultConfig()
+      else if (o.rev === CONFIG_REV) base.config = sanitizeConfig(o.config)
+      else {
+        // défaut modifié depuis (p. ex. V5 : affichage plein écran) : nouveau défaut, en gardant la taille / le gras du texte déjà réglés
+        const old = sanitizeConfig(o.config), d = userDefaultConfig()
+        base.config = { ...d, theme: { ...d.theme, typo: old.theme.typo, metrics: { ...d.theme.metrics, fontScale: old.theme.metrics.fontScale } } }
+      }
     }
   } catch { /* stockage indisponible ou corrompu : on repart du défaut */ }
   const shared = readShared()
@@ -192,7 +200,7 @@ function persist() {
   clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ overrides: toOverrides(state.params), scenario: state.scenario, lens: state.lens, config: JSON.stringify(state.config) === JSON.stringify(userDefaultConfig()) ? null : state.config }))
+      localStorage.setItem(KEY, JSON.stringify({ rev: CONFIG_REV, overrides: toOverrides(state.params), scenario: state.scenario, lens: state.lens, config: JSON.stringify(state.config) === JSON.stringify(userDefaultConfig()) ? null : state.config }))
     } catch { /* noop */ }
   }, 250)
 }
