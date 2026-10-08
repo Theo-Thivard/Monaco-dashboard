@@ -26,6 +26,8 @@ export interface HypDef {
   excelRow: string
   /** libellé de la ligne dans l'Excel (colonne D de 1_Inputs&Hyp) : c'est lui qui relie l'hypothèse à sa cellule */
   excelLabel: string
+  /** anciens intitulés du même paramètre dans les versions précédentes de l'Excel (v4 et antérieures) */
+  excelAlt?: string[]
   /** titre du bloc de l'Excel (colonne D) après lequel se trouve la ligne : sert à départager un intitulé répété dans plusieurs blocs */
   excelSection?: string
   /** colonnes lues : trois scénarios (Bas / Central / Haut), la colonne « Bas », ou la colonne « Valeur » */
@@ -56,10 +58,10 @@ const hyp = (b: Base): HypDef => ({ control: 'slider', def: [], source: '', exce
 
 const eff = (id: string, label: string, excelLabel: string, description: string) =>
   hyp({ id, label, description, category: 'growth', unit: 'pct', min: -0.02, max: 0.08, step: 0.001, excelLabel, excelMode: 'scenarios' })
-const intens = (id: string, label: string, excelLabel: string) =>
-  hyp({ id, label, description: 'Hausse annuelle du besoin IT par utilisateur, hors IA, de 2026 à 2035', category: 'growth', unit: 'pct', min: 0, max: 0.25, step: 0.001, excelLabel, excelMode: 'scenarios', role: 'intensity' })
-const ia = (id: string, label: string, excelLabel: string) =>
-  hyp({ id, label, description: 'Besoin IT additionnel lié à l\'IA en 2035, en % du besoin hors IA', category: 'ai', unit: 'pct', min: 0, max: 2, step: 0.01, excelLabel, excelMode: 'scenarios', role: 'ai' })
+const intens = (id: string, label: string, excelLabel: string, excelAlt?: string[]) =>
+  hyp({ id, label, description: 'Hausse annuelle du besoin IT par utilisateur, hors IA, de 2026 à 2035', category: 'growth', unit: 'pct', min: 0, max: 0.25, step: 0.001, excelLabel, excelAlt, excelMode: 'scenarios', role: 'intensity' })
+const ia = (id: string, label: string, excelLabel: string, excelAlt?: string[]) =>
+  hyp({ id, label, description: 'Besoin IT additionnel lié à l\'IA en 2035, en % du besoin hors IA', category: 'ai', unit: 'pct', min: 0, max: 2, step: 0.01, excelLabel, excelAlt, excelMode: 'scenarios', role: 'ai' })
 const adr = (id: string, label: string, excelLabel: string, description: string) =>
   hyp({ id, label, description, category: 'capture', unit: 'pct', min: 0, max: 1, step: 0.01, excelLabel, excelMode: 'scenarios' })
 
@@ -67,12 +69,12 @@ export const HYPS: HypDef[] = [
   eff('gEffPub', 'Effectifs publics (croissance annuelle)', 'Croissance annuelle effectifs publics', 'Croissance annuelle des effectifs du secteur public'),
   eff('gEffFin', 'Effectifs finance (croissance annuelle)', 'Croissance annuelle effectifs finance', 'Croissance annuelle des effectifs de la finance'),
   eff('gEffPriv', 'Effectifs privé hors finance (croissance annuelle)', 'Croissance annuelle effectifs privé hors finance', 'Croissance annuelle des effectifs du privé hors finance (et de Monaco Telecom)'),
-  intens('gIntPub', 'Intensité numérique public (hors IA)', 'Croissance annuelle intensité numérique hors IA – public'),
-  intens('gIntFin', 'Intensité numérique finance (hors IA)', 'Croissance annuelle intensité numérique hors IA – finance'),
-  intens('gIntPriv', 'Intensité numérique hors finance (hors IA)', 'Croissance annuelle intensité numérique hors IA – hors finance'),
-  ia('iaPub', 'Surcouche IA 2035 – public', 'Surcouche IA 2035 – public'),
-  ia('iaFin', 'Surcouche IA 2035 – finance', 'Surcouche IA 2035 – finance'),
-  ia('iaPriv', 'Surcouche IA 2035 – hors finance', 'Surcouche IA 2035 – hors finance'),
+  intens('gIntPub', 'Intensité numérique public (hors IA)', 'Croissance annuelle des besoins IT hors IA – public', ['Croissance annuelle intensité numérique hors IA – public']),
+  intens('gIntFin', 'Intensité numérique finance (hors IA)', 'Croissance annuelle des besoins IT hors IA – privé finance', ['Croissance annuelle intensité numérique hors IA – finance']),
+  intens('gIntPriv', 'Intensité numérique hors finance (hors IA)', 'Croissance annuelle des besoins IT hors IA – privé hors finance', ['Croissance annuelle intensité numérique hors IA – hors finance']),
+  ia('iaPub', 'Surcouche IA 2035 – public', 'Besoins IT additionnels liés à l’IA – public', ['Surcouche IA 2035 – public']),
+  ia('iaFin', 'Surcouche IA 2035 – finance', 'Besoins additionnels liés à l’IA – finance', ['Surcouche IA 2035 – finance']),
+  ia('iaPriv', 'Surcouche IA 2035 – hors finance', 'Besoins additionnels liés à l’IA – hors finance', ['Surcouche IA 2035 – hors finance']),
   adr('adrPub', 'Part captable – public, CHPG, DSP, Monaco Telecom', 'Part adressable Monaco – public', 'Part du besoin hors IA hébergée à Monaco pour les entités publiques et Monaco Telecom'),
   adr('adrFin', 'Part captable – finance', 'Part adressable Monaco – finance', 'Part du besoin hors IA de la finance hébergée à Monaco'),
   adr('adrPriv', 'Part captable – privé hors finance', 'Part adressable Monaco – privé hors finance', 'Part du besoin hors IA du privé hors finance hébergée à Monaco'),
