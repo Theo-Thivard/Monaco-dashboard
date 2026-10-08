@@ -85,7 +85,9 @@ export function compare(a: Val, b: Val): number {
   if (ra !== rb) return ra - rb
   if (typeof a === 'string') { const x = a.toLowerCase(), y = (b as string).toLowerCase(); return x < y ? -1 : x > y ? 1 : 0 }
   const x = Number(a), y = Number(b)
-  return x < y ? -1 : x > y ? 1 : 0
+  // Excel compare les nombres sur 15 chiffres significatifs (ex. 0,1+0,2=0,3 est VRAI)
+  if (x === y || Number(x.toPrecision(15)) === Number(y.toPrecision(15))) return 0
+  return x < y ? -1 : 1
 }
 export const eqLoose = (a: Val, b: Val) => {
   if (a instanceof XlError || b instanceof XlError) return false
@@ -180,6 +182,16 @@ function roundTo(x: number, d: number, mode: 'round' | 'up' | 'down'): number {
   return r / f
 }
 
+/** Critère de SUMIF / SUMIFS : valeur, ou texte « >5 », « <>x »… */
+function criterion(crit: Any): (v: Val) => boolean {
+  const c = scalar(crit)
+  if (typeof c !== 'string') return (v) => eqLoose(v, c)
+  const m = /^(<=|>=|<>|<|>|=)?(.*)$/.exec(c)!
+  const op = m[1] ?? '='
+  const rhs: Val = m[2] !== '' && !Number.isNaN(Number(m[2])) ? Number(m[2]) : m[2]
+  return (v) => { if (v === null || v instanceof XlError) return false; if (rank(v) !== rank(rhs)) return false; const k = compare(v, rhs); return op === '=' ? k === 0 : op === '<>' ? k !== 0 : op === '<' ? k < 0 : op === '>' ? k > 0 : op === '<=' ? k <= 0 : k >= 0 }
+}
+
 // ---------------------------------------------------------------- table des fonctions (arguments déjà évalués)
 type Fn = (...a: Any[]) => Any
 export const FUNCTIONS: Record<string, Fn> = {
@@ -261,15 +273,28 @@ export const FUNCTIONS: Record<string, Fn> = {
   SUMIF: (rng, crit, sumRng) => {
     const R = flat(rng)
     const S = sumRng === undefined ? R : flat(sumRng)
-    const c = scalar(crit)
-    let test: (v: Val) => boolean
-    if (typeof c === 'string') {
-      const m = /^(<=|>=|<>|<|>|=)?(.*)$/.exec(c)!
-      const op = m[1] ?? '='
-      const rhs: Val = m[2] !== '' && !Number.isNaN(Number(m[2])) ? Number(m[2]) : m[2]
-      test = (v) => { if (v === null || v instanceof XlError) return false; if (rank(v) !== rank(rhs)) return false; const k = compare(v, rhs); return op === '=' ? k === 0 : op === '<>' ? k !== 0 : op === '<' ? k < 0 : op === '>' ? k > 0 : op === '<=' ? k <= 0 : k >= 0 }
-    } else test = (v) => eqLoose(v, c)
+    const test = criterion(crit)
     return R.reduce<number>((s, v, i) => (test(v) && typeof S[i] === 'number' ? s + (S[i] as number) : s), 0)
+  },
+  SUMIFS: (sumRng, ...pairs) => {
+    if (!pairs.length || pairs.length % 2) throw new XlError('#VALUE!')
+    const S = flat(sumRng)
+    const tests: { R: Val[]; test: (v: Val) => boolean }[] = []
+    for (let i = 0; i < pairs.length; i += 2) {
+      const R = flat(pairs[i])
+      if (R.length !== S.length) throw new XlError('#VALUE!')
+      tests.push({ R, test: criterion(pairs[i + 1]) })
+    }
+    return S.reduce<number>((s, v, i) => (typeof v === 'number' && tests.every((t) => t.test(t.R[i])) ? s + v : s), 0)
+  },
+  /** RRI(n, pv, fv) = taux de croissance périodique équivalent : (fv/pv)^(1/n) - 1 */
+  RRI: (n, pv, fv) => {
+    const N = toNum(n), P = toNum(pv), F = toNum(fv)
+    if (N <= 0) throw new XlError('#NUM!')
+    if (P === 0) throw new XlError('#DIV/0!')
+    const q = F / P
+    if (q < 0) throw new XlError('#NUM!')
+    return Math.pow(q, 1 / N) - 1
   },
 }
 
