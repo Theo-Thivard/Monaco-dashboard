@@ -67,7 +67,11 @@ function labels(wb: Workbook, sh: Sheet): { row: number; col: number; text: stri
 // ------------------------------------------------------------------ hypothèses -> cellules d'entrée
 function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
   const labs = labels(wb, inputs)
-  const find = (label: string, section?: string) => {
+  const find = (label: string, section?: string, alts: string[] = []): { row: number; col: number; text: string } | null => {
+    for (const l of [label, ...alts]) { const r = find1(l, section); if (r) return r }
+    return null
+  }
+  const find1 = (label: string, section?: string) => {
     const want = norm(label)
     // un même intitulé peut servir dans plusieurs blocs (ex. « Surcroît métier santé » pour le CHPG et les Pompiers) : on cherche après le titre du bloc
     const sec = section ? labs.find((l) => l.text.startsWith(norm(section))) : undefined
@@ -94,7 +98,7 @@ function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
   const fromExcel: Record<string, HypFromExcel & { cells: number[] }> = {}
   const missing: string[] = []
   for (const h of HYPS) {
-    const hit = find(h.excelLabel, h.excelSection)
+    const hit = find(h.excelLabel, h.excelSection, h.excelAlt)
     if (!hit) { missing.push(`« ${h.excelLabel} »`); continue }
     let cols: number[] = []
     let hdr: { row: number; cols: number[] } | null = null
