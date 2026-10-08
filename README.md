@@ -7,7 +7,7 @@ Dashboard interactif construit à partir du classeur Excel [`Monaco_Besoins_IT_v
 | Version &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Ce qu'elle apporte par rapport aux précédentes |
 |---|---|
 | [V4.couleurs_2](https://theo-thivard.github.io/Monaco-dashboard/v4-couleurs-2/#/globale)| Affichage de la V4 enregistré comme version à part entière (même code, mise en page 19h01). |
-| [V4.couleurs_3](https://theo-thivard.github.io/Monaco-dashboard/v4-couleurs-3-2/#/scenario/central)| Affichage de la V4 enregistré comme version à part entière (même code, mise en page 19h01). |
+| [V4.couleurs_3](https://theo-thivard.github.io/Monaco-dashboard/v4-couleurs-3/#/scenario/central)| Affichage de la V4 enregistré comme version à part entière (même code, mise en page 19h01). |
 | [V4](https://theo-thivard.github.io/Monaco-dashboard/) | Modification de la taille du texte ; **légende « [unité ; date] »** ; valeur 2026 au départ des courbes; **bandeaux d'hypothèses indépendants** (générés/adressables); **unité modifiable dans chaque cellule de chiffres**; menu client réduit à quatre actions. |
 
 **À savoir pour toutes les versions**
