@@ -67,18 +67,23 @@ jq -c '.[]' "$APP/versions.json" | while read -r v; do
 done
 
 # Affichages enregistrés : « <version>-<nom> ». Le code est celui de la version de base (version actuelle = ce dépôt).
+# Les affichages de la version actuelle se construisent en parallèle (même code, dossiers de sortie distincts) ; leur journal est affiché ensuite, groupe par groupe.
 CURRENT="$(jq -r .slug "$APP/version.json")"
-[ -f "$APP/variants/index.json" ] && jq -c '.[]' "$APP/variants/index.json" | while read -r v; do
-  slug="$(jq -r .slug <<<"$v")"
-  base="$(jq -r .base <<<"$v")"
-  echo "::group::Affichage $slug (base $base)"
-  if [ "$base" != "$CURRENT" ]; then
+[ -f "$APP/variants/index.json" ] && jq -c '.[]' "$APP/variants/index.json" | {
+  pids=(); logs=(); fail=0
+  while read -r v; do
+    slug="$(jq -r .slug <<<"$v")"
+    base="$(jq -r .base <<<"$v")"
+    if [ "$base" = "$CURRENT" ]; then
+      log="$WORK/aff-$slug.log"
+      (cd "$APP" && VARIANT_CONFIG="$APP/variants/$slug.json" APP_SLUG="$slug" \
+        npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir) >"$log" 2>&1 &
+      pids+=($!); logs+=("Affichage $slug (base $base)|$log")
+      continue
+    fi
+    echo "::group::Affichage $slug (base $base)"
     vkey="aff-$slug-$(git -C "$REPO" rev-parse "$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$APP/versions.json")")-$(sha1sum "$APP/variants/$slug.json" | cut -c1-12)-$MODEL_KEY"
     if restore_cache "$vkey" "$DIST/$slug"; then echo "(inchangé : réutilisé)"; echo "::endgroup::"; continue; fi
-  fi
-  if [ "$base" = "$CURRENT" ]; then
-    src="$APP"
-  else
     ref="$(jq -r --arg b "$base" '.[] | select(.slug==$b) | .ref' "$APP/versions.json")"
     [ -n "$ref" ] || { echo "version de base inconnue : $base"; exit 1; }
     wt="$WORK/base-$base"
@@ -87,15 +92,20 @@ CURRENT="$(jq -r .slug "$APP/version.json")"
     if [ ! -d "$src/node_modules" ]; then
       (cd "$src" && npm ci --no-audit --no-fund --loglevel=error && pin_latest_model "$PWD" && { [ -f scripts/sync-model.mjs ] && node scripts/sync-model.mjs || true; })
     fi
-  fi
-  (
-    cd "$src"
-    VARIANT_CONFIG="$APP/variants/$slug.json" APP_SLUG="$slug" \
-      npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
-  )
-  [ "$base" = "$CURRENT" ] || save_cache "$vkey" "$DIST/$slug" "aff-$slug-"
-  echo "::endgroup::"
-done
+    (
+      cd "$src"
+      VARIANT_CONFIG="$APP/variants/$slug.json" APP_SLUG="$slug" \
+        npx vite build --base="$PREFIX/$slug/" --outDir "$DIST/$slug" --emptyOutDir
+    )
+    save_cache "$vkey" "$DIST/$slug" "aff-$slug-"
+    echo "::endgroup::"
+  done
+  for i in "${!pids[@]}"; do
+    wait "${pids[$i]}" || fail=1
+    echo "::group::${logs[$i]%%|*}"; cat "${logs[$i]#*|}"; echo "::endgroup::"
+  done
+  exit "$fail"
+}
 
 # Bandeau « Autres versions » sur les versions figées (versions archivées et affichages de versions archivées)
 ARCHIVED_SLUGS="$(jq -r '.[].slug' "$APP/versions.json" | tr '\n' ' ')"
