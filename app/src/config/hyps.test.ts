@@ -9,9 +9,9 @@ import { createDefaultConfig } from './defaults'
 import { defaultHypSet, hypContext, hypsOf } from './hyps'
 
 describe('bandeaux d\'hypothèses indépendants', () => {
-  it('Besoins générés : intensités numériques et surcouches IA ; Besoins adressables : toutes les parts captables', () => {
+  it('Besoins générés : intensités numériques et surcouches IA (dont public DSP) ; Besoins adressables : toutes les parts captables', () => {
     const need = defaultHypSet('need')
-    expect(need.length).toBe(6)
+    expect(need.length).toBe(8)
     expect(need.every((id) => ['intensity', 'ai'].includes(HYP_BY_ID[id].role ?? ''))).toBe(true)
     const addr = defaultHypSet('addressable')
     expect(addr.length).toBe(6)
