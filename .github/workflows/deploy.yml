@@ -52,6 +52,9 @@ jobs:
           enablement: true
       - run: npm ci
         working-directory: app
+      # L'Excel est-il lisible par le dashboard ? Sinon la publication s'arrête ici (le site en ligne reste inchangé), avec la cellule / fonction / intitulé en cause
+      - run: npm run check:model
+        working-directory: app
       - run: npm test
         working-directory: app
       - run: npm run build

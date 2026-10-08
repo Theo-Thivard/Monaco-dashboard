@@ -7,9 +7,10 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "check:model": "node scripts/sync-model.mjs && vite-node scripts/check-model.ts",
     "test": "vitest run",
     "predev": "node scripts/sync-model.mjs",
-    "prebuild": "node scripts/sync-model.mjs",
+    "prebuild": "node scripts/sync-model.mjs && vite-node scripts/check-model.ts",
     "pretest": "node scripts/sync-model.mjs"
   },
   "dependencies": {

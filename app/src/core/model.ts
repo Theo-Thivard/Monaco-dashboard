@@ -64,6 +64,17 @@ function labels(wb: Workbook, sh: Sheet): { row: number; col: number; text: stri
   return out
 }
 
+// mots significatifs d'un intitulé (sans ponctuation, articles ni mots outils) : sert à retrouver une hypothèse renommée
+const STOP = new Set(['de', 'du', 'des', 'la', 'le', 'les', 'l', 'd', 'a', 'au', 'aux', 'en', 'et', 'par', 'pour', 'sur', 'liees', 'liee', 'lie', 'annuelle', 'annuel'])
+const tokens = (s: string): Set<string> => new Set(norm(s).replace(/[^a-z0-9]+/g, ' ').split(' ').filter((w) => w && !STOP.has(w)))
+/** part de mots en commun (0..1) : |A ∩ B| / |A ∪ B| */
+function similarity(a: Set<string>, b: Set<string>): number {
+  if (!a.size || !b.size) return 0
+  let inter = 0
+  for (const w of a) if (b.has(w)) inter++
+  return inter / (a.size + b.size - inter)
+}
+
 // ------------------------------------------------------------------ hypothèses -> cellules d'entrée
 function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
   const labs = labels(wb, inputs)
@@ -96,10 +107,7 @@ function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
   const hypCells: Record<string, number[]> = {}
   const hypAddr: Record<string, string[]> = {}
   const fromExcel: Record<string, HypFromExcel & { cells: number[] }> = {}
-  const missing: string[] = []
-  for (const h of HYPS) {
-    const hit = find(h.excelLabel, h.excelSection, h.excelAlt)
-    if (!hit) { missing.push(`« ${h.excelLabel} »`); continue }
+  const link = (h: (typeof HYPS)[number], hit: { row: number; col: number }): boolean => {
     let cols: number[] = []
     let hdr: { row: number; cols: number[] } | null = null
     if (h.excelMode === 'value') {
@@ -113,7 +121,7 @@ function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
         if (bas !== undefined && cen !== undefined && hau !== undefined) cols = h.excelMode === 'bas' ? [bas] : [bas, cen, hau]
       }
     }
-    if (!cols.length || !hdr) { diag.push({ level: 'error', message: `Colonnes introuvables pour « ${h.excelLabel} » (en-tête « Scénario Bas / Central / Haut » ou « Valeur » absent au-dessus de la ligne).`, where: addr(hit.row, hit.col) }); continue }
+    if (!cols.length || !hdr) return false
     const cells = cols.map((c) => inputs.id(hit.row, c))
     hypCells[h.id] = cells
     hypAddr[h.id] = cols.map((c) => addr(hit.row, c))
@@ -121,8 +129,31 @@ function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
     const srcCol = (() => { for (let c = 0; c < inputs.cols; c++) { const v = wb.consts[inputs.id(hdr!.row, c)]; if (typeof v === 'string' && norm(v).startsWith('source')) return c } return -1 })()
     const srcText = srcCol >= 0 ? wb.consts[inputs.id(hit.row, srcCol)] : null
     fromExcel[h.id] = { def: [], row: String(hit.row + 1), source: typeof srcText === 'string' ? srcText : '', cells }
+    return true
   }
-  if (missing.length) diag.push({ level: 'error', message: `Hypothèses du dashboard introuvables dans l'Excel (intitulé modifié ou ligne supprimée ?) : ${missing.join(' ; ')}.` })
+  // 1) intitulé exact (ou ancien intitulé connu)
+  const claimed = new Set<number>()
+  const pending: typeof HYPS = []
+  for (const h of HYPS) {
+    const hit = find(h.excelLabel, h.excelSection, h.excelAlt)
+    if (hit && link(h, hit)) claimed.add(hit.row)
+    else { if (hit) diag.push({ level: 'warning', message: `Colonnes introuvables pour « ${h.excelLabel} » (en-tête « Scénario Bas / Central / Haut » ou « Valeur » absent au-dessus de la ligne) : hypothèse ignorée.`, where: addr(hit.row, hit.col) }); pending.push(h) }
+  }
+  // 2) intitulé modifié : recherche tolérante (mots en commun), jamais une ligne déjà prise par une autre hypothèse
+  const missing: string[] = []
+  for (const h of pending) {
+    const sec = h.excelSection ? labs.find((l) => l.text.startsWith(norm(h.excelSection!))) : undefined
+    const pool = labs.filter((l) => !claimed.has(l.row) && (!h.excelSection || (sec && l.row > sec.row)))
+    const want = tokens(h.excelLabel)
+    const scored = pool.map((l) => ({ l, s: similarity(want, tokens(l.text)) })).filter((x) => x.s >= 0.6).sort((a, b) => b.s - a.s)
+    const ok = scored.length > 0 && (scored.length === 1 || scored[0].s - scored[1].s >= 0.15) && link(h, scored[0].l)
+    if (ok) {
+      claimed.add(scored[0].l.row)
+      const raw = wb.consts[inputs.id(scored[0].l.row, scored[0].l.col)]
+      diag.push({ level: 'warning', message: `Intitulé modifié dans l'Excel : « ${h.excelLabel} » reconnu comme « ${String(raw)} » (ligne ${scored[0].l.row + 1}). Vérifiez que c'est bien la même hypothèse.`, where: addr(scored[0].l.row, scored[0].l.col) })
+    } else missing.push(`« ${h.excelLabel} »`)
+  }
+  if (missing.length) diag.push({ level: 'warning', message: `${missing.length} hypothèse(s) du dashboard introuvable(s) dans l'Excel (intitulé modifié ou ligne supprimée) : ${missing.join(' ; ')}. Elles ne sont pas pilotables ici et le calcul garde la valeur de l'Excel ; les autres hypothèses fonctionnent normalement.` })
   return { hypCells, hypAddr, fromExcel }
 }
 
@@ -180,7 +211,6 @@ function mapScenarios(wb: Workbook, calc: Sheet, diag: Diagnostic[]): ScenarioMa
 export function buildModel(buf: ArrayBuffer | Uint8Array, meta: ModelMeta): Model {
   const wb = Workbook.fromBuffer(buf)
   const diagnostics: Diagnostic[] = []
-  for (const p of wb.problems) diagnostics.push({ level: 'error', message: p.message, where: p.where })
   const inputs = findSheet(wb, /inputs/, '1_Inputs&Hyp')
   const calc = findSheet(wb, /calcul/, '2_Calculs')
   const { hypCells, hypAddr, fromExcel } = mapHypotheses(wb, inputs, diagnostics)
@@ -198,9 +228,23 @@ export function buildModel(buf: ArrayBuffer | Uint8Array, meta: ModelMeta): Mode
 
   // sorties lisibles ?
   const outputIds = scenarios.flatMap((s) => [...Object.values(s.blocks).flatMap((b) => Object.values(b)), ...Object.values(s.totals ?? {})])
+  // formules illisibles / fonctions inconnues : bloquant seulement si le résultat en dépend (onglets de slides, notes… sans conséquence)
+  const needed = wb.dependencies(outputIds)
+  let explained = false
+  const ignored: string[] = []
+  for (const p of wb.problems) {
+    const where = p.cell >= 0 ? wb.where(p.cell) : p.where
+    if (needed.has(p.cell)) { explained = true; diagnostics.push({ level: 'error', message: `${p.message} — cette cellule est nécessaire au calcul des résultats.`, where }) }
+    else ignored.push(where)
+  }
+  if (ignored.length) {
+    const sheets = [...new Set(ignored.map((w) => w.split('!')[0]))]
+    diagnostics.push({ level: 'warning', message: `${ignored.length} formule(s) non prises en charge par le dashboard ont été ignorées car elles ne servent pas au calcul (onglet(s) : ${sheets.join(', ')}). Exemples : ${ignored.slice(0, 3).join(', ')}.` })
+  }
+
   for (const g of outputIds) {
     const v = base.get(g)
-    if (typeof v !== 'number') {
+    if (typeof v !== 'number' && !explained) {
       const sh = wb.sheets.find((x) => g >= x.offset && g < x.offset + x.rows * x.cols)!
       const k = g - sh.offset
       diagnostics.push({ level: 'error', message: `Résultat illisible : ${v instanceof XlError ? 'erreur Excel ' + v.code : 'valeur non numérique'}.`, where: `${sh.name}!${addr(Math.floor(k / sh.cols), k % sh.cols)}` })

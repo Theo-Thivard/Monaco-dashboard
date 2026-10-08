@@ -36,6 +36,8 @@ export interface HypDef {
   role?: 'intensity' | 'ai'
   options?: { value: number; label: string }[]
   note?: string
+  /** vrai si l'intitulé est introuvable dans l'Excel chargé : l'hypothèse n'est alors pas pilotable (ni affichée) */
+  unlinked?: boolean
 }
 
 export const CATEGORIES: { id: string; title: string }[] = [
@@ -99,7 +101,8 @@ export interface HypFromExcel { def: number[]; row: string; source: string }
 export function initHypotheses(values: Record<string, HypFromExcel>) {
   for (const h of HYPS) {
     const v = values[h.id]
-    if (!v) continue
+    h.unlinked = !v
+    if (!v) { h.def = Array(h.single ? 1 : 3).fill(0); h.excelRow = ''; continue }
     h.def = v.def
     h.excelRow = v.row
     if (v.source) h.source = v.source
@@ -109,6 +112,9 @@ export function initHypotheses(values: Record<string, HypFromExcel>) {
     if (hi > h.max) h.max = Math.ceil((hi + Math.abs(hi) * 0.1 + h.step) / h.step) * h.step
   }
 }
+
+/** Hypothèses reliées à une cellule de l'Excel chargé (les autres ne sont ni affichées ni pilotables). */
+export const linkedHyps = (): HypDef[] => HYPS.filter((h) => !h.unlinked)
 
 export const HYP_BY_ID: Record<string, HypDef> = Object.fromEntries(HYPS.map((h) => [h.id, h]))
 

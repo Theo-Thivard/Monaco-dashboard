@@ -1,5 +1,5 @@
 import { isDeadHyp } from '../core/actors'
-import { CATEGORIES, HYPS } from '../core/hypotheses'
+import { CATEGORIES, linkedHyps } from '../core/hypotheses'
 import type { Env } from './env'
 
 /** Registre complet des hypothèses : valeurs courantes, défaut Excel, plage, source. */
@@ -14,7 +14,7 @@ export function AssumptionsTable({ env }: { env: Env }) {
         <tbody>
           {CATEGORIES.map((c) => (
             <FragmentRows key={c.id} title={c.title}>
-              {HYPS.filter((h) => h.category === c.id).map((h) => {
+              {linkedHyps().filter((h) => h.category === c.id).map((h) => {
                 const cur = snap.params[h.id]
                 const cells = h.single ? [cur[0]] : cur
                 return (

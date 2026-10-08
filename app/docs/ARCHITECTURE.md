@@ -19,6 +19,11 @@ Ce qui se passe au lancement : le dashboard tente d'abord la version **en ligne*
 
 Fonctions Excel prises en charge : opérateurs `+ - * / ^ & % = <> < > <= >=`, `SUM, PRODUCT, MIN, MAX, AVERAGE, COUNT, ABS, ROUND/UP/DOWN, INT, MOD, POWER, SQRT, EXP, LN, LOG, IF, IFS, IFERROR, IFNA, AND, OR, NOT, XLOOKUP, VLOOKUP, HLOOKUP, INDEX, MATCH, SUMPRODUCT, SUMIF, CHOOSE`, texte (`CONCAT, LEFT, RIGHT, MID, LEN…`). Une fonction inconnue est signalée par son nom.
 
+## Lecture tolérante de l'Excel
+- **Seules les cellules qui servent au calcul sont bloquantes.** Une fonction inconnue ou une formule illisible dans un onglet non utilisé (slides, notes…) devient un avertissement ; dans une cellule dont dépendent les résultats, c'est une erreur qui nomme la cellule et la fonction.
+- **Intitulé d'hypothèse modifié** : ancien intitulé connu (`excelAlt`), puis recherche tolérante (mots en commun, jamais une ligne déjà prise par une autre hypothèse) avec un avertissement « reconnu comme … ». Si elle reste introuvable, l'hypothèse n'est ni affichée ni pilotable (les autres fonctionnent), et l'avertissement liste les intitulés non reconnus.
+- **Avant la mise en ligne** : `npm run check:model` (lancé par le déploiement et par `npm run build`) lit l'Excel qui va être publié et échoue avec la cause précise s'il est illisible ; le site en ligne n'est alors pas remplacé.
+
 ## Navigation et lecture
 Barre fixe : **Globale** · **Scénario ▾** · **Acteurs ▾** (+ ⚙). Sous la barre, deux onglets de lecture : **Besoins générés** (livrable 2, par défaut) et **Besoins adressables** (livrable 3). Toute la page suit l'onglet choisi (graphiques, chiffres, messages clés).
 
