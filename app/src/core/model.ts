@@ -4,7 +4,9 @@
 // Le lien entre l'Excel et le dashboard se fait par INTITULÉS (lignes de la colonne D, en-têtes de colonnes), pas par numéros
 // de cellules : insérer une ligne ou une colonne dans l'Excel ne casse rien tant que les intitulés restent.
 
-import { HYPS, initHypotheses, type HypFromExcel, type Params } from './hypotheses'
+import { HYPS, initHypotheses, type HypDef, type Params } from './hypotheses'
+import { discoverHypotheses, type Effects } from './discover'
+import { norm } from './text'
 import { addr, Run, Workbook, type Sheet } from './xl/workbook'
 import { XlError, type Val } from './xl/functions'
 
@@ -36,6 +38,9 @@ export interface Model {
   hypCells: Record<string, number[]>
   /** adresses lisibles (F34, G34, H34) */
   hypAddr: Record<string, string[]>
+  /** hypothèses pilotables lues dans l'Excel (voir discover.ts) et leurs groupes */
+  hypDefs: HypDef[]
+  hypCategories: { id: string; title: string }[]
   scenarios: ScenarioMap[]
   diagnostics: Diagnostic[]
   /** valeurs fixes de l'Excel (non pilotables) qui alimentent le résultat : étiquette, valeur, adresse */
@@ -45,8 +50,7 @@ export interface Model {
 }
 
 // ------------------------------------------------------------------ utilitaires
-export const norm = (s: string) =>
-  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[–—−]/g, '-').replace(/ /g, ' ').replace(/\s+/g, ' ').trim()
+export { norm }
 
 function findSheet(wb: Workbook, re: RegExp, what: string): Sheet {
   const s = wb.sheets.find((x) => re.test(norm(x.name)))
@@ -62,68 +66,6 @@ function labels(wb: Workbook, sh: Sheet): { row: number; col: number; text: stri
     if (typeof v === 'string' && !wb.isFormula(sh.id(r, c))) out.push({ row: r, col: c, text: norm(v) })
   }
   return out
-}
-
-// ------------------------------------------------------------------ hypothèses -> cellules d'entrée
-function mapHypotheses(wb: Workbook, inputs: Sheet, diag: Diagnostic[]) {
-  const labs = labels(wb, inputs)
-  const find = (label: string, section?: string, alts: string[] = []): { row: number; col: number; text: string } | null => {
-    for (const l of [label, ...alts]) { const r = find1(l, section); if (r) return r }
-    return null
-  }
-  const find1 = (label: string, section?: string) => {
-    const want = norm(label)
-    // un même intitulé peut servir dans plusieurs blocs (ex. « Surcroît métier santé » pour le CHPG et les Pompiers) : on cherche après le titre du bloc
-    const sec = section ? labs.find((l) => l.text.startsWith(norm(section))) : undefined
-    if (section && !sec) return null
-    const after = sec ? labs.filter((l) => l.row > sec.row) : labs
-    const hits = after.filter((l) => l.text === want)
-    if (hits.length) return hits[0]
-    const pref = after.filter((l) => l.text.startsWith(want) || (want.length > 12 && want.startsWith(l.text) && l.text.length > 12))
-    return pref[0] ?? null
-  }
-  const headerAbove = (row: number, test: (t: string) => boolean, need = 1): { row: number; cols: number[] } | null => {
-    for (let r = row - 1; r >= Math.max(0, row - 70); r--) {
-      const cols: number[] = []
-      for (let c = 0; c < inputs.cols; c++) {
-        const v = wb.consts[inputs.id(r, c)]
-        if (typeof v === 'string' && test(norm(v))) cols.push(c)
-      }
-      if (cols.length >= need) return { row: r, cols }
-    }
-    return null
-  }
-  const hypCells: Record<string, number[]> = {}
-  const hypAddr: Record<string, string[]> = {}
-  const fromExcel: Record<string, HypFromExcel & { cells: number[] }> = {}
-  const missing: string[] = []
-  for (const h of HYPS) {
-    const hit = find(h.excelLabel, h.excelSection, h.excelAlt)
-    if (!hit) { missing.push(`« ${h.excelLabel} »`); continue }
-    let cols: number[] = []
-    let hdr: { row: number; cols: number[] } | null = null
-    if (h.excelMode === 'value') {
-      hdr = headerAbove(hit.row, (t) => t === 'valeur')
-      cols = hdr ? [hdr.cols[0]] : []
-    } else {
-      hdr = headerAbove(hit.row, (t) => /^(scenario )?(bas|central|haut)$/.test(t), 3)
-      if (hdr) {
-        const pick = (re: RegExp) => hdr!.cols.find((c) => re.test(norm(String(wb.consts[inputs.id(hdr!.row, c)]))))
-        const bas = pick(/bas$/), cen = pick(/central$/), hau = pick(/haut$/)
-        if (bas !== undefined && cen !== undefined && hau !== undefined) cols = h.excelMode === 'bas' ? [bas] : [bas, cen, hau]
-      }
-    }
-    if (!cols.length || !hdr) { diag.push({ level: 'error', message: `Colonnes introuvables pour « ${h.excelLabel} » (en-tête « Scénario Bas / Central / Haut » ou « Valeur » absent au-dessus de la ligne).`, where: addr(hit.row, hit.col) }); continue }
-    const cells = cols.map((c) => inputs.id(hit.row, c))
-    hypCells[h.id] = cells
-    hypAddr[h.id] = cols.map((c) => addr(hit.row, c))
-    // source / rationnel : colonne « Source… » de la même ligne d'en-tête
-    const srcCol = (() => { for (let c = 0; c < inputs.cols; c++) { const v = wb.consts[inputs.id(hdr!.row, c)]; if (typeof v === 'string' && norm(v).startsWith('source')) return c } return -1 })()
-    const srcText = srcCol >= 0 ? wb.consts[inputs.id(hit.row, srcCol)] : null
-    fromExcel[h.id] = { def: [], row: String(hit.row + 1), source: typeof srcText === 'string' ? srcText : '', cells }
-  }
-  if (missing.length) diag.push({ level: 'error', message: `Hypothèses du dashboard introuvables dans l'Excel (intitulé modifié ou ligne supprimée ?) : ${missing.join(' ; ')}.` })
-  return { hypCells, hypAddr, fromExcel }
 }
 
 // ------------------------------------------------------------------ tableaux de résultats (2_Calculs)
@@ -180,27 +122,32 @@ function mapScenarios(wb: Workbook, calc: Sheet, diag: Diagnostic[]): ScenarioMa
 export function buildModel(buf: ArrayBuffer | Uint8Array, meta: ModelMeta): Model {
   const wb = Workbook.fromBuffer(buf)
   const diagnostics: Diagnostic[] = []
-  for (const p of wb.problems) diagnostics.push({ level: 'error', message: p.message, where: p.where })
   const inputs = findSheet(wb, /inputs/, '1_Inputs&Hyp')
   const calc = findSheet(wb, /calcul/, '2_Calculs')
-  const { hypCells, hypAddr, fromExcel } = mapHypotheses(wb, inputs, diagnostics)
   const scenarios = mapScenarios(wb, calc, diagnostics)
 
   // valeurs par défaut = valeurs lues dans l'Excel (les hypothèses sont recalculées si l'Excel les définit par formule)
   const base = wb.evaluate()
-  const values: Record<string, HypFromExcel> = {}
-  for (const [id, f] of Object.entries(fromExcel)) {
-    const def = f.cells.map((g) => { const v = base.get(g); return typeof v === 'number' ? v : NaN })
-    if (def.some(Number.isNaN)) diagnostics.push({ level: 'error', message: `Valeur non numérique dans l'Excel pour « ${HYPS.find((h) => h.id === id)!.excelLabel} » (${hypAddr[id].join(', ')}).` })
-    values[id] = { def, row: f.row, source: f.source }
-  }
-  initHypotheses(values)
 
   // sorties lisibles ?
   const outputIds = scenarios.flatMap((s) => [...Object.values(s.blocks).flatMap((b) => Object.values(b)), ...Object.values(s.totals ?? {})])
+  // formules illisibles / fonctions inconnues : bloquant seulement si le résultat en dépend (onglets de slides, notes… sans conséquence)
+  const needed = wb.dependencies(outputIds)
+  let explained = false
+  const ignored: string[] = []
+  for (const p of wb.problems) {
+    const where = p.cell >= 0 ? wb.where(p.cell) : p.where
+    if (needed.has(p.cell)) { explained = true; diagnostics.push({ level: 'error', message: `${p.message} — cette cellule est nécessaire au calcul des résultats.`, where }) }
+    else ignored.push(where)
+  }
+  if (ignored.length) {
+    const sheets = [...new Set(ignored.map((w) => w.split('!')[0]))]
+    diagnostics.push({ level: 'warning', message: `${ignored.length} formule(s) non prises en charge par le dashboard ont été ignorées car elles ne servent pas au calcul (onglet(s) : ${sheets.join(', ')}). Exemples : ${ignored.slice(0, 3).join(', ')}.` })
+  }
+
   for (const g of outputIds) {
     const v = base.get(g)
-    if (typeof v !== 'number') {
+    if (typeof v !== 'number' && !explained) {
       const sh = wb.sheets.find((x) => g >= x.offset && g < x.offset + x.rows * x.cols)!
       const k = g - sh.offset
       diagnostics.push({ level: 'error', message: `Résultat illisible : ${v instanceof XlError ? 'erreur Excel ' + v.code : 'valeur non numérique'}.`, where: `${sh.name}!${addr(Math.floor(k / sh.cols), k % sh.cols)}` })
@@ -210,6 +157,21 @@ export function buildModel(buf: ArrayBuffer | Uint8Array, meta: ModelMeta): Mode
 
   // cellules dont dépend le résultat : lesquelles sont pilotables, lesquelles sont des valeurs fixes de l'Excel
   const live = wb.liveInputs(outputIds)
+
+  // hypothèses : lues automatiquement dans la structure de l'onglet des hypothèses
+  const col = (k: keyof OutCells) => scenarios.flatMap((s) => ENTITIES.map((e) => s.blocks[e][k]))
+  const watch = { need: col('need'), ia: col('ia'), total: col('total'), addressable: col('addressable') }
+  const moved = (run: Run, ids: number[]) => ids.some((g) => { const a = base.get(g), b = run.get(g); return typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) > 1e-9 * Math.max(1, Math.abs(a)) : a !== b })
+  const moves = (cells: number[]): Effects => {
+    const ov = new Map<number, Val>()
+    for (const g of cells) { const v = base.get(g); ov.set(g, typeof v === 'number' ? v * 1.37 + 0.011 : v) }
+    const run = wb.evaluate(ov)
+    return { need: moved(run, watch.need), ia: moved(run, watch.ia), total: moved(run, watch.total), addressable: moved(run, watch.addressable) }
+  }
+  const found = discoverHypotheses(wb, inputs, live, base, moves, diagnostics)
+  const hypCells = found.cells, hypAddr = found.addr
+  if (!found.defs.length) diagnostics.push({ level: 'error', message: `Aucune hypothèse pilotable trouvée dans l'onglet « ${inputs.name} » : il faut un tableau dont l'en-tête contient « Hypothèse » et « Scénario Bas / Central / Haut » (ou « Valeur »), avec des valeurs saisies qui alimentent le calcul.` })
+
   const controlled = new Set(Object.values(hypCells).flat())
   const fixedInputs: Model['fixedInputs'] = []
   const inLabelCol = (sh: Sheet, row: number) => {
@@ -275,14 +237,14 @@ export function buildModel(buf: ArrayBuffer | Uint8Array, meta: ModelMeta): Mode
     return { formula: wb.formulaOf(sh, row, cc), where: `${sh.name}!${addr(row, cc)}` }
   }
 
-  const model: Model = { wb, meta, hypCells, hypAddr, scenarios, diagnostics, fixedInputs, formulaFor }
+  const model: Model = { wb, meta, hypCells, hypAddr, hypDefs: found.defs, hypCategories: found.categories, scenarios, diagnostics, fixedInputs, formulaFor }
   if (diagnostics.some((d) => d.level === 'error')) throw Object.assign(new ModelError('Le classeur Excel n\'a pas pu être relié au dashboard.'), { diagnostics, model })
   return model
 }
 
 // ------------------------------------------------------------------ singleton
 let current: Model | null = null
-export function setModel(m: Model) { current = m }
+export function setModel(m: Model) { current = m; initHypotheses(m.hypDefs, m.hypCategories) }
 export function getModel(): Model {
   if (!current) throw new ModelError('Modèle Excel non chargé.')
   return current

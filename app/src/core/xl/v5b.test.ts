@@ -18,7 +18,7 @@ describe('classeur Excel v5 (08/10/2026)', () => {
     try { fn(m) } finally { setModel(before) }
   }
 
-  it('se charge sans erreur, les 25 hypothèses ont leur cellule et les formules = valeurs enregistrées par Excel', () => {
+  it('se charge sans erreur, les hypothèses lues automatiquement ont leur cellule et les formules = valeurs enregistrées par Excel', () => {
     withV5((m) => {
       expect(m.diagnostics.filter((d) => d.level === 'error')).toEqual([])
       expect(Object.keys(m.hypCells).sort()).toEqual(HYPS.map((h) => h.id).sort())

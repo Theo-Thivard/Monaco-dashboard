@@ -61,15 +61,18 @@ describe('évaluateur de formules contre LibreOffice (classeur modifié : entré
 })
 
 describe('liaison par intitulés', () => {
-  it('un intitulé renommé dans l\'Excel est signalé clairement (pas de résultat faux en silence)', () => {
+  it('un intitulé renommé dans l\'Excel est repris tel quel dans le dashboard (le dashboard se charge quand même)', () => {
     const x = XLSX.read(fixture('reference-v5.xlsx'), { type: 'buffer', cellFormula: true, sheetStubs: true })
     const ws = x.Sheets['1_Inputs&Hyp']
     ws['D34'] = { t: 's', v: 'Croissance des effectifs du public' }
     const buf = XLSX.write(x, { type: 'array', bookType: 'xlsx' })
-    let err: unknown
-    try { buildModel(buf, { fileName: 'x.xlsx', source: 'file', loadedAt: 0 }) } catch (e) { err = e }
-    expect(err).toBeInstanceOf(ModelError)
-    expect(JSON.stringify((err as { diagnostics: unknown }).diagnostics)).toContain('Croissance annuelle effectifs publics')
+    const m = buildModel(buf, { fileName: 'x.xlsx', source: 'file', loadedAt: 0 })
+    expect(m.diagnostics.filter((d) => d.level === 'error')).toEqual([])
+    // le nom affiché est celui de l'Excel ; l'hypothèse est toujours pilotable (même ligne, mêmes cellules)
+    const h = m.hypDefs.find((x) => x.label === 'Croissance des effectifs du public')
+    expect(h).toBeDefined()
+    expect(m.hypCells[h!.id]).toHaveLength(3)
+    expect(m.hypDefs.some((x) => x.label === 'Croissance annuelle effectifs publics')).toBe(false)
   })
   it('une fonction Excel inconnue est signalée', () => {
     const x = XLSX.read(fixture('reference-v5.xlsx'), { type: 'buffer', cellFormula: true, sheetStubs: true })

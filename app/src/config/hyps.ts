@@ -18,7 +18,7 @@ export const hypContext = (route: Route, lens: Lens): HypContext => (route.kind 
 /** Liste par défaut d'un contexte (lue dans le registre et dans l'Excel : elle suit leurs évolutions). */
 export function defaultHypSet(ctx: HypContext): string[] {
   if (ctx === 'need') return HYPS.filter((h) => h.role === 'intensity' || h.role === 'ai').map((h) => h.id)
-  if (ctx === 'addressable') return HYPS.filter((h) => h.category === 'capture').map((h) => h.id)
+  if (ctx === 'addressable') return HYPS.filter((h) => h.role === 'capture').map((h) => h.id)
   if (ctx.startsWith('actor:')) return actorHyps(ctx.slice(6) as Entity).filter((id) => HYP_BY_ID[id])
   return []
 }

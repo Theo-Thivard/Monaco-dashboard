@@ -15,7 +15,7 @@ describe('bandeaux d\'hypothèses indépendants', () => {
     expect(need.every((id) => ['intensity', 'ai'].includes(HYP_BY_ID[id].role ?? ''))).toBe(true)
     const addr = defaultHypSet('addressable')
     expect(addr.length).toBe(6)
-    expect(addr.every((id) => HYP_BY_ID[id].category === 'capture')).toBe(true)
+    expect(addr.every((id) => HYP_BY_ID[id].role === 'capture')).toBe(true)
   })
   it('chaque acteur a son propre bandeau (hypothèses qui le font varier)', () => {
     for (const a of ACTORS) {

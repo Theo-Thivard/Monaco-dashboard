@@ -71,12 +71,19 @@ export class Workbook {
   consts: Val[] = []
   formulas: (Compiled | null)[] = []
   /** problèmes rencontrés à la lecture (formule illisible, fonction inconnue…) */
-  problems: { where: string; message: string }[] = []
+  problems: { where: string; message: string; cell: number }[] = []
+  /** cellule en cours de compilation (rattache un problème à sa cellule) */
+  private compiling = -1
   private byName = new Map<string, Sheet>()
 
   static fromBuffer(buf: ArrayBuffer | Uint8Array): Workbook {
     const wb = new Workbook()
-    const x = XLSX.read(buf, { type: 'array', cellFormula: true, cellNF: false, cellStyles: false, cellDates: false, sheetStubs: true })
+    let x: XLSX.WorkBook
+    try {
+      x = XLSX.read(buf, { type: 'array', cellFormula: true, cellNF: false, cellStyles: false, cellDates: false, sheetStubs: true })
+    } catch (e) {
+      throw new Error(`Fichier Excel illisible (${(e as Error).message}) : ce n'est peut-être pas un classeur .xlsx valide.`)
+    }
     // 1) dimensions
     const dims = x.SheetNames.map((name) => {
       const ws = x.Sheets[name]
@@ -114,14 +121,17 @@ export class Workbook {
     // 3) formules : analyse + compilation
     for (const p of pending) {
       const where = `${p.sheet.name}!${addr(p.row, p.col)}`
+      wb.compiling = p.sheet.id(p.row, p.col)
       try {
         const ast = parseFormula(p.src)
         wb.formulas[p.sheet.id(p.row, p.col)] = wb.compile(ast, p.sheet, p.src)
       } catch (e) {
-        wb.problems.push({ where, message: `Formule illisible « =${p.src} » : ${(e as Error).message}` })
+        const why = e instanceof XlError ? `référence à un onglet ou une cellule introuvable (${e.code})` : (e as Error).message
+        wb.problems.push({ where, message: `Formule illisible « =${p.src.slice(0, 80)} » : ${why}`, cell: wb.compiling })
         wb.consts[p.sheet.id(p.row, p.col)] = new XlError('#NAME?')
       }
     }
+    wb.compiling = -1
     return wb
   }
 
@@ -145,18 +155,31 @@ export class Workbook {
 
   /** Cellules constantes dont dépend (directement ou non) au moins une des cellules `targets`. */
   liveInputs(targets: number[]): Set<number> {
-    const seen = new Set<number>()
     const live = new Set<number>()
+    for (const g of this.dependencies(targets)) if (!this.formulas[g]) live.add(g)
+    return live
+  }
+
+  /** Toutes les cellules (constantes ET formules) dont dépend au moins une des cellules `targets`, elles-mêmes comprises. */
+  dependencies(targets: number[]): Set<number> {
+    const seen = new Set<number>()
     const stack = [...targets]
     while (stack.length) {
       const g = stack.pop()!
       if (seen.has(g)) continue
       seen.add(g)
       const f = this.formulas[g]
-      if (!f) { live.add(g); continue }
-      for (const r of f.refs) stack.push(r)
+      if (f) for (const r of f.refs) stack.push(r)
     }
-    return live
+    return seen
+  }
+
+  /** Adresse lisible (« Onglet!B12 ») d'une cellule désignée par son identifiant global. */
+  where(g: number): string {
+    const sh = this.sheets.find((x) => g >= x.offset && g < x.offset + x.rows * x.cols)
+    if (!sh) return `#${g}`
+    const k = g - sh.offset
+    return `${sh.name}!${addr(Math.floor(k / sh.cols), k % sh.cols)}`
   }
 
   // ------------------------------------------------------------ compilation
@@ -235,7 +258,7 @@ export class Workbook {
           }
           const f = FUNCTIONS[n.fn]
           if (!f) {
-            wb.problems.push({ where: `${home.name} (${src.slice(0, 60)})`, message: `Fonction Excel non prise en charge : ${n.fn}` })
+            wb.problems.push({ where: `${home.name} (${src.slice(0, 60)})`, message: `Fonction Excel non prise en charge : ${n.fn}`, cell: wb.compiling })
             return () => { throw new XlError('#NAME?') }
           }
           const args = n.args.map((x) => (x ? comp(x) : null))

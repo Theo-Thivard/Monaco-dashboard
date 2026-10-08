@@ -17,7 +17,7 @@ Dashboard interactif construit à partir du classeur Excel [`Monaco_Besoins_IT_v
 - Toutes les versions restent en ligne à leur propre adresse ; un nouveau dashboard n'efface jamais les précédents.
 
 ## Mettre à jour le modèle
-Remplacez le fichier dans le dépôt (*Add file › Upload files*, **même nom** `Monaco_Besoins_IT_v3.xlsx` ; si vous créez `…_v4.xlsx`, le plus élevé est utilisé). Le dashboard reprend valeurs et formules au lancement suivant. Détails et limites : [app/docs/ARCHITECTURE.md](app/docs/ARCHITECTURE.md).
+Remplacez le fichier dans le dépôt (*Add file › Upload files*, **même nom** `Monaco_Besoins_IT_v3.xlsx` ; si vous créez `…_v4.xlsx`, le plus élevé est utilisé). Le dashboard reprend valeurs et formules au lancement suivant. Le dashboard lit lui-même les hypothèses de l'onglet `1_Inputs&Hyp` (noms, valeurs, unités, groupes) : renommer, ajouter ou retirer une ligne d'un tableau d'hypothèses suffit, à condition de respecter les conventions de structure décrites dans la documentation. Détails et limites : [app/docs/ARCHITECTURE.md](app/docs/ARCHITECTURE.md).
 
 ## Organisation du dépôt
 - **`Monaco_Besoins_IT_v3.xlsx`** : votre modèle Excel (le seul fichier à modifier à la main).
