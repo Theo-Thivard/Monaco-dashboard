@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it } from 'vitest'
 import * as XLSX from 'xlsx'
 import { computeAll } from '../engine'
-import { defaultParams, HYPS, linkedHyps } from '../hypotheses'
+import { defaultParams, HYP_BY_ID } from '../hypotheses'
 import { buildModel, ModelError, setModel, type Model } from '../model'
 import { fixture } from '../../test/withModel'
 
@@ -69,26 +69,60 @@ describe('lecture robuste de l\'Excel', () => {
     }
   })
 
-  it('une hypothèse légèrement renommée est retrouvée, avec un avertissement, et donne les mêmes chiffres', () => {
+  it('une hypothèse renommée garde son identifiant (réglages enregistrés) et prend le nom de l\'Excel', () => {
     const m = load((x) => {
       const k = label(x, 'Croissance annuelle effectifs finance')
       x.Sheets['1_Inputs&Hyp'][k].v = 'Croissance annuelle des effectifs de la finance (2026-2035)'
     })
     expect(m.diagnostics.filter((d) => d.level === 'error')).toEqual([])
-    expect(m.diagnostics.some((d) => /Intitulé modifié.*effectifs finance/.test(d.message))).toBe(true)
-    expect(Object.keys(m.hypCells)).toHaveLength(HYPS.length)
-    expect(linkedHyps()).toHaveLength(HYPS.length)
+    expect(HYP_BY_ID.gEffFin.label).toBe('Croissance annuelle des effectifs de la finance (2026-2035)')
+    expect(Object.keys(m.hypCells)).toHaveLength(24)
     expect(totals()).toEqual(expected)
   })
 
-  it('une hypothèse introuvable est signalée par son intitulé, sans bloquer les autres ni les chiffres', () => {
-    const m = load((x) => { x.Sheets['1_Inputs&Hyp'][label(x, 'Ajout annuel de caméras')].v = 'Rien à voir' })
+  it('une hypothèse entièrement renommée devient une nouvelle hypothèse (nom de l\'Excel), les chiffres ne bougent pas', () => {
+    const m = load((x) => { x.Sheets['1_Inputs&Hyp'][label(x, 'Ajout annuel de caméras')].v = 'Rythme de pose des caméras' })
     expect(m.diagnostics.filter((d) => d.level === 'error')).toEqual([])
-    expect(m.diagnostics.find((d) => /introuvable/.test(d.message))?.message).toMatch(/Ajout annuel de caméras/)
-    expect(m.hypCells.camAdd).toBeUndefined()
-    expect(linkedHyps().map((h) => h.id)).not.toContain('camAdd')
-    expect(linkedHyps()).toHaveLength(HYPS.length - 1)
+    const h = m.hypDefs.find((d) => d.label === 'Rythme de pose des caméras')
+    expect(h?.id).toBe('rythme-de-pose-des-cameras')
+    expect(HYP_BY_ID.camAdd).toBeUndefined()
+    expect(m.hypDefs).toHaveLength(24)
     expect(totals()).toEqual(expected)
+  })
+
+  it('une hypothèse ajoutée dans l\'Excel apparaît toute seule (curseur, unité, groupe), une ligne qui ne sert à rien est signalée', () => {
+    const m = load((x) => {
+      const ws = x.Sheets['1_Inputs&Hyp']
+      ws.D63 = { t: 's', v: 'Caméras supplémentaires en 2035' }
+      ws.E63 = { t: 's', v: 'caméras' }
+      ws.F63 = { t: 'n', v: 0 }
+      ws.F59 = { t: 'n', v: 1750, f: 'F57+9*F58+F63' }
+      ws['!ref'] = 'A1:P120'
+    })
+    expect(m.diagnostics.filter((d) => d.level === 'error')).toEqual([])
+    const h = m.hypDefs.find((d) => d.label === 'Caméras supplémentaires en 2035')!
+    expect(h).toMatchObject({ unit: 'count', single: true, def: [0], id: 'cameras-supplementaires-en-2035' })
+    expect(m.hypDefs).toHaveLength(25)
+    expect(m.hypCategories.find((c) => c.id === h.category)?.title).toMatch(/Hypothèses DSP/)
+    expect(m.diagnostics.some((d) => /n'alimentent aucun résultat/.test(d.message) && /Résolution actuelle/.test(d.message))).toBe(true)
+    expect(totals()).toEqual(expected)
+  })
+
+  it('une hypothèse retirée de l\'Excel disparaît du dashboard sans le casser', () => {
+    const m = load((x) => { delete x.Sheets['1_Inputs&Hyp'][label(x, 'Ajout annuel de caméras')] })
+    expect(m.diagnostics.filter((d) => d.level === 'error')).toEqual([])
+    expect(HYP_BY_ID.camAdd).toBeUndefined()
+    expect(m.hypDefs).toHaveLength(23)
+  })
+
+  it('la plage du curseur peut être fixée dans l\'Excel (colonnes Min / Max / Pas)', () => {
+    const m = load((x) => {
+      const ws = x.Sheets['1_Inputs&Hyp']
+      ws.K33 = { t: 's', v: 'Min' }; ws.L33 = { t: 's', v: 'Max' }; ws.M33 = { t: 's', v: 'Pas' }
+      ws.K47 = { t: 'n', v: 0.1 }; ws.L47 = { t: 'n', v: 0.8 }; ws.M47 = { t: 'n', v: 0.05 }
+    })
+    expect(HYP_BY_ID.adrFin).toMatchObject({ min: 0.1, max: 0.8, step: 0.05 })
+    expect(m.hypDefs).toHaveLength(24)
   })
 
   it('un fichier qui n\'est pas un classeur donne un message clair', () => {
@@ -101,5 +135,21 @@ describe('lecture robuste de l\'Excel', () => {
     expect(r.map((s) => s.base / 1000)).toEqual([2.4703, 2.4703, 2.4703].map((v) => expect.closeTo(v, 3)))
     expect(r.map((s) => s.total / 1000)).toEqual([3.9124, 6.1675, 8.2069].map((v) => expect.closeTo(v, 3)))
     expect(r.map((s) => s.addressable / 1000)).toEqual([1.2196, 2.3722, 4.4783].map((v) => expect.closeTo(v, 3)))
+  })
+
+  it('réglages enregistrés : les identifiants d\'avant (v4, v5) sont conservés, ceux d\'hypothèses disparues sont ignorés', async () => {
+    const { sanitizeConfig } = await import('../../state/store')
+    load(() => {})
+    const c = sanitizeConfig({ hyps: { sets: { need: ['gIntPub', 'gPomp', 'inconnue'], addressable: ['adrFin'] }, notes: {} } })
+    expect(c.hyps.sets.need).toEqual(['gIntPub'])
+    expect(c.hyps.sets.addressable).toEqual(['adrFin'])
+  })
+
+  it('v4 et v5 donnent les mêmes identifiants d\'hypothèses (mêmes réglages enregistrés) avec chacun les noms de son Excel', () => {
+    const v4 = buildModel(fixture('reference-v4.xlsx'), { fileName: 'v4', source: 'file', loadedAt: 0 })
+    const v5 = buildModel(fixture('reference-v5b.xlsx'), { fileName: 'v5', source: 'file', loadedAt: 0 })
+    expect(v4.hypDefs.map((h) => h.id).sort()).toEqual(v5.hypDefs.map((h) => h.id).sort())
+    expect(v4.hypDefs.find((h) => h.id === 'gIntPub')!.label).toMatch(/intensité numérique/)
+    expect(v5.hypDefs.find((h) => h.id === 'gIntPub')!.label).toMatch(/besoins IT hors IA/)
   })
 })

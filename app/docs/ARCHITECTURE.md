@@ -12,8 +12,10 @@ Le modèle de calcul **est** le classeur [`Monaco_Besoins_IT_v3.xlsx`](Monaco_Be
 | une **valeur** (hypothèse Bas / Central / Haut, baseline, effectifs, caméras…) | reprise automatiquement ; les curseurs repartent de la nouvelle valeur |
 | une **formule** (même une seule cellule, y compris l'ajout de `IF`, `ROUND`, `MAX`…) | reprise automatiquement : résultats, graphiques, cascades et pages acteurs suivent |
 | une **ligne ou une colonne insérée** | sans effet : le lien Excel ↔ dashboard se fait par *intitulés* (colonne D, en-têtes de colonnes), pas par numéros de cellules |
-| un **intitulé renommé** (p. ex. « Surcouche IA 2035 – public ») ou un **onglet supprimé** | le dashboard le dit clairement (écran d'erreur ou bandeau) au lieu d'afficher un résultat faux ; il suffit de rétablir l'intitulé ou de demander la mise à jour |
-| un **nouvel acteur / une nouvelle hypothèse pilotable** | demande une évolution du dashboard (la valeur est lue automatiquement, mais il faut lui créer un contrôle / une page) |
+| une **hypothèse renommée** | le dashboard affiche le **nom de l'Excel**, tel quel ; les réglages enregistrés sur cette hypothèse sont conservés si le nouveau nom reste proche de l'ancien |
+| une **hypothèse ajoutée ou retirée** dans un tableau d'hypothèses | un curseur apparaît (ou disparaît) tout seul : nom, valeurs, unité, source, groupe et plage viennent de l'Excel (voir « Lecture automatique des hypothèses ») |
+| un **onglet principal** (`1_Inputs&Hyp`, `2_Calculs`) ou un **tableau de résultats** renommé / supprimé | le dashboard le dit clairement (écran d'erreur avec l'élément en cause) au lieu d'afficher un résultat faux |
+| un **nouvel acteur** (nouvelle ligne de bloc dans `2_Calculs`) | demande une évolution du dashboard : la page acteur et sa description sont écrites à la main |
 
 Ce qui se passe au lancement : le dashboard tente d'abord la version **en ligne** du fichier (dépôt GitHub, branche `main` : visible dès le lancement suivant, sans attendre un déploiement) ; si elle est inaccessible (hors ligne, pare-feu) il utilise la copie déployée avec le site ; si la version en ligne est illisible ou incompatible, il retombe sur la copie en l'indiquant. L'origine du fichier est rappelée en bas de page et dans *Globale › Méthodologie › Source du modèle* (contrôles, valeurs de base lues, correspondance hypothèses ↔ cellules). Une hypothèse qui n'intervient plus dans les résultats après une modification de formule est signalée « ⚠ sans effet ».
 
@@ -21,8 +23,18 @@ Fonctions Excel prises en charge : opérateurs `+ - * / ^ & % = <> < > <= >=`, `
 
 ## Lecture tolérante de l'Excel
 - **Seules les cellules qui servent au calcul sont bloquantes.** Une fonction inconnue ou une formule illisible dans un onglet non utilisé (slides, notes…) devient un avertissement ; dans une cellule dont dépendent les résultats, c'est une erreur qui nomme la cellule et la fonction.
-- **Intitulé d'hypothèse modifié** : ancien intitulé connu (`excelAlt`), puis recherche tolérante (mots en commun, jamais une ligne déjà prise par une autre hypothèse) avec un avertissement « reconnu comme … ». Si elle reste introuvable, l'hypothèse n'est ni affichée ni pilotable (les autres fonctionnent), et l'avertissement liste les intitulés non reconnus.
+- **Hypothèses** : lues automatiquement (voir ci-dessous) ; un tableau sans hypothèse exploitable est une erreur explicite.
 - **Avant la mise en ligne** : `npm run check:model` (lancé par le déploiement et par `npm run build`) lit l'Excel qui va être publié et échoue avec la cause précise s'il est illisible ; le site en ligne n'est alors pas remplacé.
+
+## Lecture automatique des hypothèses
+Aucune liste d'hypothèses n'est codée dans le dashboard : `core/discover.ts` la construit à chaque chargement à partir de l'onglet `1_Inputs&Hyp`. **Conventions à respecter dans l'Excel :**
+- Un tableau d'hypothèses a une ligne d'en-tête contenant **« Hypothèse »** (colonne des noms) et soit **« Scénario Bas », « Scénario Central », « Scénario Haut »**, soit **« Valeur »**. Les colonnes **« Unité »** et **« Source… »** sont lues si elles existent.
+- Le **texte juste au-dessus** de l'en-tête (même colonne que « Hypothèse ») est le titre du bloc. Au sein d'un tableau, des lignes consécutives qui commencent par le même mot forment un groupe nommé d'après leur début commun (p. ex. « Part adressable Monaco »).
+- Une ligne est un curseur si ses cellules de valeur sont des **nombres saisis** (pas de formule) **dont dépend le résultat** ; Bas / Central / Haut tous utilisés → 3 valeurs, une seule colonne utilisée → valeur unique. Une ligne qui n'alimente aucun résultat est listée dans « Source du modèle » mais n'est pas proposée.
+- Unité : une unité contenant `%` → pourcentage (la valeur est une fraction : 0,05 = 5 %), commençant par `W` → watts, `x` / « facteur » → ratio, sinon nombre. « p.a. » dans l'unité = croissance annuelle (plage −2 % à +10 % ou plus).
+- **Plage du curseur** : par défaut déduite des valeurs ; pour la fixer, ajoutez dans l'en-tête les colonnes facultatives **« Min », « Max », « Pas »**.
+- Bandeaux : « Besoins générés » = hypothèses dont l'intitulé contient *besoin(s)* ou *intensité* ou qui agissent sur la seule surcouche IA ; « Besoins adressables » = hypothèses qui ne changent que la demande adressable ; chaque page acteur = les hypothèses qui le font varier (déduit en recalculant l'Excel).
+- Les identifiants internes (réglages enregistrés, liens partagés) sont l'ancien identifiant si l'intitulé est reconnu (`core/legacyHyps.ts`, uniquement pour retrouver ces réglages), sinon tirés du nom ; un réglage enregistré sur une hypothèse qui n'existe plus est ignoré.
 
 ## Navigation et lecture
 Barre fixe : **Globale** · **Scénario ▾** · **Acteurs ▾** (+ ⚙). Sous la barre, deux onglets de lecture : **Besoins générés** (livrable 2, par défaut) et **Besoins adressables** (livrable 3). Toute la page suit l'onglet choisi (graphiques, chiffres, messages clés).
@@ -43,8 +55,8 @@ core/hypotheses.ts  core/engine.ts  core/snapshot.ts  core/kpis.ts · core/datas
 - `src/core/` — **pur, sans React, entièrement testé**.
   - `actors.ts` : registre des acteurs (libellé, groupe, description, méthode, hypothèses qui comptent) ; un test vérifie que la liste d'hypothèses de chaque acteur est exactement celle qui agit dans le moteur.
   - `xl/` : lecteur de classeurs et **évaluateur de formules Excel** (analyseur, compilateur, bibliothèque de fonctions), vérifié contre les valeurs enregistrées par Excel et contre LibreOffice.
-  - `model.ts` : relie le classeur au dashboard par intitulés (hypothèses → cellules d'entrée, tableaux de résultats → blocs) et produit les diagnostics.
-  - `hypotheses.ts` : interface des hypothèses pilotables (libellé, catégorie, contrôle, bornes). Valeur par défaut, source et ligne viennent de l'Excel.
+  - `model.ts` : relie le classeur au dashboard par intitulés (tableaux de résultats → blocs) et lance la lecture des hypothèses et produit les diagnostics.
+  - `discover.ts` : lit les hypothèses dans `1_Inputs&Hyp` (nom, valeurs, unité, source, groupe, bornes, rôle) ; `hypotheses.ts` : registre courant, recopié à chaque `setModel()`.
   - `engine.ts` : met en forme les résultats lus dans l'Excel recalculé (aucune formule ici ; l'écart entre scénarios et la décomposition sont obtenus en recalculant l'Excel avec certaines hypothèses neutralisées).
   - `snapshot.ts` : tout ce qui dérive du modèle (scénarios, trajectoires, sensibilité) pour la lentille choisie (`lens.ts`), calculé **une fois** par modification.
   - `kpis.ts` / `datasets.ts` : registres des indicateurs et des jeux de données ; chaque graphique, tableau et infobulle lit un jeu de données, jamais le modèle directement. Les types de graphiques proposés dépendent de la nature des données (`compatibleCharts`).
@@ -73,7 +85,7 @@ npm run dev       # http://localhost:5173/Monaco-dashboard/
 npm test
 npm run build
 ```
-Ajouter un KPI : une entrée dans `core/kpis.ts`. Une hypothèse : `core/hypotheses.ts`. Un graphique : un jeu de
+Ajouter un KPI : une entrée dans `core/kpis.ts`. Un graphique : un jeu de
 données dans `core/datasets.ts` puis un widget dans `config/defaults.ts`.
 
 ## Déploiement

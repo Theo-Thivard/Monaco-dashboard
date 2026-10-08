@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { hypContext, hypsOf, HYP_CONTEXT_LABEL } from '../config/hyps'
-import { CATEGORIES, HYPS, linkedHyps } from '../core/hypotheses'
+import { CATEGORIES, HYPS } from '../core/hypotheses'
 import type { HypMode, WidgetConfig } from '../config/types'
 import { patchUI, resetHypSet, updateWidget, useUI } from '../state/store'
 import { HypControl } from './Controls'
@@ -16,7 +16,7 @@ export function DriversWidget({ wc, env, pinned }: { wc: WidgetConfig; env: Env;
   const ui = useUI()
   const consultant = ui.mode === 'consultant'
   const ctx = hypContext(env.route, env.snap.lens)
-  const ids = linkedHyps().filter((h) => hypsOf(env.config, ctx).includes(h.id)).sort((a, b) => hypsOf(env.config, ctx).indexOf(a.id) - hypsOf(env.config, ctx).indexOf(b.id)).map((h) => h.id)
+  const ids = HYPS.filter((h) => hypsOf(env.config, ctx).includes(h.id)).sort((a, b) => hypsOf(env.config, ctx).indexOf(a.id) - hypsOf(env.config, ctx).indexOf(b.id)).map((h) => h.id)
   const custom = !!env.config.hyps.sets[ctx]
   const name = env.route.kind === 'actor' ? env.actorLabel(env.route.actor) : env.label(`lens:${ctx}`, HYP_CONTEXT_LABEL[ctx])
   // regroupe par catégorie dès que plusieurs catégories sont visibles
