@@ -11,7 +11,7 @@ export const LEGACY_HYPS: LegacyHyp[] = [
   { id: 'gIntPub', labels: ['Croissance annuelle des besoins IT hors IA – public', 'Croissance annuelle intensité numérique hors IA – public'] },
   { id: 'gIntFin', labels: ['Croissance annuelle des besoins IT hors IA – privé finance', 'Croissance annuelle intensité numérique hors IA – finance'] },
   { id: 'gIntPriv', labels: ['Croissance annuelle des besoins IT hors IA – privé hors finance', 'Croissance annuelle intensité numérique hors IA – hors finance'] },
-  { id: 'iaPub', labels: ['Besoins IT additionnels liés à l’IA – public', 'Surcouche IA 2035 – public'] },
+  { id: 'iaPub', labels: ['Besoins IT additionnels liés à l’IA – public', 'Besoins IT additionnels liés à l’IA – public hors DSP', 'Surcouche IA 2035 – public'] },
   { id: 'iaFin', labels: ['Besoins additionnels liés à l’IA – finance', 'Surcouche IA 2035 – finance'] },
   { id: 'iaPriv', labels: ['Besoins additionnels liés à l’IA – hors finance', 'Surcouche IA 2035 – hors finance'] },
   { id: 'adrPub', labels: ['Part adressable Monaco – public'] },
