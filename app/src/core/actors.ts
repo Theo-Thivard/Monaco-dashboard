@@ -34,7 +34,7 @@ export const ACTORS: ActorDef[] = [
   },
   {
     id: 'AUTRES', slug: 'autres-entites-publiques', label: 'Autres entités publiques', short: 'Autres entités publiques', group: 'public',
-    description: 'Autres entités publiques (dont APDP, Caisses sociales, DENJS).',
+    description: 'Autres entités publiques (dont APDP, Caisses sociales, DENJS, DPP).',
     method: 'Projection générique du secteur public : croissance des effectifs et de l\'intensité numérique, puis surcouche IA.',
   },
   {

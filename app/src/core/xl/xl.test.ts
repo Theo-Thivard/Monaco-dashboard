@@ -28,6 +28,16 @@ describe('formules Excel : analyse', () => {
     expect(ev('=ROUND(2.345,2)')).toBeCloseTo(2.35)
     expect(ev('=XLOOKUP("b",{"a","b"},{1,2})')).toBeInstanceOf(XlError) // matrices littérales non gérées -> erreur explicite
   })
+  it('RRI, SUMIFS et égalité à 15 chiffres (onglet 0_Sliding de l\'Excel v4)', () => {
+    const ev = (f: string) => Workbook.fromBuffer(mini(f)).evaluate().at('S', 'A1')
+    expect(ev('=RRI(9,100,200)')).toBeCloseTo(Math.pow(2, 1 / 9) - 1, 12)
+    expect(ev('=RRI(0,100,200)')).toBeInstanceOf(XlError)
+    expect(ev('=RRI(9,0,200)')).toBeInstanceOf(XlError)
+    expect(ev('=1+RRI(9,5,5)')).toBe(1)
+    expect(ev('=SUMIFS(B1:B1,B1:B1,">0")')).toBe(0)
+    expect(ev('=(0.1+0.2)=0.3')).toBe(true)
+    expect(ev('=(0.1+0.2)>0.3')).toBe(false)
+  })
   it('analyse sans lever pour toutes les formes du fichier', () => {
     expect(() => parseFormula("(1+_xlfn.XLOOKUP($D$56,$F$33:$H$33,$F$34:$H$34))^9")).not.toThrow()
     expect(() => parseFormula("'1_Inputs&Hyp'!F59/'1_Inputs&Hyp'!F57*A1")).not.toThrow()
