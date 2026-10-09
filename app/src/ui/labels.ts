@@ -1,6 +1,7 @@
 import { ACTORS } from '../core/actors'
 import { ACTOR_KPI_DEFS } from '../core/kpis'
 import { LENS_HINT, LENS_LABEL } from '../core/lens'
+import { DEFAULT_SCENARIO_NAMES } from '../core/scenarios'
 import { OUTPUT_GROUPS } from '../core/engine'
 
 /** Titre du panneau des trois scénarios, au format « … [unité ; date] » ({unité} suit le réglage MW / kW). */
@@ -29,7 +30,7 @@ export const LABEL_DEFS: { group: string; key: string; def: string }[] = [
   ...ACTOR_KPI_DEFS.map((k) => ({ group: 'Indicateurs d\'acteur', key: `actorkpi:${k.id}`, def: k.label })),
   ...ACTORS.map((a) => ({ group: 'Descriptions des acteurs', key: `actor:desc:${a.id}`, def: a.description })),
   ...ACTORS.map((a) => ({ group: 'Noms des acteurs', key: `actor:${a.id}`, def: a.label })),
-  ...['Bas', 'Central', 'Haut'].map((d, i) => ({ group: 'Scénarios', key: `scenario:${i}`, def: d })),
+  ...DEFAULT_SCENARIO_NAMES.map((d, i) => ({ group: 'Scénarios', key: `scenario:${i}`, def: d })),
   ...OUTPUT_GROUPS.map((g) => ({ group: 'Blocs', key: `block:${g.id}`, def: g.label })),
   { group: 'Séries', key: 'series:base', def: 'Besoin 2026' },
   { group: 'Séries', key: 'series:need', def: 'Besoin total 2035' },

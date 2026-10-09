@@ -127,7 +127,7 @@ export const TOKEN_GROUPS: { title: string; keys: { key: keyof Tokens; label: st
   { title: 'Marque', keys: [{ key: 'primary', label: 'Couleur principale' }, { key: 'accent', label: 'Accent' }] },
   { title: 'États', keys: [{ key: 'positive', label: 'Positif' }, { key: 'negative', label: 'Négatif' }, { key: 'neutral', label: 'Neutre' }, { key: 'warning', label: 'Alerte' }] },
   { title: 'Navigation', keys: [{ key: 'navBg', label: 'Fond de la barre' }, { key: 'navText', label: 'Texte' }, { key: 'navActive', label: 'Élément actif' }, { key: 'navAccent', label: 'Indicateur actif' }] },
-  { title: 'Scénarios', keys: [{ key: 'scen0', label: 'Bas' }, { key: 'scen1', label: 'Central' }, { key: 'scen2', label: 'Haut' }] },
+  { title: 'Scénarios', keys: [{ key: 'scen0', label: 'Scénario de base' }, { key: 'scen1', label: 'Scénario d\'accélération' }, { key: 'scen2', label: 'Scénario de rupture' }] },
   { title: 'Graphiques', keys: [{ key: 'grid', label: 'Quadrillage' }, { key: 'axis', label: 'Axes' }] },
   { title: 'Palette des séries', keys: [{ key: 'p1', label: 'Série 1' }, { key: 'p2', label: 'Série 2' }, { key: 'p3', label: 'Série 3' }, { key: 'p4', label: 'Série 4' }, { key: 'p5', label: 'Série 5' }, { key: 'p6', label: 'Série 6' }] },
 ]

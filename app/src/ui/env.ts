@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { ACTOR_BY_ID } from '../core/actors'
 import { resolveTokens, type Tokens } from '../config/theme'
 import type { DashboardConfig } from '../config/types'
+import { DEFAULT_SCENARIO_NAMES } from '../core/scenarios'
 import { DATASET_BY_ID, type Dataset, type DatasetCtx } from '../core/datasets'
 import { fmt, fmtHyp, unitLabel, type FmtOptions, type FormatSettings } from '../core/format'
 import { HYP_BY_ID, type FormatKind } from '../core/hypotheses'
@@ -25,7 +26,7 @@ export interface Env {
   route: Route
 }
 
-const SCEN = ['Bas', 'Central', 'Haut']
+const SCEN = DEFAULT_SCENARIO_NAMES
 
 /** Tout ce dont un composant a besoin pour afficher une valeur de façon cohérente. */
 export function useEnv(): Env {

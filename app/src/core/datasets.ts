@@ -291,7 +291,7 @@ export const DATASETS: DatasetDef[] = [
     },
   },
   {
-    id: 'spreadByActor', title: 'Qui explique l\'écart entre scénarios ? [{unité} ; 2035]', subtitle: 'Écart Haut − Bas, par acteur', kind: 'comparison', defaultChart: 'hbar',
+    id: 'spreadByActor', title: 'Qui explique l\'écart entre scénarios ? [{unité} ; 2035]', subtitle: 'Écart rupture − base, par acteur', kind: 'comparison', defaultChart: 'hbar',
     build: (c) => {
       const lo = c.snap.results[0]
       const hi = c.snap.results[2]
@@ -300,7 +300,7 @@ export const DATASETS: DatasetDef[] = [
       return {
         id: 'spreadByActor', kind: 'comparison', format: 'power', stackable: false,
         categories: ids.map((id) => actorName(c, id)), categoryIds: ids,
-        series: [{ id: 'spread', name: c.label('series:spread', 'Écart Haut − Bas'), values: ids.map(spread), total: lv(c)(hi) - lv(c)(lo), tone: 'accent' }],
+        series: [{ id: 'spread', name: c.label('series:spread', 'Écart rupture − base'), values: ids.map(spread), total: lv(c)(hi) - lv(c)(lo), tone: 'accent' }],
       }
     },
   },
