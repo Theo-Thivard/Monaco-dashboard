@@ -185,7 +185,7 @@ h4.cat { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .08em; c
 .hyp.changed .hyp-name { color: var(--c-accent); font-weight: var(--tw-body); }
 .reset { background: none; border: 0; color: var(--c-accent); font-size: 1.05rem; padding: 0 4px; }
 .slider-row { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
-.scen-dot { font-size: 0.72rem; color: #fff; border-radius: 9px; padding: 1px 8px; min-width: 56px; text-align: center; }
+.scen-dot { font-size: 0.72rem; color: #fff; border-radius: 9px; padding: 1px 8px; min-width: 56px; max-width: 9.8rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .range { position: relative; flex: 1; min-width: 0; height: 20px; }
 .range input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; margin: 0; background: transparent; position: relative; z-index: 2; }
 .range input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, var(--c-primary) var(--pct, 50%), var(--c-border) var(--pct, 50%)); }

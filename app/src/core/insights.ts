@@ -6,6 +6,7 @@ import { groupBlocks } from './engine'
 import { fmt, type FormatSettings } from './format'
 import { KPI_BY_ID, kpiValue } from './kpis'
 import { lensValue } from './lens'
+import { asScenario } from './scenarios'
 import { sensitivityFor, type Snapshot } from './snapshot'
 
 export type Part = { t: string; strong?: boolean }
@@ -47,14 +48,14 @@ export function buildGlobalHeadline(snap: Snapshot, f: FormatSettings, scen: (i:
   const contrib = ACTORS.map((a) => ({ a, d: v(actorBlock(hi, a.id)) - v(actorBlock(lo, a.id)) })).sort((x, y) => y.d - x.d)[0]
   const share = spread ? contrib.d / spread : 0
   const title: Part[] = [
-    P(need ? 'Le besoin IT généré à Monaco atteint ' : 'La demande adressable à Monaco atteint '), P(fmt('power', v(mid), f), true), P(` en 2035 dans le scénario ${scen(1)}, entre `),
+    P(need ? 'Le besoin IT généré à Monaco atteint ' : 'La demande adressable à Monaco atteint '), P(fmt('power', v(mid), f), true), P(` en 2035 dans le ${asScenario(scen(1))}, entre `),
     P(fmt('power', v(lo), f), true), P(` (${scen(0)}) et `), P(fmt('power', v(hi), f), true), P(` (${scen(2)}).`),
   ]
   const bullets: Part[][] = [
     need
       ? [P('Le besoin IT passe de '), P(fmt('power', mid.base, f), true), P(' en 2026 à '), P(fmt('power', lo.total, f), true), P(' – '), P(fmt('power', hi.total, f), true), P(' en 2035, soit '), P(fmt('ratio', lo.growth, f), true), P(' à '), P(fmt('ratio', hi.growth, f), true), P('.')]
       : [P('Le besoin IT total passe de '), P(fmt('power', mid.base, f), true), P(' en 2026 à '), P(fmt('power', lo.total, f), true), P(' – '), P(fmt('power', hi.total, f), true), P(' en 2035.')],
-    [P(actorName(contrib.a), true), P(' explique '), P(fmt('pct', share, f, { decimals: 0 }), true), P(` de l'écart entre les scénarios ${scen(0)} et ${scen(2)}.`)],
+    [P(actorName(contrib.a), true), P(' explique '), P(fmt('pct', share, f, { decimals: 0 }), true), P(` de l'écart entre le ${asScenario(scen(0))} et le ${asScenario(scen(2))}.`)],
     need
       ? [P('La surcouche IA pèse '), P(fmt('pct', lo.total ? lo.ia / lo.total : 0, f, { decimals: 0 }), true), P(' à '), P(fmt('pct', hi.total ? hi.ia / hi.total : 0, f, { decimals: 0 }), true), P(' du besoin 2035 selon le scénario.')]
       : [P('Le taux adressable varie de '), P(fmt('pct', lo.rate, f), true), P(' à '), P(fmt('pct', hi.rate, f), true), P(' : l\'incertitude porte surtout sur la part du privé hébergée à Monaco.')],

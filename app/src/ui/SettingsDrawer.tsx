@@ -47,7 +47,7 @@ const TABS = [['content', 'Contenu'], ['look', 'Apparence'], ['format', 'Formats
 function ContentTab({ env }: { env: Env }) {
   const { config } = env
   const kind = env.route.kind
-  const pageLabel = kind === 'global' ? 'Globale' : kind === 'scenario' ? 'Scénario (Bas, Central et Haut)' : 'Acteurs (les huit acteurs)'
+  const pageLabel = kind === 'global' ? 'Globale' : kind === 'scenario' ? 'Scénario (les trois scénarios)' : 'Acteurs (les huit acteurs)'
   const [ds, setDs] = useState(DATASETS[0].id)
   const tiers: [string, string][] = [['client', 'Vue client'], ['detail', 'Analyse détaillée'], ['method', 'Méthodologie']]
   return (

@@ -127,7 +127,7 @@ export function HypControl({ id, env, mode = 'together', consultant }: Props) {
           <p>{h.description}</p>
           <dl>
             <dt>Plage</dt><dd>{fmtHyp(h.unit, h.min, f)} – {fmtHyp(h.unit, h.max, f)}</dd>
-            <dt>Valeur Excel</dt><dd>{h.def.map((x) => env.fmtHypValue(id, x)).join(' · ')}{h.single ? '' : ' (Bas · Central · Haut)'}</dd>
+            <dt>Valeur Excel</dt><dd>{h.def.map((x) => env.fmtHypValue(id, x)).join(' · ')}{h.single ? '' : ` (${[0, 1, 2].map((k) => env.scenarioName(k)).join(' · ')})`}</dd>
             <dt>Source</dt><dd>{h.source}{h.excelRow !== '—' ? ` (ligne ${h.excelRow})` : ''}</dd>
           </dl>
           {h.note && <p className="warn">{h.note}</p>}

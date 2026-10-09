@@ -13,7 +13,7 @@ const METHOD_TEXT = `Le modèle de calcul est le classeur Excel lui-même. Le ta
 
 Pour chaque acteur (DSP, autres entités publiques, Sapeurs Pompiers, DITN, CHPG, Monaco Telecom, finance, privé hors finance), l'Excel part du besoin IT de 2026, applique la croissance des effectifs et de l'intensité numérique, puis ajoute une surcouche IA : cela donne le besoin 2035. La demande adressable en est la part hébergée à Monaco, calculée séparément pour le besoin classique et pour l'IA.
 
-Chacun des trois scénarios (Bas, Central, Haut) a ses propres hypothèses. Le scénario actif pilote les indicateurs et les graphiques qui n'en montrent qu'un.`
+Chacun des trois scénarios (de base, d'accélération, de rupture) a ses propres hypothèses. Le scénario actif pilote les indicateurs et les graphiques qui n'en montrent qu'un.`
 
 const NOTES_TEXT = `- Source du modèle : fichier Excel, origine et contrôles détaillés dans « Source du modèle ».
 - Une hypothèse marquée « sans effet » ne change plus aucun résultat de l'Excel actuel (sa formule a été modifiée).
@@ -77,7 +77,7 @@ export const scenarioLayout = (): Layout[] => stack([
   [['tb-assumptions', 0, 24, 22], ['tx-method', 0, 9, 12], ['tx-notes', 9, 15, 10]],
 ])
 
-const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios Bas, Central et Haut utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le tableau de bord s'adapte automatiquement : aucun calcul n'est écrit dans le tableau de bord.`
+const GLOBAL_METHOD = `Une seule source de calcul alimente toutes les pages : le classeur Excel, lu à chaque lancement. Les scénarios de base, d'accélération et de rupture utilisent exactement les mêmes formules avec des jeux d'hypothèses différents, et chaque acteur est un bloc du même modèle.\n\nSi une valeur ou une formule change dans l'Excel, le tableau de bord s'adapte automatiquement : aucun calcul n'est écrit dans le tableau de bord.`
 
 export const globalWidgets = (): WidgetConfig[] => [
   // par défaut : chiffres clés, puis l'évolution du besoin seule, puis « Décomposition de la demande » (qui porte la demande + répartition par bloc)
@@ -117,7 +117,7 @@ export const actorWidgets = (): WidgetConfig[] => [
   w({ id: 'a-bridge', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorBridge', chartType: 'waterfall', legend: false }),
   w({ id: 'a-trajectory', kind: 'chart', tier: 'client', visible: true, datasetId: 'actorTrajectory', chartType: 'line', legend: true, showInitial: true, lensOverrides: { need: { chartType: 'area' } } }),
   // « Selon les scénarios » (besoin par scénario) retiré de l'affichage par défaut
-  w({ id: 'a-sec-scen', kind: 'section', tier: 'client', visible: false, title: 'Selon les scénarios', subtitle: 'La même analyse pour les scénarios Bas, Central et Haut' }),
+  w({ id: 'a-sec-scen', kind: 'section', tier: 'client', visible: false, title: 'Selon les scénarios', subtitle: 'La même analyse pour les scénarios de base, d\'accélération et de rupture' }),
   w({ id: 'a-scenarios', kind: 'chart', tier: 'client', visible: false, datasetId: 'actorScenarios', chartType: 'bar', legend: true }),
   w({ id: 'a-sec-detail', kind: 'section', tier: 'client', visible: true, collapse: 'detail', title: 'Détail du calcul', subtitle: 'De 2026 à 2035, étape par étape' }),
   w({ id: 'a-table', kind: 'chart', tier: 'detail', visible: true, datasetId: 'actorTable', chartType: 'table' }),

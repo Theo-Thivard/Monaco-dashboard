@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { scenarioTitle } from './core/scenarios'
 import { getModel } from './core/model'
 import { SOURCE_LABEL } from './ui/ModelInfo'
 import { applyTheme } from './config/theme'
@@ -37,7 +38,7 @@ export default function App() {
   useEffect(() => { applyTypography(config.theme.typo) }, [config.theme.typo])
 
   // titre de l'onglet = page courante
-  const pageTitle = route.kind === 'global' ? 'Globale' : route.kind === 'scenario' ? `Scénario ${env.scenarioName(route.scenario)}` : env.actorLabel(route.actor)
+  const pageTitle = route.kind === 'global' ? 'Globale' : route.kind === 'scenario' ? scenarioTitle(env.scenarioName(route.scenario)) : env.actorLabel(route.actor)
   useEffect(() => { document.title = `${pageTitle} · ${config.brand}` }, [pageTitle, config.brand])
 
   useEffect(() => {

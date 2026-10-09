@@ -9,7 +9,7 @@ export function AssumptionsTable({ env }: { env: Env }) {
     <div className="table-wrap">
       <table className="data assumptions">
         <thead>
-          <tr><th>Hypothèse</th><th>Bas</th><th>Central</th><th>Haut</th><th>Plage</th><th>Source</th></tr>
+          <tr><th>Hypothèse</th><th>{env.scenarioName(0)}</th><th>{env.scenarioName(1)}</th><th>{env.scenarioName(2)}</th><th>Plage</th><th>Source</th></tr>
         </thead>
         <tbody>
           {CATEGORIES.map((c) => (

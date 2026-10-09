@@ -1,3 +1,4 @@
+import { DEFAULT_SCENARIO_NAMES } from './scenarios'
 // Moteur de calcul : lit les résultats du classeur Excel (recalculé avec les hypothèses courantes).
 // Aucune formule n'est écrite ici : tout vient de l'Excel (voir model.ts). Ce fichier met en forme les résultats
 // (blocs, totaux, décomposition des écarts) et fournit le profil annuel interpolé 2026 → 2035.
@@ -8,7 +9,7 @@ import type { Run } from './xl/workbook'
 
 export { ENTITIES }
 export type { Entity }
-export const SCENARIOS = ['Bas', 'Central', 'Haut'] as const
+export const SCENARIOS = DEFAULT_SCENARIO_NAMES
 export const HORIZON = 9 // 2026 -> 2035
 
 

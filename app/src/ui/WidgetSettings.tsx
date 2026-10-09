@@ -1,5 +1,6 @@
 import { CHART_LABELS, compatibleCharts, DATASET_BY_ID, type ChartType } from '../core/datasets'
 import type { EntityText, HypMode, LensOverride, SeriesStyle, WidgetConfig } from '../config/types'
+import { scenarioTitle } from '../core/scenarios'
 import { headlineTokens } from '../core/headlineText'
 import { KPI_BY_ID } from '../core/kpis'
 import { LABEL_DEFS } from './labels'
@@ -142,7 +143,7 @@ export function WidgetSettings({ wc, env }: { wc: WidgetConfig; env: Env }) {
     <Drawer title="Réglages du bloc" onClose={() => patchUI({ panel: null, selectedWidget: null })}>
       {ekey && (
         <>
-          <p className="drawer-help">Textes de <b>{env.route.kind === 'scenario' ? `Scénario ${env.scenarioName(env.route.scenario)}` : env.route.kind === 'actor' ? env.actorLabel(env.route.actor) : ''}</b> : ce qui est saisi ici ne concerne que cette page.</p>
+          <p className="drawer-help">Textes de <b>{env.route.kind === 'scenario' ? scenarioTitle(env.scenarioName(env.route.scenario)) : env.route.kind === 'actor' ? env.actorLabel(env.route.actor) : ''}</b> : ce qui est saisi ici ne concerne que cette page.</p>
           <label className="inline"><input type="checkbox" checked={shared} onChange={(e) => setShared(e.target.checked)} /> Modifier le texte de tous les {env.route.kind === 'scenario' ? 'scénarios' : 'acteurs'}</label>
         </>
       )}

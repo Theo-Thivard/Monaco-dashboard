@@ -4,6 +4,7 @@ import { applyTokens, headlineTokens, toParts } from '../core/headlineText'
 import type { WidgetConfig } from '../config/types'
 import { buildActorHeadline, buildGlobalHeadline, buildHeadline, type Headline as HeadlineData } from '../core/insights'
 import { ACTOR_KPI_BY_ID, actorKpisForLens } from '../core/kpis'
+import { asScenario } from '../core/scenarios'
 import { getModel } from '../core/model'
 import { moveActorKpi, navigate, toggleActorKpi, useUI } from '../state/store'
 import { KpiCard, KpiPicker } from './KpiStrip'
@@ -134,7 +135,7 @@ function ActorFormulas({ env, actor }: { env: Env; actor: import('../core/engine
   const rows: [string, 'need' | 'ia' | 'addressable'][] = [['Besoin hors IA 2035', 'need'], ['Besoin IA', 'ia'], ['Demande adressable', 'addressable']]
   return (
     <div className="formulas">
-      <div className="muted small">Formules de l'Excel pour cet acteur (scénario {env.scenarioName(s)}) :</div>
+      <div className="muted small">Formules de l'Excel pour cet acteur ({asScenario(env.scenarioName(s))}) :</div>
       {rows.map(([label, col]) => {
         const f = m.formulaFor(s, actor, col)
         return <div key={col} className="formula-row"><span>{label}</span><code>{f.formula ? `=${f.formula}` : '(valeur saisie)'}</code><span className="muted small">{f.where}</span></div>

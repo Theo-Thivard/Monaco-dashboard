@@ -13,7 +13,8 @@ export function buildCSV(env: Env): string {
   const { snap } = env
   const out: string[] = []
   out.push(row('Hypothèses'))
-  out.push(row('Libellé', 'Unité', 'Bas', 'Central', 'Haut', 'Défaut Bas', 'Défaut Central', 'Défaut Haut', 'Source'))
+  const sn = [0, 1, 2].map((i) => env.scenarioName(i))
+  out.push(row('Libellé', 'Unité', ...sn, ...sn.map((n) => `Défaut ${n}`), 'Source'))
   for (const h of HYPS) {
     const p = snap.params[h.id]
     const d = h.def
